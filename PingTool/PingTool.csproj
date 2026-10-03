@@ -24,8 +24,9 @@
          1.7.3 = the screen leaves "Running" at once when every loop died (PIN454.4);
          1.8.0 = failures before "down" are set in the window, and "back up" says how long the outage lasted (PIN456.2);
          1.8.1 = the incident summary names the longest outage (PIN456.3);
-         1.9.0 = optional automatic log: every ping appended to a daily CSV per host (PIN456.4). -->
-    <Version>1.9.0</Version>
+         1.9.0 = optional automatic log: every ping appended to a daily CSV per host (PIN456.4);
+         1.9.1 = the recent picture also shows the loss over the last 60 pings (PIN456.6). -->
+    <Version>1.9.1</Version>
   </PropertyGroup>
 
 </Project>

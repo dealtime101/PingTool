@@ -45,7 +45,7 @@ namespace PingTool
 
         // Two short lines (one line is wider than the window):
         //   "Last 60: p50 12 / p95 40 / p99 55 ms"
-        //   "Recent jitter 3.1 ms"          (numbers in the user's culture)
+        //   "Recent jitter 3.1 ms | loss 5% (3/60)"   (numbers in the user's culture)
         public string Describe()
         {
             var c = CultureInfo.CurrentCulture;
@@ -55,8 +55,8 @@ namespace PingTool
             if (P50 is null)
                 return string.Format(c, "Last {0}: need {1} replies for percentiles", Samples, MinForPercentiles);
 
-            return string.Format(c, "Last {0}: p50 {1} / p95 {2} / p99 {3} ms\nRecent jitter {4} ms",
-                Samples, N(P50), N(P95), N(P99), N(Jitter));
+            return string.Format(c, "Last {0}: p50 {1} / p95 {2} / p99 {3} ms\nRecent jitter {4} ms | loss {5}% ({6}/{0})",
+                Samples, N(P50), N(P95), N(P99), N(Jitter), N(100.0 * Lost / Samples), Lost);
         }
     }
 }

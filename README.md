@@ -8,7 +8,7 @@ It started as a one-address ping window. It now watches several targets at once,
 
 - **Several targets at once**, each with its own statistics, graph and alerts.
 - **Four kinds of probe** (see [Targets](#targets)): ping, TCP port, web request, DNS lookup.
-- **Live numbers**: last result, min / average / max, jitter, loss, and the *recent* picture (p50 / p95 / p99 and jitter over the last 60 pings, so an old spike does not hide an improvement).
+- **Live numbers**: last result, min / average / max, jitter, loss, and the *recent* picture (p50 / p95 / p99, jitter and loss over the last 60 pings, so an old spike does not hide an improvement).
 - **Live graph** of the last 180 pings, or **all targets on one graph** to compare them on the same time scale.
 - **"Where is the fault?"** compares the targets side by side: everything down (this PC or its link), local targets up but every Internet target down (router or ISP), only some targets down, and so on. It is a hint from the pattern, and says so.
 - **Alerts** (sound and notification) when a target goes down, becomes degraded (too slow or losing too many pings) and recovers. The two limits are set in the window.
