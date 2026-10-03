@@ -23,6 +23,10 @@ namespace PingTool
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
 
+        // Named monitoring profiles (see Profile) and the one last used.
+        public List<Profile> Profiles { get; set; } = new();
+        public string ActiveProfile { get; set; } = "";
+
         public static string DefaultPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "PingTool", "settings.json");
@@ -36,6 +40,8 @@ namespace PingTool
                 s.Recent ??= new();
                 s.Hosts ??= new();
                 s.Address ??= "";
+                s.ActiveProfile ??= "";
+                s.Profiles = ProfileBook.Sanitize(s.Profiles);
                 return s;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException

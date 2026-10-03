@@ -39,6 +39,9 @@
             lblSize = new Label();
             chkAlert = new CheckBox();
             lstHosts = new ListView();
+            cboProfile = new ComboBox();
+            btnSaveProfile = new Button();
+            btnDeleteProfile = new Button();
             colHost = new ColumnHeader();
             colLast = new ColumnHeader();
             colAvg = new ColumnHeader();
@@ -194,10 +197,10 @@
             lstHosts.Columns.AddRange(new ColumnHeader[] { colHost, colLast, colAvg, colLoss });
             lstHosts.FullRowSelect = true;
             lstHosts.HideSelection = false;
-            lstHosts.Location = new Point(300, 20);
+            lstHosts.Location = new Point(300, 52);
             lstHosts.MultiSelect = false;
             lstHosts.Name = "lstHosts";
-            lstHosts.Size = new Size(260, 250);
+            lstHosts.Size = new Size(260, 218);
             lstHosts.TabIndex = 13;
             lstHosts.UseCompatibleStateImageBehavior = false;
             lstHosts.View = View.Details;
@@ -314,6 +317,34 @@
             chkCompare.UseVisualStyleBackColor = true;
             chkCompare.CheckedChanged += chkCompare_CheckedChanged;
             //
+            // cboProfile
+            //
+            cboProfile.Location = new Point(300, 20);
+            cboProfile.Name = "cboProfile";
+            cboProfile.Size = new Size(150, 23);
+            cboProfile.TabIndex = 23;
+            cboProfile.SelectionChangeCommitted += cboProfile_SelectionChangeCommitted;
+            //
+            // btnSaveProfile
+            //
+            btnSaveProfile.Location = new Point(455, 19);
+            btnSaveProfile.Name = "btnSaveProfile";
+            btnSaveProfile.Size = new Size(50, 25);
+            btnSaveProfile.TabIndex = 24;
+            btnSaveProfile.Text = "Save";
+            btnSaveProfile.UseVisualStyleBackColor = true;
+            btnSaveProfile.Click += btnSaveProfile_Click;
+            //
+            // btnDeleteProfile
+            //
+            btnDeleteProfile.Location = new Point(510, 19);
+            btnDeleteProfile.Name = "btnDeleteProfile";
+            btnDeleteProfile.Size = new Size(50, 25);
+            btnDeleteProfile.TabIndex = 25;
+            btnDeleteProfile.Text = "Delete";
+            btnDeleteProfile.UseVisualStyleBackColor = true;
+            btnDeleteProfile.Click += btnDeleteProfile_Click;
+            //
             // MainForm
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -325,6 +356,9 @@
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
             Controls.Add(chkCompact);
+            Controls.Add(btnDeleteProfile);
+            Controls.Add(btnSaveProfile);
+            Controls.Add(cboProfile);
             Controls.Add(btnReport);
             Controls.Add(btnIncidents);
             Controls.Add(btnExport);
@@ -378,6 +412,9 @@
         private Button btnExport;
         private Button btnIncidents;
         private Button btnReport;
+        private ComboBox cboProfile;
+        private Button btnSaveProfile;
+        private Button btnDeleteProfile;
         private CheckBox chkCompact;
         private Label lblState;
         private Label lblDiagnosis;

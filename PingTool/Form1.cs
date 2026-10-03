@@ -39,6 +39,7 @@ namespace PingTool
             InitializeComponent();
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
+            toolTip.SetToolTip(cboProfile, "Profile = the target list and all settings, under a name. Pick one to load it; type a name and press Save to keep the current setup.");
             FormClosed += (_, _) =>
             {
                 notifyIcon.Dispose();
@@ -48,7 +49,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, lblDiagnosis, chkCompare,
+                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -112,6 +113,8 @@ namespace PingTool
             numSize.Value = Math.Clamp(settings.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             chkAlert.Checked = settings.Alert;
             chkCompact.Checked = settings.Compact;
+            RefreshProfileList();
+            cboProfile.Text = settings.ActiveProfile;
 
             foreach (var host in settings.Hosts) AddHost(host);
         }
@@ -149,6 +152,121 @@ namespace PingTool
             lstHosts.Items.Add(item);
             item.Selected = true;
             return session;
+        }
+
+        private void RefreshProfileList()
+        {
+            string typed = cboProfile.Text;
+            cboProfile.Items.Clear();
+            cboProfile.Items.AddRange(settings.Profiles.Select(p => p.Name).ToArray<object>());
+            cboProfile.Text = typed;
+        }
+
+        // Keeps the current setup (targets and every setting) under the name typed in the box.
+        private void btnSaveProfile_Click(object? sender, EventArgs e)
+        {
+            if (!ProfileBook.TryName(cboProfile.Text, out string name, out string error))
+            {
+                MessageBox.Show(error, "PingTool");
+                return;
+            }
+
+            var hosts = sessions.Select(s => s.Address).ToList();
+            if (hosts.Count == 0)
+            {
+                string typed = cmbAddress.Text.Trim();
+                if (!IsValidTarget(typed)) return;
+                hosts.Add(typed);
+            }
+
+            if (ProfileBook.Find(settings.Profiles, name) is not null
+                && MessageBox.Show($"Replace the profile \"{name}\"?", "PingTool", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                return;
+
+            var profile = new Profile
+            {
+                Name = name,
+                Hosts = hosts,
+                IntervalMs = (int)numInterval.Value,
+                TimeoutMs = (int)numTimeout.Value,
+                PacketSize = (int)numSize.Value,
+                Alert = chkAlert.Checked,
+                DegradedLatencyMs = settings.DegradedLatencyMs,
+                DegradedLossPercent = settings.DegradedLossPercent,
+            };
+
+            if (!ProfileBook.Upsert(settings.Profiles, profile))
+            {
+                MessageBox.Show($"At most {ProfileBook.MaxProfiles} profiles: delete one first.", "PingTool");
+                return;
+            }
+
+            settings.ActiveProfile = name;
+            RefreshProfileList();
+            cboProfile.Text = name;
+            SaveSettings();
+        }
+
+        private void btnDeleteProfile_Click(object? sender, EventArgs e)
+        {
+            var profile = ProfileBook.Find(settings.Profiles, cboProfile.Text);
+            if (profile is null)
+            {
+                MessageBox.Show("Pick the profile to delete in the list.", "PingTool");
+                return;
+            }
+
+            if (MessageBox.Show($"Delete the profile \"{profile.Name}\"?", "PingTool", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+
+            ProfileBook.Remove(settings.Profiles, profile.Name);
+            settings.ActiveProfile = "";
+            cboProfile.Text = "";
+            RefreshProfileList();
+            SaveSettings();
+        }
+
+        private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)
+        {
+            var profile = ProfileBook.Find(settings.Profiles, cboProfile.SelectedItem?.ToString());
+            if (profile is not null) ApplyProfile(profile);
+        }
+
+        // Replaces the target list and the settings with the profile's. Only while stopped: the box
+        // is locked during a run.
+        private void ApplyProfile(Profile profile)
+        {
+            if (isRunning) return;
+
+            settings.DegradedLatencyMs = profile.DegradedLatencyMs;
+            settings.DegradedLossPercent = profile.DegradedLossPercent;
+            numInterval.Value = Math.Clamp(profile.IntervalMs, (int)numInterval.Minimum, (int)numInterval.Maximum);
+            numTimeout.Value = Math.Clamp(profile.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
+            numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
+            chkAlert.Checked = profile.Alert;
+
+            sessions.Clear();
+            lstHosts.Items.Clear();
+            selected = null;
+            int skipped = 0;
+            foreach (var host in profile.Hosts)
+            {
+                if (ProbeTarget.TryParse(host, out _, out _)) AddHost(host);
+                else skipped++;
+            }
+
+            // The figures of the previous setup mean nothing for this one.
+            log.Clear();
+            incidents.Clear();
+            UpdateIncidentButton();
+            hasRun = false;
+            ShowRunState();
+            RenderSelected();
+
+            settings.ActiveProfile = profile.Name;
+            SaveSettings();
+
+            if (skipped > 0)
+                MessageBox.Show($"{skipped} address(es) of this profile are not valid and were skipped.", "PingTool");
         }
 
         // False (with a message) when the text is not a valid target.
@@ -302,6 +420,9 @@ namespace PingTool
             numSize.Enabled = enabled;
             btnAddHost.Enabled = enabled;
             btnRemoveHost.Enabled = enabled;
+            cboProfile.Enabled = enabled;
+            btnSaveProfile.Enabled = enabled;
+            btnDeleteProfile.Enabled = enabled;
         }
 
         // One host's loop. An error it cannot survive (0.0.0.0 and :: make Dns throw
