@@ -51,10 +51,13 @@ namespace PingTool
         // leaves the old file instead of half of a new one.
         public void Save(string path)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            string temp = path + ".tmp";
+            // A bare name like "settings.json" has directory "" (not null), which
+            // CreateDirectory refuses: resolve against the current folder first.
+            string full = Path.GetFullPath(path);
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);   // null only for a root, which is no file path
+            string temp = full + ".tmp";
             File.WriteAllText(temp, JsonSerializer.Serialize(this, WriteOptions));
-            File.Move(temp, path, overwrite: true);
+            File.Move(temp, full, overwrite: true);
         }
 
         // Most recent first, no duplicates (case-insensitive), capped.
