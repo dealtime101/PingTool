@@ -23,6 +23,8 @@ namespace PingTool
         private HostSession? selected;
         private readonly PingLog log = new();
         private readonly IncidentLog incidents = new();
+        // Route captures running in the background; the run waits for them before releasing its token.
+        private readonly List<Task> pathCaptures = new();
         private readonly Settings settings = Settings.Load(Settings.DefaultPath);
         private static readonly string[] DefaultAddresses = { "google.ca", "8.8.8.8", "1.1.1.1", "192.168.0.1" };
         // Everything below the top block: hidden in compact mode.
@@ -377,6 +379,11 @@ namespace PingTool
                 }
                 finally
                 {
+                    // A capture still tracing uses the token: let it end (Stop cancels it) before the
+                    // token's source is released.
+                    await Task.WhenAll(pathCaptures.ToArray());
+                    pathCaptures.Clear();
+
                     bool mine = ReferenceEquals(cts, runCts);
                     runCts.Dispose();
                     if (mine) cts = null;
@@ -528,6 +535,14 @@ namespace PingTool
             if (change != HostChange.None) UpdateIncidentButton();
             Alert(session, change);
 
+            // Where do the answers stop? Trace the route the moment an outage is declared, and once
+            // while the host is healthy, so the two can be compared.
+            var token = cts?.Token ?? CancellationToken.None;
+            if (change == HostChange.Down)
+                StartPathCapture(session, incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage && i.Ongoing), token);
+            else if (ping >= 0 && !session.BaselineRequested)
+                StartPathCapture(session, null, token);
+
             foreach (ListViewItem item in lstHosts.Items)
                 if (item.Tag == session) RenderRow(item);
 
@@ -581,6 +596,39 @@ namespace PingTool
             catch (UnauthorizedAccessException ex)
             {
                 MessageBox.Show("Could not write the file: " + ex.Message, "PingTool");
+            }
+        }
+
+        // outage = the incident to attach the route to; null = the healthy baseline of the host.
+        private void StartPathCapture(HostSession session, Incident? outage, CancellationToken token)
+        {
+            if (session.Ip is not { } ip) return;   // no address yet: try again at the next reply
+            if (outage is null) session.BaselineRequested = true;
+            pathCaptures.Add(CapturePathAsync(session, ip, outage, token));
+        }
+
+        private static async Task CapturePathAsync(HostSession session, IPAddress ip, Incident? outage, CancellationToken token)
+        {
+            try
+            {
+                var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: token);
+                if (outage is null)
+                {
+                    session.BaselinePath = path;
+                }
+                else
+                {
+                    outage.Path = path;
+                    outage.PathNotes.AddRange(PathCapture.Compare(session.BaselinePath, path));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Stop or close: the trace is simply abandoned.
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Path capture for {session.Address} failed: {ex}");
             }
         }
 

@@ -38,7 +38,14 @@ namespace PingTool
             LastFailure = null;
             IpText = "-";
             Ip = null;
+            BaselinePath = null;
+            BaselineRequested = false;
         }
+
+        // The route to this host while it was healthy, to compare with the one at an outage.
+        // Captured once per run, at the first reply.
+        public PathCapture? BaselinePath { get; set; }
+        public bool BaselineRequested { get; set; }
 
         public void SetIp(System.Net.IPAddress ip)
         {

@@ -8,7 +8,7 @@ namespace PingTool
         public IncidentsForm(IReadOnlyList<Incident> incidents, string summary, DateTimeOffset now)
         {
             Text = "PingTool - Incidents";
-            ClientSize = new Size(720, 370);
+            ClientSize = new Size(720, 480);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -25,7 +25,7 @@ namespace PingTool
                 FullRowSelect = true,
                 GridLines = true,
                 Location = new Point(10, 40),
-                Size = new Size(700, 280),
+                Size = new Size(700, 190),
             };
             list.Columns.Add("Host", 120);
             list.Columns.Add("Type", 70);
@@ -54,8 +54,24 @@ namespace PingTool
                     outage ? i.FailedPings.ToString(culture) : "-",
                     detail,
                     i.Occurrence.ToString(culture),
-                }));
+                }) { Tag = i });
             }
+
+            // The route to the host at the moment of the selected outage.
+            var details = new TextBox
+            {
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Font = new Font(FontFamily.GenericMonospace, 9F),
+                BackColor = Color.FromArgb(40, 40, 40),
+                ForeColor = Color.White,
+                Location = new Point(10, 238),
+                Size = new Size(700, 168),
+            };
+            list.SelectedIndexChanged += (_, _) =>
+                details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
+            if (list.Items.Count > 0) list.Items[0].Selected = true;
 
             var lblSummary = new Label
             {
@@ -70,17 +86,28 @@ namespace PingTool
                 Text = "An outage starts at its first failed ping. A slowdown is dated when detected (after 10 pings). # = how many times this host had that kind of incident.",
                 ForeColor = Color.Silver,
                 AutoSize = false,
-                Location = new Point(10, 326),
+                Location = new Point(10, 414),
                 Size = new Size(600, 34),
             };
 
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(620, 330), Size = new Size(90, 28) };
+            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(620, 418), Size = new Size(90, 28) };
             CancelButton = close;
 
             Controls.Add(lblSummary);
             Controls.Add(list);
+            Controls.Add(details);
             Controls.Add(lblNote);
             Controls.Add(close);
+        }
+
+        private static string DetailsOf(Incident i)
+        {
+            if (i.Kind == IncidentKind.Slowdown)
+                return "A slowdown has no route capture: the host still answers, only slowly.";
+
+            return i.Path is null
+                ? "No route was captured for this outage: the host's address was not known yet, the run was stopped first, or the trace is still running."
+                : i.PathText();
         }
     }
 }

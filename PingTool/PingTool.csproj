@@ -10,8 +10,9 @@
          1.0.0 = the repository as first received; 1.1.0 = after audits 451-453 (+ version system);
          1.2.0 = recent-window percentiles and jitter (PIN453.5);
          1.3.0 = TCP, HTTP and DNS probes besides ping (PIN453.6);
-         1.4.0 = named monitoring profiles (PIN453.7). -->
-    <Version>1.4.0</Version>
+         1.4.0 = named monitoring profiles (PIN453.7);
+         1.5.0 = network path captured at each outage (PIN453.8). -->
+    <Version>1.5.0</Version>
   </PropertyGroup>
 
 </Project>

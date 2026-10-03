@@ -26,6 +26,14 @@ namespace PingTool
         // 1 for the first outage of this host, 2 for the second...: how often it came back.
         public int Occurrence { get; init; }
 
+        // Outage only: the route to the host captured when the outage was declared, and what
+        // differs from the route seen while it was healthy. Filled in later (a trace takes seconds).
+        public PathCapture? Path { get; set; }
+        public List<string> PathNotes { get; } = new();
+
+        public string PathText() =>
+            Path is null ? "" : Path.Describe() + (PathNotes.Count > 0 ? "\n" + string.Join("\n", PathNotes) : "");
+
         public bool Ongoing => End is null;
         public TimeSpan Duration(DateTimeOffset now) => (End ?? now) - Start;
     }
