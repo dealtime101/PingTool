@@ -8,8 +8,8 @@ namespace PingTool
     // Percentiles use the nearest-rank method on the successful pings only (a lost ping has no
     // latency; loss is reported on its own). They need MinForPercentiles successes: with fewer,
     // p95 and p99 would just be the maximum under another name.
-    // Jitter is the mean absolute difference between consecutive successful pings, losses skipped,
-    // the same definition as the session figure.
+    // Jitter is the mean absolute difference between two pings that follow each other and both answered:
+    // a loss breaks the chain (the same definition as the session figure).
     internal readonly record struct RecentStats(int Samples, int Lost, double? P50, double? P95, double? P99, double? Jitter)
     {
         public const int Window = 60;
@@ -20,13 +20,19 @@ namespace PingTool
             var recent = history.Skip(Math.Max(0, history.Count - window)).ToList();
             var ok = recent.Where(p => p >= 0).ToList();
 
+            // Only between two pings that follow each other and both answered (same definition as the session
+            // figure): a loss breaks the chain.
             double? jitter = null;
-            if (ok.Count >= 2)
+            double sum = 0;
+            int pairs = 0;
+            for (int i = 1; i < recent.Count; i++)
             {
-                double sum = 0;
-                for (int i = 1; i < ok.Count; i++) sum += Math.Abs(ok[i] - ok[i - 1]);
-                jitter = sum / (ok.Count - 1);
+                if (recent[i] < 0 || recent[i - 1] < 0) continue;
+                sum += Math.Abs(recent[i] - recent[i - 1]);
+                pairs++;
             }
+
+            if (pairs > 0) jitter = sum / pairs;
 
             if (ok.Count < MinForPercentiles)
                 return new RecentStats(recent.Count, recent.Count - ok.Count, null, null, null, jitter);

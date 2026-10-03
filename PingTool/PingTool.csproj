@@ -41,8 +41,9 @@
          1.12.10 = a damaged settings file is kept aside and reported, not overwritten (PIN456.21);
          1.12.11 = a temporary DNS failure is no longer reported as an unknown name (PIN456.24);
          1.12.12 = an unreachable host has one label whether it came as an exception or as an ICMP reply (PIN456.25);
-         1.12.13 = the CSV export no longer changes the line ending of the writer it is given (PIN456.28). -->
-    <Version>1.12.13</Version>
+         1.12.13 = the CSV export no longer changes the line ending of the writer it is given (PIN456.28);
+         1.12.14 = jitter is measured only between replies that follow each other, a loss breaks the chain (PIN456.29). -->
+    <Version>1.12.14</Version>
   </PropertyGroup>
 
 </Project>

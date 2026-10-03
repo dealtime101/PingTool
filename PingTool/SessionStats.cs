@@ -1,7 +1,8 @@
 namespace PingTool
 {
-    // One session = one Start..Stop. Jitter is the mean absolute difference
-    // between consecutive successful round trips (RFC 3550 style, unsmoothed).
+    // One session = one Start..Stop. Jitter is the mean absolute difference between two round trips
+    // that FOLLOW EACH OTHER, both successful (unsmoothed): a lost ping breaks the chain, so a reply
+    // is never compared with one from before the loss.
     internal sealed class SessionStats
     {
         private long sum, count, last = -1;
@@ -29,7 +30,9 @@ namespace PingTool
         public void Add(long ping)
         {
             Sent++;
-            if (ping < 0) { Lost++; return; }
+            // A loss breaks the chain: the next reply is not compared with one from before the gap, which may
+            // be minutes old (an outage then a slower route would read as a huge jitter that is not one).
+            if (ping < 0) { Lost++; last = -1; return; }
 
             sum += ping;
             count++;
