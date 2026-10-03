@@ -12,6 +12,7 @@ namespace PingTool
         public static readonly (int Min, int Max) PacketSize = (1, 65_500);
         public static readonly (int Min, int Max) DegradedLatencyMs = (1, 60_000);
         public static readonly (int Min, int Max) DegradedLossPercent = (1, 100);
+        public static readonly (int Min, int Max) DownAfter = (1, 20);
 
         public static int Clamp(int value, (int Min, int Max) range) => Math.Clamp(value, range.Min, range.Max);
     }
@@ -36,6 +37,7 @@ namespace PingTool
         // average latency (see HostMonitor). Edited in settings.json.
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
+        public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
         // Named monitoring profiles (see Profile) and the one last used.
         public List<Profile> Profiles { get; set; } = new();
@@ -71,6 +73,7 @@ namespace PingTool
             PacketSize = Limits.Clamp(PacketSize, Limits.PacketSize);
             DegradedLatencyMs = Limits.Clamp(DegradedLatencyMs, Limits.DegradedLatencyMs);
             DegradedLossPercent = Limits.Clamp(DegradedLossPercent, Limits.DegradedLossPercent);
+            DownAfter = Limits.Clamp(DownAfter, Limits.DownAfter);
 
             Address = (Address ?? "").Trim();
             ActiveProfile ??= "";

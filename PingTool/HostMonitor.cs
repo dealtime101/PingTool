@@ -6,7 +6,7 @@ namespace PingTool
 
     // Watches one host's successive pings and says when its state CHANGES.
     //
-    //   Down      : DownAfter consecutive failures (one lost packet is noise).
+    //   Down      : downAfter consecutive failures, 3 by default (one lost packet is noise).
     //   Up        : first success after Down.
     //   Degraded  : the last WindowSize pings, window FULL, show loss >= lossPercent
     //               or an average latency >= latencyMs. A single spike cannot do it:
@@ -18,23 +18,25 @@ namespace PingTool
     // cannot read as "degraded" the moment the host answers again.
     internal sealed class HostMonitor
     {
-        public const int DownAfter = 3;
+        public const int DefaultDownAfter = 3;
         public const int WindowSize = 10;
         public const double RecoverLossPercent = 10;
         public const double RecoverLatencyFactor = 0.8;
 
         private readonly double latencyMs;
         private readonly double lossPercent;
+        private readonly int downAfter;
         private readonly Queue<long> window = new();
         private HostState state;
         private int failures;
 
         public HostState State => state;
 
-        public HostMonitor(int latencyMs = 150, int lossPercent = 30)
+        public HostMonitor(int latencyMs = 150, int lossPercent = 30, int downAfter = DefaultDownAfter)
         {
             this.latencyMs = Math.Max(1, latencyMs);
             this.lossPercent = Math.Clamp(lossPercent, 1, 100);
+            this.downAfter = Math.Max(1, downAfter);
         }
 
         public double WindowLossPercent =>
@@ -74,7 +76,7 @@ namespace PingTool
             {
                 failures++;
                 if (state == HostState.Down) return HostChange.None;
-                if (failures >= DownAfter)
+                if (failures >= downAfter)
                 {
                     state = HostState.Down;
                     return HostChange.Down;

@@ -51,7 +51,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                lblSlow, numSlow, lblLoss, numLoss,
+                lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
                 chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
@@ -116,6 +116,7 @@ namespace PingTool
             numSize.Value = Math.Clamp(settings.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             numSlow.Value = Math.Clamp(settings.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
             numLoss.Value = Math.Clamp(settings.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
+            numDownAfter.Value = Math.Clamp(settings.DownAfter, (int)numDownAfter.Minimum, (int)numDownAfter.Maximum);
             chkAlert.Checked = settings.Alert;
             chkCompact.Checked = settings.Compact;
             RefreshProfileList();
@@ -133,6 +134,7 @@ namespace PingTool
             settings.PacketSize = (int)numSize.Value;
             settings.DegradedLatencyMs = (int)numSlow.Value;
             settings.DegradedLossPercent = (int)numLoss.Value;
+            settings.DownAfter = (int)numDownAfter.Value;
             settings.Alert = chkAlert.Checked;
             settings.Compact = chkCompact.Checked;
 
@@ -153,7 +155,7 @@ namespace PingTool
             var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
             if (existing != null) return existing;
 
-            var session = new HostSession(address, (int)numSlow.Value, (int)numLoss.Value);
+            var session = new HostSession(address, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
             sessions.Add(session);
             var item = new ListViewItem(new[] { address, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
@@ -200,6 +202,7 @@ namespace PingTool
                 Alert = chkAlert.Checked,
                 DegradedLatencyMs = (int)numSlow.Value,
                 DegradedLossPercent = (int)numLoss.Value,
+                DownAfter = (int)numDownAfter.Value,
             };
 
             if (!ProfileBook.Upsert(settings.Profiles, profile))
@@ -246,6 +249,7 @@ namespace PingTool
 
             numSlow.Value = Math.Clamp(profile.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
             numLoss.Value = Math.Clamp(profile.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
+            numDownAfter.Value = Math.Clamp(profile.DownAfter, (int)numDownAfter.Minimum, (int)numDownAfter.Maximum);
             numInterval.Value = Math.Clamp(profile.IntervalMs, (int)numInterval.Minimum, (int)numInterval.Maximum);
             numTimeout.Value = Math.Clamp(profile.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
             numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
@@ -366,7 +370,7 @@ namespace PingTool
                 // ones in the boxes (it builds a fresh monitor with them).
                 foreach (var s in sessions)
                 {
-                    s.ApplyThresholds((int)numSlow.Value, (int)numLoss.Value);
+                    s.ApplyThresholds((int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
@@ -442,6 +446,7 @@ namespace PingTool
             numSize.Enabled = enabled;
             numSlow.Enabled = enabled;
             numLoss.Enabled = enabled;
+            numDownAfter.Enabled = enabled;
             btnAddHost.Enabled = enabled;
             btnRemoveHost.Enabled = enabled;
             cboProfile.Enabled = enabled;
@@ -550,7 +555,11 @@ namespace PingTool
             incidents.Observe(DateTimeOffset.Now, session.Address, ping, session.LastFailure, change,
                 session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs);
             if (change != HostChange.None) UpdateIncidentButton();
-            Alert(session, change);
+            // The outage the host just came back from, already closed by Observe above.
+            TimeSpan? outage = change == HostChange.Up
+                ? incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage)?.Duration(DateTimeOffset.Now)
+                : null;
+            Alert(session, change, outage);
 
             // Where do the answers stop? Trace the route the moment an outage is declared, and once
             // while the host is healthy, so the two can be compared.
@@ -737,12 +746,12 @@ namespace PingTool
             }
         }
 
-        private void Alert(HostSession session, HostChange change)
+        private void Alert(HostSession session, HostChange change, TimeSpan? outage)
         {
             if (closing || change == HostChange.None || !chkAlert.Checked) return;
 
             var monitor = session.Monitor;
-            string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs);
+            string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
             var (sound, icon) = change switch
             {
                 HostChange.Down => (System.Media.SystemSounds.Hand, ToolTipIcon.Error),

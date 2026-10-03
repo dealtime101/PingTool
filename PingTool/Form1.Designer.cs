@@ -63,8 +63,11 @@
             lblLoss = new Label();
             numSlow = new NumericUpDown();
             numLoss = new NumericUpDown();
+            lblDownAfter = new Label();
+            numDownAfter = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)numSlow).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numLoss).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numDownAfter).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numInterval).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numSize).BeginInit();
@@ -216,7 +219,7 @@
             //
             lblLoss.AutoSize = true;
             lblLoss.ForeColor = Color.White;
-            lblLoss.Location = new Point(140, 417);
+            lblLoss.Location = new Point(125, 417);
             lblLoss.Name = "lblLoss";
             lblLoss.TabIndex = 28;
             lblLoss.Text = "Loss at least (%)";
@@ -224,13 +227,33 @@
             // numLoss
             //
             numLoss.AccessibleName = "Loss at least (%)";
-            numLoss.Location = new Point(140, 435);
+            numLoss.Location = new Point(125, 435);
             numLoss.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
             numLoss.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numLoss.Name = "numLoss";
             numLoss.Size = new Size(80, 23);
             numLoss.TabIndex = 29;
             numLoss.Value = new decimal(new int[] { 30, 0, 0, 0 });
+            //
+            // lblDownAfter
+            //
+            lblDownAfter.AutoSize = true;
+            lblDownAfter.ForeColor = Color.White;
+            lblDownAfter.Location = new Point(225, 417);
+            lblDownAfter.Name = "lblDownAfter";
+            lblDownAfter.TabIndex = 31;
+            lblDownAfter.Text = "Down after";
+            //
+            // numDownAfter
+            //
+            numDownAfter.AccessibleName = "Down after (consecutive failures)";
+            numDownAfter.Location = new Point(225, 435);
+            numDownAfter.Maximum = new decimal(new int[] { 20, 0, 0, 0 });
+            numDownAfter.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numDownAfter.Name = "numDownAfter";
+            numDownAfter.Size = new Size(60, 23);
+            numDownAfter.TabIndex = 32;
+            numDownAfter.Value = new decimal(new int[] { 3, 0, 0, 0 });
             //
             // chkAlert
             //
@@ -431,6 +454,8 @@
             Controls.Add(btnAddHost);
             Controls.Add(lstHosts);
             Controls.Add(chkAlert);
+            Controls.Add(numDownAfter);
+            Controls.Add(lblDownAfter);
             Controls.Add(numLoss);
             Controls.Add(lblLoss);
             Controls.Add(numSlow);
@@ -457,6 +482,7 @@
             ((System.ComponentModel.ISupportInitialize)numSize).EndInit();
             ((System.ComponentModel.ISupportInitialize)numSlow).EndInit();
             ((System.ComponentModel.ISupportInitialize)numLoss).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numDownAfter).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -498,5 +524,7 @@
         private Label lblLoss;
         private NumericUpDown numSlow;
         private NumericUpDown numLoss;
+        private Label lblDownAfter;
+        private NumericUpDown numDownAfter;
     }
 }

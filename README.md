@@ -38,11 +38,11 @@ Use **Add address** to build a list of several targets, then **Start** to probe 
 
 For each target, PingTool looks at the last 10 pings:
 
-- **Down**: 3 pings in a row failed. **Back up** at the first reply.
+- **Down**: 3 pings in a row failed (the **Down after** box sets that number). **Back up** at the first reply; the notification says how long the outage lasted ("back up after 2 min 14 s").
 - **Degraded**: a full window of 10 pings shows at least the *loss* limit (default 30 %) or at least the *slow* limit as an average (default 150 ms). One isolated spike does not trigger it.
 - **Recovered**: loss back under 10 % and the average under 80 % of the slow limit, so a target hovering at the limit does not flap.
 
-Both limits are the two boxes **Slow above (ms)** and **Loss at least (%)**.
+The thresholds are the three boxes **Slow above (ms)**, **Loss at least (%)** and **Down after**.
 
 ## Settings
 
@@ -53,6 +53,7 @@ Both limits are the two boxes **Slow above (ms)** and **Loss at least (%)**.
 | Packet size (ping only) | 1 – 65 500 bytes | 32 bytes |
 | Slow above | 1 – 60 000 ms | 150 ms |
 | Loss at least | 1 – 100 % | 30 % |
+| Down after | 1 – 20 failed pings in a row | 3 |
 
 They are saved in `%APPDATA%\PingTool\settings.json`. A hand-edited file is checked on load: out-of-range numbers are pulled to the nearest limit, and blank or duplicate entries in the lists are dropped. A damaged file is replaced by defaults instead of stopping the program.
 

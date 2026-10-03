@@ -12,6 +12,7 @@ namespace PingTool
         public bool Alert { get; set; } = true;
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
+        public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
     }
 
     // The rules for the list of profiles kept in settings.json. Names are compared without
@@ -71,6 +72,7 @@ namespace PingTool
                 p.PacketSize = Limits.Clamp(p.PacketSize, Limits.PacketSize);
                 p.DegradedLatencyMs = Limits.Clamp(p.DegradedLatencyMs, Limits.DegradedLatencyMs);
                 p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
+                p.DownAfter = Limits.Clamp(p.DownAfter, Limits.DownAfter);
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
                 clean.Add(p);
                 if (clean.Count == MaxProfiles) break;

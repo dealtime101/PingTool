@@ -6,10 +6,10 @@ namespace PingTool
     {
         public const int HistorySize = 180;
 
-        public HostSession(string address, int degradedLatencyMs = 150, int degradedLossPercent = 30)
+        public HostSession(string address, int degradedLatencyMs = 150, int degradedLossPercent = 30, int downAfter = HostMonitor.DefaultDownAfter)
         {
             Address = address;
-            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent);
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
         }
 
         public string Address { get; }
@@ -18,8 +18,8 @@ namespace PingTool
 
         // The user can change the thresholds between two runs: the monitor is built with them, so
         // it is replaced (starting from a clean state), not edited.
-        public void ApplyThresholds(int degradedLatencyMs, int degradedLossPercent) =>
-            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent);
+        public void ApplyThresholds(int degradedLatencyMs, int degradedLossPercent, int downAfter) =>
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
         public Queue<long> History { get; } = new();
 
         // null until the first reply or timeout of the current run.
