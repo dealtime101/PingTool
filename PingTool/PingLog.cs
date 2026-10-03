@@ -40,11 +40,28 @@ namespace PingTool
             }
         }
 
+        // A spreadsheet runs a field as a formula when it begins with = + - @, or with a tab or a CR.
+        // Looking at the very first character is not enough: spaces, a no-break space, a line feed, a
+        // zero-width space or a byte-order mark in front hide the formula character from a check on
+        // value[0] while a spreadsheet may still skip them. So: the first VISIBLE character decides.
+        private static bool StartsLikeFormula(string value)
+        {
+            if (value.Length > 0 && (value[0] == '\t' || value[0] == '\r')) return true;
+
+            foreach (char c in value)
+            {
+                if (char.IsWhiteSpace(c) || char.IsControl(c) || char.GetUnicodeCategory(c) == UnicodeCategory.Format) continue;
+                return "=+-@".Contains(c, StringComparison.Ordinal);
+            }
+
+            return false;
+        }
+
         // RFC 4180 quoting, plus a leading ' on anything a spreadsheet would
         // run as a formula: the host is whatever the user typed.
         private static string Field(string value)
         {
-            if (value.Length > 0 && "=+-@\t\r".Contains(value[0])) value = "'" + value;
+            if (StartsLikeFormula(value)) value = "'" + value;
             if (value.IndexOfAny(CsvSpecials) < 0) return value;
             return "\"" + value.Replace("\"", "\"\"") + "\"";
         }
