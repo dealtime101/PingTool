@@ -17,14 +17,30 @@ namespace PingTool
         // Oldest first. Read-only: the timeline draws from it.
         public IReadOnlyCollection<LogEntry> Entries => entries;
 
-        public void Clear() => entries.Clear();
+        // How many of the oldest entries were let go since the last Clear, to say so instead of letting
+        // an export or a timeline pass for the whole session.
+        public long Dropped { get; private set; }
+
+        public string? DroppedNote => Dropped == 0 ? null : string.Format(CultureInfo.CurrentCulture,
+            "The log keeps the latest {0:N0} pings: the {1:N0} older ones are no longer in it.", MaxEntries, Dropped);
+
+        public void Clear()
+        {
+            entries.Clear();
+            Dropped = 0;
+        }
 
         // Returns the entry, so the automatic log writes exactly what the in-memory log holds.
         public LogEntry Add(DateTimeOffset time, string host, string status, long? rttMs, string detail = "")
         {
             var entry = new LogEntry(time, host, status, rttMs, detail);
             entries.Enqueue(entry);
-            while (entries.Count > MaxEntries) entries.Dequeue();
+            while (entries.Count > MaxEntries)
+            {
+                entries.Dequeue();
+                Dropped++;
+            }
+
             return entry;
         }
 

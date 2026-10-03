@@ -450,8 +450,14 @@ namespace PingTool
             try
             {
                 // UTF-8 with BOM so Excel reads accented host names correctly.
-                using var writer = new StreamWriter(dialog.FileName, false, new System.Text.UTF8Encoding(true));
-                log.WriteCsv(writer);
+                using (var writer = new StreamWriter(dialog.FileName, false, new System.Text.UTF8Encoding(true)))
+                    log.WriteCsv(writer);
+
+                // The file is not the whole session once the log has let its oldest pings go: say so.
+                if (log.DroppedNote is string dropped)
+                    MessageBox.Show("Exported, but incomplete.\n\n" + dropped + "\nThe file starts at "
+                        + log.Entries.First().Time.ToLocalTime().ToString("G", CultureInfo.CurrentCulture)
+                        + ".\n\nTick \"Save the log to disk\" before Start to keep everything.", "PingTool");
             }
             catch (IOException ex)
             {
@@ -839,7 +845,7 @@ namespace PingTool
                 return;
             }
 
-            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address);
+            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote);
             dialog.ShowDialog(this);
         }
 

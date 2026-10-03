@@ -99,7 +99,7 @@ The version number lives in one place, `<Version>` in `PingTool/PingTool.csproj`
 - **DNS probe**: it goes through the operating system's resolver, cache included, so a name looked up a moment ago answers in 0 ms. It catches a resolver that stopped answering, not a specific DNS server.
 - **Web probe**: it sends a real `GET` (the body is not read) and does not follow redirects. A certificate that cannot be validated is a failure ("TLS").
 - **Network path**: it uses ICMP with a growing TTL. Many routers do not answer such probes, so a silent hop does not prove a fault at that spot. For `tcp://` and `http(s)://` targets a firewall that drops ICMP leaves the trace silent. IPv6 paths have not been tried.
-- **Log size**: the log behind the CSV export and the session timeline keeps the latest 100 000 measurements (about 27 hours at one ping per second) and starts again at each **Start**.
+- **Log size**: the log behind the CSV export and the session timeline keeps the latest 100 000 measurements (about 27 hours at one ping per second) and starts again at each **Start**. Once older measurements have been let go, an export warns that the file is incomplete (and from when it starts), and the timeline says how many are missing; tick **Save the log to disk** before Start to keep everything.
 - **Packet size** applies to ping only.
 - **CSV**: a field that a spreadsheet would run as a formula (it starts with `=`, `+`, `-` or `@`, even after spaces or invisible characters) is prefixed with an apostrophe. A few other programs show that apostrophe.
 

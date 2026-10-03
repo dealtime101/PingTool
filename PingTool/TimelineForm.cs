@@ -92,13 +92,17 @@ namespace PingTool
     internal sealed class TimelineForm : Form
     {
         private readonly IReadOnlyCollection<LogEntry> entries;
+        private readonly string? droppedNote;
         private readonly IReadOnlyList<Incident> incidents;
         private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = "Target" };
-        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 300), AccessibleName = "Session timeline" };
-        private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 350), Size = new Size(740, 50) };
+        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 290), AccessibleName = "Session timeline" };
+        // Room for four lines: the three of the summary and, when the log let pings go, the note about it.
+        private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 340), Size = new Size(740, 62) };
 
-        public TimelineForm(IReadOnlyCollection<LogEntry> entries, IReadOnlyList<Incident> incidents, IEnumerable<string> hosts, string? selected)
+        // droppedNote: what to say when the log has let its oldest pings go (null = nothing lost).
+        public TimelineForm(IReadOnlyCollection<LogEntry> entries, IReadOnlyList<Incident> incidents, IEnumerable<string> hosts, string? selected, string? droppedNote = null)
         {
+            this.droppedNote = droppedNote;
             this.entries = entries;
             this.incidents = incidents;
 
@@ -134,7 +138,7 @@ namespace PingTool
             // About one column per 4 pixels.
             var data = Timeline.Build(entries, host, Math.Max(10, chart.PlotWidth / 4));
             chart.Show(data, incidents);
-            summary.Text = Timeline.Describe(data);
+            summary.Text = Timeline.Describe(data) + (droppedNote is null ? "" : "\n" + droppedNote);
         }
     }
 }
