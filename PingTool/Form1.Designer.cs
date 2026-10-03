@@ -136,7 +136,7 @@
             lblTimeout.ForeColor = Color.White;
             lblTimeout.Location = new Point(106, 367);
             lblTimeout.Name = "lblTimeout";
-            lblTimeout.TabIndex = 7;
+            lblTimeout.TabIndex = 8;
             lblTimeout.Text = "Timeout (ms)";
             //
             // lblSize
@@ -145,7 +145,7 @@
             lblSize.ForeColor = Color.White;
             lblSize.Location = new Point(182, 367);
             lblSize.Name = "lblSize";
-            lblSize.TabIndex = 8;
+            lblSize.TabIndex = 10;
             lblSize.Text = "Size (bytes)";
             //
             // numInterval
@@ -156,7 +156,10 @@
             numInterval.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numInterval.Name = "numInterval";
             numInterval.Size = new Size(68, 23);
-            numInterval.TabIndex = 9;
+            // Each box comes right after its label in tab order: that is how a screen reader names it,
+            // and AccessibleName says it outright so a later reordering cannot break it.
+            numInterval.AccessibleName = "Interval (ms)";
+            numInterval.TabIndex = 7;
             numInterval.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numTimeout
@@ -167,7 +170,8 @@
             numTimeout.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numTimeout.Name = "numTimeout";
             numTimeout.Size = new Size(68, 23);
-            numTimeout.TabIndex = 10;
+            numTimeout.AccessibleName = "Timeout (ms)";
+            numTimeout.TabIndex = 9;
             numTimeout.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numSize
@@ -177,6 +181,7 @@
             numSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numSize.Name = "numSize";
             numSize.Size = new Size(72, 23);
+            numSize.AccessibleName = "Size (bytes)";
             numSize.TabIndex = 11;
             numSize.Value = new decimal(new int[] { 32, 0, 0, 0 });
             //
@@ -201,6 +206,7 @@
             lstHosts.MultiSelect = false;
             lstHosts.Name = "lstHosts";
             lstHosts.Size = new Size(260, 218);
+            lstHosts.AccessibleName = "Monitored targets";
             lstHosts.TabIndex = 13;
             lstHosts.UseCompatibleStateImageBehavior = false;
             lstHosts.View = View.Details;
@@ -322,6 +328,7 @@
             cboProfile.Location = new Point(300, 20);
             cboProfile.Name = "cboProfile";
             cboProfile.Size = new Size(150, 23);
+            cboProfile.AccessibleName = "Monitoring profile";
             cboProfile.TabIndex = 23;
             cboProfile.SelectionChangeCommitted += cboProfile_SelectionChangeCommitted;
             //

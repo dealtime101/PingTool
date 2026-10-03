@@ -15,8 +15,9 @@
          1.5.1 = status 11004 no longer reported as "refused" (PIN453.17);
          1.5.2 = reassembly timeout no longer reported as an expired TTL (PIN453.16);
          1.5.3 = loaded settings are validated: numbers in range, clean lists (PIN453.14);
-         1.5.4 = isolated successful pings are drawn on the graph (PIN453.11). -->
-    <Version>1.5.4</Version>
+         1.5.4 = isolated successful pings are drawn on the graph (PIN453.11);
+         1.5.5 = the numeric boxes are named for screen readers (PIN453.12). -->
+    <Version>1.5.5</Version>
   </PropertyGroup>
 
 </Project>
