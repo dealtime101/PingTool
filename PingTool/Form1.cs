@@ -786,28 +786,19 @@ namespace PingTool
 
         private void DrawSeries(Graphics g, GraphSeries s, long top)
         {
-            float step = (Width - 1f) / (MaxSamples - 1);
-            float x0 = Width - 1 - (s.Samples.Count - 1) * step;
-            float Y(long v) => Height - 1 - (Height - 1f) * v / top;
+            // Where everything goes is computed by GraphLayout (and tested there); this only paints.
+            var shapes = GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples);
 
             using var line = new Pen(s.Color, 1.5f);
             // Alone, a loss is red; compared, it keeps its host's colour so you can tell whose it is.
             using var lost = new Pen(compare ? s.Color : Color.Red, 2f);
-            PointF? prev = null;
-            int i = 0;
-            foreach (var v in s.Samples)
-            {
-                float x = x0 + i++ * step;
-                if (v < 0)
-                {
-                    g.DrawLine(lost, x, Height - 1, x, Height - 8);
-                    prev = null;
-                    continue;
-                }
-                var p = new PointF(x, Y(v));
-                if (prev is PointF q) g.DrawLine(line, q, p);
-                prev = p;
-            }
+            using var dot = new SolidBrush(s.Color);
+
+            foreach (var (from, to) in shapes.Lines) g.DrawLine(line, from.X, from.Y, to.X, to.Y);
+            // A reply with no neighbour to be joined to (the first one, or one between two losses)
+            // is a dot: as a line it would have no length and the reply would not show at all.
+            foreach (var d in shapes.Dots) g.FillEllipse(dot, d.X - 2f, d.Y - 2f, 4f, 4f);
+            foreach (float x in shapes.LossXs) g.DrawLine(lost, x, Height - 1, x, Height - 8);
         }
 
         // A dotted line at the recent p95: "95 % of the last pings were at or below this".
