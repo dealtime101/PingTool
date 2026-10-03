@@ -100,7 +100,7 @@
             btnStartStop.Location = new Point(85, 145);
             btnStartStop.Name = "btnStartStop";
             btnStartStop.Size = new Size(100, 32);
-            btnStartStop.TabIndex = 2;
+            btnStartStop.TabIndex = 3;
             btnStartStop.Text = "Start";
             btnStartStop.UseVisualStyleBackColor = true;
             btnStartStop.Click += btnStartStop_Click;
@@ -113,7 +113,7 @@
             lblPingResult.Location = new Point(30, 80);
             lblPingResult.Name = "lblPingResult";
             lblPingResult.Size = new Size(224, 59);
-            lblPingResult.TabIndex = 3;
+            lblPingResult.TabIndex = 4;
             lblPingResult.Text = "---";
             lblPingResult.TextAlign = ContentAlignment.MiddleCenter;
             // 
@@ -124,7 +124,7 @@
             lblStats.Location = new Point(30, 190);
             lblStats.Name = "lblStats";
             lblStats.Size = new Size(10, 15);
-            lblStats.TabIndex = 4;
+            lblStats.TabIndex = 5;
             lblStats.Text = "Min - / Avg - / Max - ms\nJitter - ms | Loss 0% (0/0)\n-";
             //
             // graphLatency
@@ -132,7 +132,7 @@
             graphLatency.Location = new Point(30, 277);
             graphLatency.Name = "graphLatency";
             graphLatency.Size = new Size(224, 90);
-            graphLatency.TabIndex = 5;
+            graphLatency.TabIndex = 6;
             //
             // lblInterval
             //
@@ -140,7 +140,7 @@
             lblInterval.ForeColor = Color.White;
             lblInterval.Location = new Point(30, 367);
             lblInterval.Name = "lblInterval";
-            lblInterval.TabIndex = 6;
+            lblInterval.TabIndex = 7;
             lblInterval.Text = "Interval (ms)";
             //
             // lblTimeout
@@ -149,7 +149,7 @@
             lblTimeout.ForeColor = Color.White;
             lblTimeout.Location = new Point(106, 367);
             lblTimeout.Name = "lblTimeout";
-            lblTimeout.TabIndex = 8;
+            lblTimeout.TabIndex = 9;
             lblTimeout.Text = "Timeout (ms)";
             //
             // lblSize
@@ -158,7 +158,7 @@
             lblSize.ForeColor = Color.White;
             lblSize.Location = new Point(182, 367);
             lblSize.Name = "lblSize";
-            lblSize.TabIndex = 10;
+            lblSize.TabIndex = 11;
             lblSize.Text = "Size (bytes)";
             //
             // numInterval
@@ -172,7 +172,7 @@
             // Each box comes right after its label in tab order: that is how a screen reader names it,
             // and AccessibleName says it outright so a later reordering cannot break it.
             numInterval.AccessibleName = "Interval (ms)";
-            numInterval.TabIndex = 7;
+            numInterval.TabIndex = 8;
             numInterval.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numTimeout
@@ -184,7 +184,7 @@
             numTimeout.Name = "numTimeout";
             numTimeout.Size = new Size(68, 23);
             numTimeout.AccessibleName = "Timeout (ms)";
-            numTimeout.TabIndex = 9;
+            numTimeout.TabIndex = 10;
             numTimeout.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numSize
@@ -195,7 +195,7 @@
             numSize.Name = "numSize";
             numSize.Size = new Size(72, 23);
             numSize.AccessibleName = "Size (bytes)";
-            numSize.TabIndex = 11;
+            numSize.TabIndex = 12;
             numSize.Value = new decimal(new int[] { 32, 0, 0, 0 });
             //
             // lblSlow
@@ -275,7 +275,7 @@
             chkAlert.ForeColor = Color.White;
             chkAlert.Location = new Point(30, 467);
             chkAlert.Name = "chkAlert";
-            chkAlert.TabIndex = 12;
+            chkAlert.TabIndex = 13;
             chkAlert.Text = "Alert on outage / slowdown / recovery";
             chkAlert.UseVisualStyleBackColor = true;
             //
@@ -289,7 +289,7 @@
             lstHosts.Name = "lstHosts";
             lstHosts.Size = new Size(260, 218);
             lstHosts.AccessibleName = "Monitored targets";
-            lstHosts.TabIndex = 13;
+            lstHosts.TabIndex = 14;
             lstHosts.UseCompatibleStateImageBehavior = false;
             lstHosts.View = View.Details;
             lstHosts.SelectedIndexChanged += lstHosts_SelectedIndexChanged;
@@ -319,7 +319,7 @@
             btnAddHost.Location = new Point(300, 328);
             btnAddHost.Name = "btnAddHost";
             btnAddHost.Size = new Size(120, 28);
-            btnAddHost.TabIndex = 14;
+            btnAddHost.TabIndex = 15;
             btnAddHost.Text = "Add address";
             btnAddHost.UseVisualStyleBackColor = true;
             btnAddHost.Click += btnAddHost_Click;
@@ -329,7 +329,7 @@
             btnRemoveHost.Location = new Point(440, 328);
             btnRemoveHost.Name = "btnRemoveHost";
             btnRemoveHost.Size = new Size(120, 28);
-            btnRemoveHost.TabIndex = 15;
+            btnRemoveHost.TabIndex = 16;
             btnRemoveHost.Text = "Remove selected";
             btnRemoveHost.UseVisualStyleBackColor = true;
             btnRemoveHost.Click += btnRemoveHost_Click;
@@ -339,7 +339,7 @@
             btnExport.Location = new Point(300, 362);
             btnExport.Name = "btnExport";
             btnExport.Size = new Size(126, 28);
-            btnExport.TabIndex = 16;
+            btnExport.TabIndex = 17;
             btnExport.Text = "Export CSV...";
             btnExport.UseVisualStyleBackColor = true;
             btnExport.Click += btnExport_Click;
@@ -400,7 +400,7 @@
             chkCompact.ForeColor = Color.White;
             chkCompact.Location = new Point(125, 19);
             chkCompact.Name = "chkCompact";
-            chkCompact.TabIndex = 17;
+            chkCompact.TabIndex = 2;
             chkCompact.Text = "Compact (on top)";
             chkCompact.UseVisualStyleBackColor = true;
             chkCompact.CheckedChanged += chkCompact_CheckedChanged;
