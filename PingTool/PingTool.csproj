@@ -27,8 +27,9 @@
          1.9.0 = optional automatic log: every ping appended to a daily CSV per host (PIN456.4);
          1.9.1 = the recent picture also shows the loss over the last 60 pings (PIN456.6);
          1.10.0 = trace route on demand from the host list, and route text shown on separate lines (PIN456.7);
-         1.11.0 = command line: targets, start, minimized and interval options (PIN456.8). -->
-    <Version>1.11.0</Version>
+         1.11.0 = command line: targets, start, minimized and interval options (PIN456.8);
+         1.12.0 = profiles can be exported to a file and imported from one (PIN456.9). -->
+    <Version>1.12.0</Version>
   </PropertyGroup>
 
 </Project>

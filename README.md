@@ -19,7 +19,7 @@ It started as a one-address ping window. It now watches several targets at once,
 - **Readable failures**: a short word on the big result ("Timeout", "No host", "Refused", "HTTP 503", "TLS", "Frag"...) and the full explanation on hover, instead of one generic "Timeout".
 - **Automatic log** (optional, **Save the log to disk**): every ping appended to a daily CSV per host in `%APPDATA%\PingTool\logs` (change the folder with `LogFolder` in `settings.json`), so a night of monitoring or a crash loses nothing. A file open in a spreadsheet is retried, never a reason to stop.
 - **Export**: a timestamped CSV log, and a **self-contained HTML report** (one file, no script, graphs drawn inline) for an ISP or an IT team.
-- **Profiles**: save a set of targets and settings under a name (a quick check, a long watch, the office network, a hotel wifi) and switch with one click.
+- **Profiles**: save a set of targets and settings under a name (a quick check, a long watch, the office network, a hotel wifi) and switch with one click. **Export profiles** writes them all to a `.json` file; **Import profiles** reads one (yours from another PC, or a colleague's). The file is checked on import: numbers are pulled into range, targets the address box would refuse are left out, and you are told which of your profiles would be replaced before anything changes (profiles with the same name, case ignored).
 - **Compact mode**: a small always-on-top window that minimizes to the notification area.
 - Settings, recent addresses and profiles are remembered between launches.
 

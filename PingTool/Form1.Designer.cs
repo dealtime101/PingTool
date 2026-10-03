@@ -53,6 +53,8 @@
             btnIncidents = new Button();
             btnReport = new Button();
             btnTimeline = new Button();
+            btnImportProfiles = new Button();
+            btnExportProfiles = new Button();
             chkCompact = new CheckBox();
             lblState = new Label();
             lblDiagnosis = new Label();
@@ -372,6 +374,26 @@
             btnTimeline.UseVisualStyleBackColor = true;
             btnTimeline.Click += btnTimeline_Click;
             //
+            // btnImportProfiles
+            //
+            btnImportProfiles.Location = new Point(300, 488);
+            btnImportProfiles.Name = "btnImportProfiles";
+            btnImportProfiles.Size = new Size(126, 28);
+            btnImportProfiles.TabIndex = 34;
+            btnImportProfiles.Text = "Import profiles...";
+            btnImportProfiles.UseVisualStyleBackColor = true;
+            btnImportProfiles.Click += btnImportProfiles_Click;
+            //
+            // btnExportProfiles
+            //
+            btnExportProfiles.Location = new Point(434, 488);
+            btnExportProfiles.Name = "btnExportProfiles";
+            btnExportProfiles.Size = new Size(126, 28);
+            btnExportProfiles.TabIndex = 35;
+            btnExportProfiles.Text = "Export profiles...";
+            btnExportProfiles.UseVisualStyleBackColor = true;
+            btnExportProfiles.Click += btnExportProfiles_Click;
+            //
             // chkCompact
             //
             chkCompact.AutoSize = true;
@@ -456,6 +478,8 @@
             Controls.Add(btnDeleteProfile);
             Controls.Add(btnSaveProfile);
             Controls.Add(cboProfile);
+            Controls.Add(btnExportProfiles);
+            Controls.Add(btnImportProfiles);
             Controls.Add(btnTimeline);
             Controls.Add(btnReport);
             Controls.Add(btnIncidents);
@@ -522,6 +546,8 @@
         private Button btnIncidents;
         private Button btnReport;
         private Button btnTimeline;
+        private Button btnImportProfiles;
+        private Button btnExportProfiles;
         private ComboBox cboProfile;
         private Button btnSaveProfile;
         private Button btnDeleteProfile;

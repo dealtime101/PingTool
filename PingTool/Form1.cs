@@ -64,7 +64,7 @@ namespace PingTool
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
                 lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
-                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
+                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -275,6 +275,92 @@ namespace PingTool
             cboProfile.Text = "";
             RefreshProfileList();
             SaveSettings();
+        }
+
+        // Every saved profile, as a file to keep or to give to a colleague.
+        private void btnExportProfiles_Click(object? sender, EventArgs e)
+        {
+            if (settings.Profiles.Count == 0)
+            {
+                MessageBox.Show("No profile saved yet: set up the targets and settings, then Save a profile first.", "PingTool");
+                return;
+            }
+
+            using var dialog = new SaveFileDialog
+            {
+                Filter = "PingTool profiles (*.json)|*.json",
+                FileName = "PingTool-profiles.json",
+                DefaultExt = "json",
+                OverwritePrompt = true,
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            try
+            {
+                File.WriteAllText(dialog.FileName, ProfileExchange.Export(settings.Profiles), new System.Text.UTF8Encoding(false));
+                MessageBox.Show($"{settings.Profiles.Count} profile(s) written to {dialog.FileName}.", "PingTool");
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show("Could not write the file: " + ex.Message, "PingTool");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("Could not write the file: " + ex.Message, "PingTool");
+            }
+        }
+
+        // Reads a profiles file. Nothing of yours is replaced before the user has been shown which
+        // profiles would be.
+        private void btnImportProfiles_Click(object? sender, EventArgs e)
+        {
+            if (isRunning) return;
+
+            using var dialog = new OpenFileDialog { Filter = "PingTool profiles (*.json)|*.json|All files (*.*)|*.*" };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            string text;
+            try
+            {
+                if (new FileInfo(dialog.FileName).Length > ProfileExchange.MaxFileBytes)
+                {
+                    MessageBox.Show("That file is too large to be a list of profiles.", "PingTool");
+                    return;
+                }
+
+                text = File.ReadAllText(dialog.FileName);
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show("Could not read the file: " + ex.Message, "PingTool");
+                return;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("Could not read the file: " + ex.Message, "PingTool");
+                return;
+            }
+
+            if (!ProfileExchange.TryParse(text, out var imported, out string error))
+            {
+                MessageBox.Show(error, "PingTool");
+                return;
+            }
+
+            var replaced = ProfileExchange.Replaced(settings.Profiles, imported.Profiles);
+            string left = imported.ProfilesDropped + imported.TargetsDropped > 0
+                ? $"\n\nLeft out as unusable: {imported.ProfilesDropped} profile(s), {imported.TargetsDropped} target(s)."
+                : "";
+            string question = $"Import {imported.Profiles.Count} profile(s)?"
+                + (replaced.Count > 0 ? "\n\nThese of yours will be REPLACED: " + string.Join(", ", replaced) + "." : "")
+                + left;
+            if (MessageBox.Show(question, "PingTool", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+
+            int notFitting = ProfileExchange.Merge(settings.Profiles, imported.Profiles);
+            RefreshProfileList();
+            SaveSettings();
+            if (notFitting > 0)
+                MessageBox.Show($"{notFitting} profile(s) did not fit: at most {ProfileBook.MaxProfiles} profiles, delete some first.", "PingTool");
         }
 
         private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)
@@ -522,6 +608,7 @@ namespace PingTool
             cboProfile.Enabled = enabled;
             btnSaveProfile.Enabled = enabled;
             btnDeleteProfile.Enabled = enabled;
+            btnImportProfiles.Enabled = enabled;
         }
 
         // One host's loop. An error it cannot survive (0.0.0.0 and :: make Dns throw
