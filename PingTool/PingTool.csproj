@@ -37,8 +37,9 @@
          1.12.6 = the empty-address message says what to do (PIN456.15);
          1.12.7 = Enter no longer stops a run: it only starts one from the address box (PIN456.17);
          1.12.8 = the Compact box comes right after the address box in the tab order (PIN456.18);
-         1.12.9 = the host list columns fit beside the scroll bar (PIN456.19). -->
-    <Version>1.12.9</Version>
+         1.12.9 = the host list columns fit beside the scroll bar (PIN456.19);
+         1.12.10 = a damaged settings file is kept aside and reported, not overwritten (PIN456.21). -->
+    <Version>1.12.10</Version>
   </PropertyGroup>
 
 </Project>

@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PingTool
 {
@@ -60,14 +62,64 @@ namespace PingTool
                 s.Normalize();
                 return s;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
-                                          or JsonException or NotSupportedException)
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
-                // Not silent: a broken file is replaced by defaults at the next save.
+                return new Settings();   // first launch: nothing to read, nothing to report
+            }
+            catch (JsonException ex)
+            {
+                // The file exists and is damaged (a typo is enough). The next save would overwrite it with the
+                // defaults, taking the user's host list and profiles with it: keep it aside first, and say so.
+                string? kept = KeepAside(path);
+                return new Settings
+                {
+                    LoadProblem = $"The settings file could not be read ({Short(ex.Message)}). "
+                        + (kept is null ? "It could not be kept aside either: fix or remove it before closing PingTool, which would overwrite it. "
+                                        : $"It was kept as {kept} so that you can fix it. ")
+                        + "PingTool starts with its default settings.",
+                };
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                // Unreadable right now (locked, no permission): not renamed, it may be fine a moment later.
                 System.Diagnostics.Debug.WriteLine($"Settings not loaded from {path}: {ex}");
-                return new Settings();
+                return new Settings
+                {
+                    LoadProblem = $"The settings file could not be opened ({Short(ex.Message)}). The file was left as it is; "
+                        + "PingTool starts with its default settings and will overwrite it when it closes unless you fix the problem first.",
+                };
             }
         }
+
+        // What went wrong while loading, for the window to show; null when nothing did. Never saved.
+        [JsonIgnore]
+        public string? LoadProblem { get; private set; }
+
+        // settings.json -> settings.json.bad-20261003-142501-123 (a counter if that name is taken), so that two
+        // damaged files in a row do not overwrite each other. Null when the move itself failed.
+        private static string? KeepAside(string path)
+        {
+            string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+            for (int n = 0; n < 100; n++)
+            {
+                string target = path + ".bad-" + stamp + (n == 0 ? "" : "-" + n.ToString(CultureInfo.InvariantCulture));
+                if (File.Exists(target)) continue;
+                try
+                {
+                    File.Move(path, target);
+                    return target;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Settings file not kept aside: {ex}");
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        private static string Short(string message) => message.Length <= 160 ? message : message[..160] + "...";
 
         // Makes whatever was read usable: numbers pulled into range, lists free of nulls, blanks,
         // duplicates and excess ("Recent": null would otherwise throw later, far from the cause).

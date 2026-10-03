@@ -72,6 +72,10 @@ namespace PingTool
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
 
+            // A settings file that could not be read is said once the window is up, with where it went.
+            if (settings.LoadProblem is string loadProblem)
+                Shown += (_, _) => MessageBox.Show(loadProblem, "PingTool");
+
             // Host column = what the other columns and the scroll bar leave (see ColumnFit).
             lstHosts.SizeChanged += (_, _) => FitHostColumns();
             Shown += (_, _) => FitHostColumns();

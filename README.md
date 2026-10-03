@@ -57,7 +57,7 @@ The thresholds are the three boxes **Slow above (ms)**, **Loss at least (%)** an
 | Loss at least | 1 – 100 % | 30 % |
 | Down after | 1 – 20 failed pings in a row | 3 |
 
-They are saved in `%APPDATA%\PingTool\settings.json`. A hand-edited file is checked on load: out-of-range numbers are pulled to the nearest limit, and blank or duplicate entries in the lists are dropped. A damaged file is replaced by defaults instead of stopping the program.
+They are saved in `%APPDATA%\PingTool\settings.json`. A hand-edited file is checked on load: out-of-range numbers are pulled to the nearest limit, and blank or duplicate entries in the lists are dropped. A damaged file does not stop the program: it is kept aside (`settings.json.bad-<date-time>`, never overwritten), PingTool starts with defaults and says so, so the file can be fixed instead of lost. A file that cannot be opened at all (locked, no permission) is left alone and reported.
 
 Up to 20 profiles and the 10 most recent addresses are kept.
 
