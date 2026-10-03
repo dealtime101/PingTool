@@ -109,7 +109,8 @@ namespace PingTool
         {
             TopMost = compact;
             foreach (var c in detailControls) c.Visible = !compact;
-            ClientSize = compact ? CompactSize : FullSize;
+            // The sizes are in pixels at 100 %: scaled to this screen, like the controls inside.
+            ClientSize = DpiScale.Scale(compact ? CompactSize : FullSize, DeviceDpi);
         }
 
         protected override void OnResize(EventArgs e)
