@@ -72,6 +72,10 @@ namespace PingTool
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
 
+            // Host column = what the other columns and the scroll bar leave (see ColumnFit).
+            lstHosts.SizeChanged += (_, _) => FitHostColumns();
+            Shown += (_, _) => FitHostColumns();
+
             // Enter in the address box STARTS the monitoring, and only that. There is no default button any
             // more: Start and Stop are one button, so Enter used to flip the state - and could stop a run
             // from anywhere in the window. (The box is locked while running, so it never stops anything.)
@@ -126,6 +130,10 @@ namespace PingTool
             // The sizes are in pixels at 100 %: scaled to this screen, like the controls inside.
             ClientSize = DpiScale.Scale(compact ? CompactSize : FullSize, DeviceDpi);
         }
+
+        private void FitHostColumns() =>
+            colHost.Width = ColumnFit.HostWidth(lstHosts.ClientSize.Width, SystemInformation.VerticalScrollBarWidth,
+                colLast.Width + colAvg.Width + colLoss.Width);
 
         protected override void OnResize(EventArgs e)
         {

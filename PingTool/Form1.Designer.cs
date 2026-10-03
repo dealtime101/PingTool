@@ -307,7 +307,7 @@
             // colAvg
             //
             colAvg.Text = "Avg";
-            colAvg.Width = 45;
+            colAvg.Width = 50;
             //
             // colLoss
             //
