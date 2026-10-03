@@ -12,8 +12,9 @@
          1.3.0 = TCP, HTTP and DNS probes besides ping (PIN453.6);
          1.4.0 = named monitoring profiles (PIN453.7);
          1.5.0 = network path captured at each outage (PIN453.8);
-         1.5.1 = status 11004 no longer reported as "refused" (PIN453.17). -->
-    <Version>1.5.1</Version>
+         1.5.1 = status 11004 no longer reported as "refused" (PIN453.17);
+         1.5.2 = reassembly timeout no longer reported as an expired TTL (PIN453.16). -->
+    <Version>1.5.2</Version>
   </PropertyGroup>
 
 </Project>

@@ -22,8 +22,15 @@ namespace PingTool
             IPStatus.DestinationScopeMismatch => new("Bad dest", "Source and destination address scopes do not match"),
             IPStatus.BadDestination => new("Bad dest", "Bad destination address"),
             IPStatus.PacketTooBig => new("Too big", "Packet too big for the path: lower the packet size"),
-            IPStatus.TtlExpired or IPStatus.TimeExceeded or IPStatus.TtlReassemblyTimeExceeded
-                => new("TTL", "TTL expired in transit"),
+            // ICMP "Time Exceeded" has two causes. .NET names them apart for IPv4: the TTL ran out on
+            // the way, or the fragments of a packet did not all arrive in time (a different problem:
+            // nothing to do with the number of hops).
+            IPStatus.TtlExpired => new("TTL", "TTL expired in transit"),
+            IPStatus.TtlReassemblyTimeExceeded
+                => new("Frag", "Fragment reassembly time exceeded: the pieces of the packet did not all arrive in time (not a hop-count problem)"),
+            // The IPv6 status covers both causes without saying which; the TTL is the usual one.
+            IPStatus.TimeExceeded
+                => new("TTL", "Time exceeded in transit: usually the TTL (hop limit) ran out; this status can also mean a fragment-reassembly timeout"),
             IPStatus.NoResources => new("Busy", "Not enough resources on the path"),
             IPStatus.SourceQuench => new("Busy", "Destination asked the sender to slow down"),
             _ => new("Error", "ICMP error: " + status),
