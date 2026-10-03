@@ -42,7 +42,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport,
+                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -346,7 +346,9 @@ namespace PingTool
             foreach (ListViewItem item in lstHosts.Items)
                 if (item.Tag == session) RenderRow(item);
 
-            if (session == selected) RenderSelected();
+            // The comparison graph and the diagnosis read every host, not just the selected one.
+            if (session == selected || chkCompare.Checked) RenderSelected();
+            else RenderDiagnosis();
         }
 
         private static void RenderRow(ListViewItem item)
@@ -357,11 +359,24 @@ namespace PingTool
             item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
         }
 
+        private void chkCompare_CheckedChanged(object? sender, EventArgs e) => RenderSelected();
+
+        // The sentence that compares the targets: where the fault most likely is.
+        private void RenderDiagnosis()
+        {
+            lblDiagnosis.Text = Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()) ?? "";
+            lblDiagnosis.ForeColor = sessions.Any(s => s.Monitor.State != HostState.Up) ? Color.Tomato : Color.Silver;
+        }
+
         // Big value, stats and graph all follow the host selected in the list.
         private void RenderSelected()
         {
             Text = selected == null ? "PingTool" : "PingTool - " + selected.Address;
-            graphLatency.Show(selected?.History);
+            if (chkCompare.Checked)
+                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.Address, HostPalette.ColorFor(i), s.History)).ToList());
+            else
+                graphLatency.Show(selected?.History);
+            RenderDiagnosis();
             UpdateStatsUI();
 
             long? ping = selected?.Last;
@@ -442,7 +457,9 @@ namespace PingTool
     internal sealed class LatencyGraph : Control
     {
         private const int MaxSamples = HostSession.HistorySize;
-        private IReadOnlyCollection<long> samples = Array.Empty<long>();
+        private const int MaxLegend = 5;
+        private IReadOnlyList<GraphSeries> series = Array.Empty<GraphSeries>();
+        private bool compare;
 
         public LatencyGraph()
         {
@@ -450,10 +467,19 @@ namespace PingTool
             BackColor = Color.FromArgb(40, 40, 40);
         }
 
-        // Draws the host's own queue: it is repainted, never copied.
+        // One host. Draws the host's own queue: it is repainted, never copied.
         public void Show(IReadOnlyCollection<long>? history)
         {
-            samples = history ?? Array.Empty<long>();
+            compare = false;
+            series = history is null ? Array.Empty<GraphSeries>() : new[] { new GraphSeries("", Color.LimeGreen, history) };
+            Invalidate();
+        }
+
+        // Every host on one shared scale: all queues end at "now", so the columns line up in time.
+        public void ShowAll(IReadOnlyList<GraphSeries> all)
+        {
+            compare = true;
+            series = all;
             Invalidate();
         }
 
@@ -463,20 +489,27 @@ namespace PingTool
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            long top = Math.Max(50, samples.Count == 0 ? 0 : samples.Max());
+            long top = Math.Max(50, series.Count == 0 ? 0 : series.Max(s => s.Samples.Count == 0 ? 0 : s.Samples.Max()));
             using var grey = new SolidBrush(Color.Silver);
             g.DrawString(top + " ms", Font, grey, 2, 0);
             g.DrawString("0", Font, grey, 2, Height - Font.Height);
 
+            foreach (var s in series) DrawSeries(g, s, top);
+            if (compare) DrawLegend(g);
+        }
+
+        private void DrawSeries(Graphics g, GraphSeries s, long top)
+        {
             float step = (Width - 1f) / (MaxSamples - 1);
-            float x0 = Width - 1 - (samples.Count - 1) * step;
+            float x0 = Width - 1 - (s.Samples.Count - 1) * step;
             float Y(long v) => Height - 1 - (Height - 1f) * v / top;
 
-            using var line = new Pen(Color.LimeGreen, 1.5f);
-            using var lost = new Pen(Color.Red, 2f);
+            using var line = new Pen(s.Color, 1.5f);
+            // Alone, a loss is red; compared, it keeps its host's colour so you can tell whose it is.
+            using var lost = new Pen(compare ? s.Color : Color.Red, 2f);
             PointF? prev = null;
             int i = 0;
-            foreach (var v in samples)
+            foreach (var v in s.Samples)
             {
                 float x = x0 + i++ * step;
                 if (v < 0)
@@ -490,5 +523,26 @@ namespace PingTool
                 prev = p;
             }
         }
+
+        private void DrawLegend(Graphics g)
+        {
+            float y = 0;
+            foreach (var s in series.Take(MaxLegend))
+            {
+                string name = s.Name.Length > 14 ? s.Name[..13] + "…" : s.Name;
+                using var brush = new SolidBrush(s.Color);
+                g.DrawString(name, Font, brush, Width - g.MeasureString(name, Font).Width - 2, y);
+                y += Font.Height;
+            }
+
+            if (series.Count > MaxLegend)
+            {
+                using var grey = new SolidBrush(Color.Silver);
+                string more = "+" + (series.Count - MaxLegend) + " more";
+                g.DrawString(more, Font, grey, Width - g.MeasureString(more, Font).Width - 2, y);
+            }
+        }
     }
+
+    internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples);
 }

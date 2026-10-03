@@ -48,6 +48,8 @@
             btnExport = new Button();
             chkCompact = new CheckBox();
             lblState = new Label();
+            lblDiagnosis = new Label();
+            chkCompare = new CheckBox();
             numInterval = new NumericUpDown();
             numTimeout = new NumericUpDown();
             numSize = new NumericUpDown();
@@ -193,7 +195,7 @@
             lstHosts.Location = new Point(300, 20);
             lstHosts.MultiSelect = false;
             lstHosts.Name = "lstHosts";
-            lstHosts.Size = new Size(260, 300);
+            lstHosts.Size = new Size(260, 250);
             lstHosts.TabIndex = 13;
             lstHosts.UseCompatibleStateImageBehavior = false;
             lstHosts.View = View.Details;
@@ -269,6 +271,27 @@
             lblState.TabIndex = 18;
             lblState.Text = "";
             //
+            // lblDiagnosis
+            //
+            lblDiagnosis.AutoSize = false;
+            lblDiagnosis.ForeColor = Color.Silver;
+            lblDiagnosis.Location = new Point(300, 276);
+            lblDiagnosis.Name = "lblDiagnosis";
+            lblDiagnosis.Size = new Size(260, 46);
+            lblDiagnosis.TabIndex = 19;
+            lblDiagnosis.Text = "";
+            //
+            // chkCompare
+            //
+            chkCompare.AutoSize = true;
+            chkCompare.ForeColor = Color.White;
+            chkCompare.Location = new Point(300, 394);
+            chkCompare.Name = "chkCompare";
+            chkCompare.TabIndex = 20;
+            chkCompare.Text = "Compare all hosts on one graph";
+            chkCompare.UseVisualStyleBackColor = true;
+            chkCompare.CheckedChanged += chkCompare_CheckedChanged;
+            //
             // MainForm
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -276,6 +299,8 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
             ClientSize = new Size(580, 420);
+            Controls.Add(chkCompare);
+            Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
             Controls.Add(chkCompact);
             Controls.Add(btnExport);
@@ -329,6 +354,8 @@
         private Button btnExport;
         private CheckBox chkCompact;
         private Label lblState;
+        private Label lblDiagnosis;
+        private CheckBox chkCompare;
         private NumericUpDown numInterval;
         private NumericUpDown numTimeout;
         private NumericUpDown numSize;

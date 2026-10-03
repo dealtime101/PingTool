@@ -26,6 +26,9 @@ namespace PingTool
         // "IPv4 142.250.80.35", "IPv6 2607:f8b0::2004", "-" before resolution.
         public string IpText { get; private set; } = "-";
 
+        // The address behind IpText, for telling a local target from an Internet one.
+        public System.Net.IPAddress? Ip { get; private set; }
+
         public void Reset()
         {
             Stats.Reset();
@@ -34,11 +37,23 @@ namespace PingTool
             Last = null;
             LastFailure = null;
             IpText = "-";
+            Ip = null;
         }
 
-        public void SetIp(System.Net.IPAddress ip) => IpText = Describe(ip);
+        public void SetIp(System.Net.IPAddress ip)
+        {
+            Ip = ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip;
+            IpText = Describe(ip);
+        }
 
-        public void SetUnresolved() => IpText = "not resolved";
+        public void SetUnresolved()
+        {
+            Ip = null;
+            IpText = "not resolved";
+        }
+
+        // What the comparison reads: only a host that has been pinged this run has data.
+        public Target ToTarget() => new(Address, Ip, Monitor.State, Last is not null);
 
         public static string Describe(System.Net.IPAddress ip)
         {

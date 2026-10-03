@@ -2,6 +2,8 @@ namespace PingTool
 {
     internal enum HostChange { None, Down, Up, Degraded, Recovered }
 
+    internal enum HostState { Up, Degraded, Down }
+
     // Watches one host's successive pings and says when its state CHANGES.
     //
     //   Down      : DownAfter consecutive failures (one lost packet is noise).
@@ -21,13 +23,13 @@ namespace PingTool
         public const double RecoverLossPercent = 10;
         public const double RecoverLatencyFactor = 0.8;
 
-        private enum State { Up, Degraded, Down }
-
         private readonly double latencyMs;
         private readonly double lossPercent;
         private readonly Queue<long> window = new();
-        private State state;
+        private HostState state;
         private int failures;
+
+        public HostState State => state;
 
         public HostMonitor(int latencyMs = 150, int lossPercent = 30)
         {
@@ -49,7 +51,7 @@ namespace PingTool
 
         public void Reset()
         {
-            state = State.Up;
+            state = HostState.Up;
             failures = 0;
             window.Clear();
         }
@@ -60,9 +62,9 @@ namespace PingTool
             if (ping >= 0)
             {
                 failures = 0;
-                if (state == State.Down)
+                if (state == HostState.Down)
                 {
-                    state = State.Up;
+                    state = HostState.Up;
                     window.Clear();
                     window.Enqueue(ping);
                     return HostChange.Up;
@@ -71,10 +73,10 @@ namespace PingTool
             else
             {
                 failures++;
-                if (state == State.Down) return HostChange.None;
+                if (state == HostState.Down) return HostChange.None;
                 if (failures >= DownAfter)
                 {
-                    state = State.Down;
+                    state = HostState.Down;
                     return HostChange.Down;
                 }
             }
@@ -86,16 +88,16 @@ namespace PingTool
             double loss = WindowLossPercent;
             double? avg = WindowAvgMs;
 
-            if (state == State.Up && (loss >= lossPercent || avg >= latencyMs))
+            if (state == HostState.Up && (loss >= lossPercent || avg >= latencyMs))
             {
-                state = State.Degraded;
+                state = HostState.Degraded;
                 return HostChange.Degraded;
             }
 
-            if (state == State.Degraded && loss <= RecoverLossPercent
+            if (state == HostState.Degraded && loss <= RecoverLossPercent
                 && avg is double a && a <= latencyMs * RecoverLatencyFactor)
             {
-                state = State.Up;
+                state = HostState.Up;
                 return HostChange.Recovered;
             }
 
