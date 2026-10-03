@@ -24,7 +24,7 @@ namespace PingTool
         private readonly PingLog log = new();
         private readonly IncidentLog incidents = new();
         // Route captures running in the background; the run waits for them before releasing its token.
-        private readonly List<Task> pathCaptures = new();
+        private List<Task> pathCaptures = new();
         private readonly Settings settings = Settings.Load(Settings.DefaultPath);
         private static readonly string[] DefaultAddresses = { "google.ca", "8.8.8.8", "1.1.1.1", "192.168.0.1" };
         // Everything below the top block: hidden in compact mode.
@@ -379,6 +379,10 @@ namespace PingTool
                 // must not have the old run dispose the new run's source.
                 var runCts = new CancellationTokenSource();
                 cts = runCts;
+                // This run's own route captures: a newer run (quick Stop then Start) gets its own list,
+                // so this one never waits for, or clears, someone else's.
+                var runCaptures = new List<Task>();
+                pathCaptures = runCaptures;
 
                 try
                 {
@@ -390,19 +394,19 @@ namespace PingTool
                 }
                 finally
                 {
+                    // The loops ended by themselves (every host failed), not through Stop: the run
+                    // is over, so the screen says so NOW. Only for THIS run: after a quick Stop then
+                    // Start, the old run finishing must not end the new one. It comes BEFORE waiting
+                    // for the captures: nobody cancelled them, and a route trace can last ~20 s, during
+                    // which the screen would have stayed on "Running" with nothing being measured.
+                    if (ReferenceEquals(cts, runCts) && isRunning) FinishRun();
+
                     // A capture still tracing uses the token: let it end (Stop cancels it) before the
                     // token's source is released.
-                    await Task.WhenAll(pathCaptures.ToArray());
-                    pathCaptures.Clear();
+                    await Task.WhenAll(runCaptures.ToArray());
 
-                    bool mine = ReferenceEquals(cts, runCts);
                     runCts.Dispose();
-                    if (mine) cts = null;
-
-                    // The loops ended by themselves (every host failed), not through Stop:
-                    // the run is over, so the screen must say so. Only for THIS run: after a
-                    // quick Stop then Start, the old run finishing must not end the new one.
-                    if (mine && isRunning) FinishRun();
+                    if (ReferenceEquals(cts, runCts)) cts = null;   // not a newer run's token
                 }
             }
             else
