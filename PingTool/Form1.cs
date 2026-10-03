@@ -17,6 +17,7 @@ namespace PingTool
         private bool hasRun;
         // Set when the window starts closing: late callbacks must leave the screen alone.
         private bool closing;
+        private DateTimeOffset runStart = DateTimeOffset.Now;
         private CancellationTokenSource? cts;
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
@@ -27,7 +28,7 @@ namespace PingTool
         // Everything below the top block: hidden in compact mode.
         private Control[] detailControls = Array.Empty<Control>();
 
-        private static readonly Size FullSize = new(580, 420);
+        private static readonly Size FullSize = new(580, 460);
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 250);
         private readonly ToolTip toolTip = new();
@@ -45,7 +46,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, lblDiagnosis, chkCompare,
+                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -227,6 +228,7 @@ namespace PingTool
                 ShowRunState();
 
                 foreach (var s in sessions) s.Reset();
+                runStart = DateTimeOffset.Now;
                 log.Clear();
                 incidents.Clear();
                 UpdateIncidentButton();
@@ -407,6 +409,46 @@ namespace PingTool
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
             item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
+        }
+
+        // A report for someone who does not have PingTool: one self-contained HTML file.
+        private void btnReport_Click(object? sender, EventArgs e)
+        {
+            if (sessions.All(s => s.Last is null))
+            {
+                MessageBox.Show("Nothing to report yet: start pinging first.", "PingTool");
+                return;
+            }
+
+            var now = DateTimeOffset.Now;
+            var data = new ReportData(now, runStart, Environment.MachineName,
+                typeof(MainForm).Assembly.GetName().Version?.ToString() ?? "unknown",
+                (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
+                settings.DegradedLatencyMs, settings.DegradedLossPercent,
+                sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
+                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
+                Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
+                incidents.Summary(now), incidents.Incidents.ToList());
+
+            using var dialog = new SaveFileDialog
+            {
+                Filter = "HTML report (*.html)|*.html",
+                FileName = $"pingtool-report-{DateTime.Now:yyyyMMdd-HHmmss}.html",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            try
+            {
+                File.WriteAllText(dialog.FileName, ReportBuilder.Build(data), new System.Text.UTF8Encoding(false));
+            }
+            catch (IOException ex)
+            {
+                MessageBox.Show("Could not write the file: " + ex.Message, "PingTool");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                MessageBox.Show("Could not write the file: " + ex.Message, "PingTool");
+            }
         }
 
         private void UpdateIncidentButton() =>

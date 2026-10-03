@@ -47,6 +47,7 @@
             btnRemoveHost = new Button();
             btnExport = new Button();
             btnIncidents = new Button();
+            btnReport = new Button();
             chkCompact = new CheckBox();
             lblState = new Label();
             lblDiagnosis = new Label();
@@ -262,6 +263,16 @@
             btnIncidents.UseVisualStyleBackColor = true;
             btnIncidents.Click += btnIncidents_Click;
             //
+            // btnReport
+            //
+            btnReport.Location = new Point(300, 424);
+            btnReport.Name = "btnReport";
+            btnReport.Size = new Size(260, 28);
+            btnReport.TabIndex = 22;
+            btnReport.Text = "Save diagnostic report (HTML)...";
+            btnReport.UseVisualStyleBackColor = true;
+            btnReport.Click += btnReport_Click;
+            //
             // chkCompact
             //
             chkCompact.AutoSize = true;
@@ -309,11 +320,12 @@
             AcceptButton = btnStartStop;
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
-            ClientSize = new Size(580, 420);
+            ClientSize = new Size(580, 460);
             Controls.Add(chkCompare);
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
             Controls.Add(chkCompact);
+            Controls.Add(btnReport);
             Controls.Add(btnIncidents);
             Controls.Add(btnExport);
             Controls.Add(btnRemoveHost);
@@ -365,6 +377,7 @@
         private Button btnRemoveHost;
         private Button btnExport;
         private Button btnIncidents;
+        private Button btnReport;
         private CheckBox chkCompact;
         private Label lblState;
         private Label lblDiagnosis;
