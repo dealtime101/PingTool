@@ -348,7 +348,7 @@ namespace PingTool
             if (session == selected) RenderSelected();
         }
 
-        private void RenderRow(ListViewItem item)
+        private static void RenderRow(ListViewItem item)
         {
             var s = (HostSession)item.Tag!;
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
