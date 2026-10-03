@@ -37,6 +37,7 @@ namespace PingTool
         public MainForm()
         {
             InitializeComponent();
+            Text = AppVersion.Title(null);
             FormClosed += (_, _) =>
             {
                 notifyIcon.Dispose();
@@ -422,7 +423,7 @@ namespace PingTool
 
             var now = DateTimeOffset.Now;
             var data = new ReportData(now, runStart, Environment.MachineName,
-                typeof(MainForm).Assembly.GetName().Version?.ToString() ?? "unknown",
+                AppVersion.Display,
                 (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
                 settings.DegradedLatencyMs, settings.DegradedLossPercent,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
@@ -474,7 +475,7 @@ namespace PingTool
         private void RenderSelected()
         {
             if (closing) return;
-            Text = selected == null ? "PingTool" : "PingTool - " + selected.Address;
+            Text = AppVersion.Title(selected?.Address);
             if (chkCompare.Checked)
                 graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.Address, HostPalette.ColorFor(i), s.History)).ToList());
             else

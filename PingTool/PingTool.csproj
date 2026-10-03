@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- THE version of PingTool: bump it by hand at each delivery (see pingtool-deploy.sh).
+         1.0.0 = the repository as first received; 1.1.0 = after audits 451-453. -->
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
 </Project>
