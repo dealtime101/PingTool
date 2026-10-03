@@ -149,7 +149,9 @@ namespace PingTool
             if (outages.Count > 0)
             {
                 var down = outages.Aggregate(TimeSpan.Zero, (sum, i) => sum + i.Duration(now));
-                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} down)");
+                // With one outage the longest is the total: saying it twice adds nothing.
+                string longest = outages.Count > 1 ? $", longest {FormatDuration(outages.Max(i => i.Duration(now)))}" : "";
+                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} down{longest})");
             }
 
             if (slow > 0) parts.Add($"{slow} slowdown{(slow == 1 ? "" : "s")}");
