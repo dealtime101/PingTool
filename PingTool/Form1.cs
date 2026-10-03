@@ -129,7 +129,7 @@ namespace PingTool
             var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
             if (existing != null) return existing;
 
-            var session = new HostSession(address);
+            var session = new HostSession(address, settings.DegradedLatencyMs, settings.DegradedLossPercent);
             sessions.Add(session);
             var item = new ListViewItem(new[] { address, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
@@ -341,7 +341,7 @@ namespace PingTool
             session.Add(ping, failure);
             var why = session.LastFailure;
             log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
-            Alert(session, session.Monitor.Update(ping >= 0));
+            Alert(session, session.Monitor.Update(ping));
 
             foreach (ListViewItem item in lstHosts.Items)
                 if (item.Tag == session) RenderRow(item);
@@ -411,13 +411,18 @@ namespace PingTool
         {
             if (change == HostChange.None || !chkAlert.Checked) return;
 
-            string host = session.Address;
-            bool down = change == HostChange.Down;
-            (down ? System.Media.SystemSounds.Hand : System.Media.SystemSounds.Asterisk).Play();
+            var monitor = session.Monitor;
+            string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs);
+            var (sound, icon) = change switch
+            {
+                HostChange.Down => (System.Media.SystemSounds.Hand, ToolTipIcon.Error),
+                HostChange.Degraded => (System.Media.SystemSounds.Exclamation, ToolTipIcon.Warning),
+                _ => (System.Media.SystemSounds.Asterisk, ToolTipIcon.Info),
+            };
+
+            sound.Play();
             notifyIcon.Visible = true;
-            notifyIcon.ShowBalloonTip(5000, "PingTool",
-                down ? $"{host} is down" : $"{host} is back up",
-                down ? ToolTipIcon.Error : ToolTipIcon.Info);
+            notifyIcon.ShowBalloonTip(5000, "PingTool", text, icon);
         }
 
         private void UpdateStatsUI()

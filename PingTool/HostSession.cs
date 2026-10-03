@@ -6,11 +6,15 @@ namespace PingTool
     {
         public const int HistorySize = 180;
 
-        public HostSession(string address) => Address = address;
+        public HostSession(string address, int degradedLatencyMs = 150, int degradedLossPercent = 30)
+        {
+            Address = address;
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent);
+        }
 
         public string Address { get; }
         public SessionStats Stats { get; } = new();
-        public HostMonitor Monitor { get; } = new();
+        public HostMonitor Monitor { get; }
         public Queue<long> History { get; } = new();
 
         // null until the first reply or timeout of the current run.

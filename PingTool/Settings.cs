@@ -18,6 +18,11 @@ namespace PingTool
         public bool Alert { get; set; } = true;
         public bool Compact { get; set; }
 
+        // A host is "degraded" when the last 10 pings show this much loss or this
+        // average latency (see HostMonitor). Edited in settings.json.
+        public int DegradedLatencyMs { get; set; } = 150;
+        public int DegradedLossPercent { get; set; } = 30;
+
         public static string DefaultPath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "PingTool", "settings.json");

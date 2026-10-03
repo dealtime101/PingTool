@@ -182,7 +182,7 @@
             chkAlert.Location = new Point(30, 385);
             chkAlert.Name = "chkAlert";
             chkAlert.TabIndex = 12;
-            chkAlert.Text = "Alert when host goes down / comes back";
+            chkAlert.Text = "Alert on outage / slowdown / recovery";
             chkAlert.UseVisualStyleBackColor = true;
             //
             // lstHosts
