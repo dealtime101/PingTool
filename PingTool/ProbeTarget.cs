@@ -20,7 +20,7 @@ namespace PingTool
             target = null;
             error = "";
             string text = (input ?? "").Trim();
-            if (text.Length == 0) { error = "The address is empty."; return false; }
+            if (text.Length == 0) { error = "Enter an address first, or add a host to the list."; return false; }
 
             int sep = text.IndexOf("://", StringComparison.Ordinal);
             if (sep < 0)
