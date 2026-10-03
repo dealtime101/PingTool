@@ -61,6 +61,12 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            // Right-click (or the menu key) on a host: where does the path to it stop?
+            var hostMenu = new ContextMenuStrip();
+            hostMenu.Items.Add("Trace route to this host").Click += (_, _) => TraceSelected();
+            hostMenu.Opening += (_, e) => e.Cancel = selected is null;
+            lstHosts.ContextMenuStrip = hostMenu;
             FormClosing += (_, _) =>
             {
                 // Stop the loops BEFORE FormClosed disposes the notification icon and the
@@ -696,6 +702,19 @@ namespace PingTool
             {
                 Debug.WriteLine($"Path capture for {session.Address} failed: {ex}");
             }
+        }
+
+        private void TraceSelected()
+        {
+            if (selected is null) return;
+            if (selected.Ip is not { } ip)
+            {
+                MessageBox.Show("No address yet for " + selected.Address + ": start pinging first, so that it is resolved.", "PingTool");
+                return;
+            }
+
+            using var dialog = new TraceForm(selected, ip);
+            dialog.ShowDialog(this);
         }
 
         // The whole session of a host, not just the last 180 pings of the live graph.

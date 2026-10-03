@@ -107,7 +107,8 @@ namespace PingTool
 
             return i.Path is null
                 ? "No route was captured for this outage: the host's address was not known yet, the run was stopped first, or the trace is still running."
-                : i.PathText();
+                // A multi-line TextBox only breaks lines on CR LF: the route text uses a bare LF.
+                : i.PathText().Replace("\r\n", "\n").Replace("\n", "\r\n");
         }
     }
 }

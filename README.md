@@ -14,6 +14,7 @@ It started as a one-address ping window. It now watches several targets at once,
 - **Alerts** (sound and notification) when a target goes down, becomes degraded (too slow or losing too many pings) and recovers. The two limits are set in the window.
 - **Incidents**: outages and slowdowns as periods (when they started, how long, how many pings failed, the most frequent cause, how often it came back), not as a long list of failed probes.
 - **Network path at each outage**: when a target goes down, the route to it is traced and compared with the route seen while it was healthy, so a changed or silent router is named.
+- **Trace route on demand**: right-click a target in the list, then **Trace route to this host** (the address must have been resolved once, so start pinging first).
 - **Session timeline**: the *whole* session of a target in one picture with a time axis, with outages and slowdowns shaded and a summary of when it was slowest and when it lost the most.
 - **Readable failures**: a short word on the big result ("Timeout", "No host", "Refused", "HTTP 503", "TLS", "Frag"...) and the full explanation on hover, instead of one generic "Timeout".
 - **Automatic log** (optional, **Save the log to disk**): every ping appended to a daily CSV per host in `%APPDATA%\PingTool\logs` (change the folder with `LogFolder` in `settings.json`), so a night of monitoring or a crash loses nothing. A file open in a spreadsheet is retried, never a reason to stop.
