@@ -51,6 +51,7 @@
             btnExport = new Button();
             btnIncidents = new Button();
             btnReport = new Button();
+            btnTimeline = new Button();
             chkCompact = new CheckBox();
             lblState = new Label();
             lblDiagnosis = new Label();
@@ -328,6 +329,16 @@
             btnReport.UseVisualStyleBackColor = true;
             btnReport.Click += btnReport_Click;
             //
+            // btnTimeline
+            //
+            btnTimeline.Location = new Point(300, 456);
+            btnTimeline.Name = "btnTimeline";
+            btnTimeline.Size = new Size(260, 28);
+            btnTimeline.TabIndex = 30;
+            btnTimeline.Text = "Session timeline...";
+            btnTimeline.UseVisualStyleBackColor = true;
+            btnTimeline.Click += btnTimeline_Click;
+            //
             // chkCompact
             //
             chkCompact.AutoSize = true;
@@ -412,6 +423,7 @@
             Controls.Add(btnDeleteProfile);
             Controls.Add(btnSaveProfile);
             Controls.Add(cboProfile);
+            Controls.Add(btnTimeline);
             Controls.Add(btnReport);
             Controls.Add(btnIncidents);
             Controls.Add(btnExport);
@@ -471,6 +483,7 @@
         private Button btnExport;
         private Button btnIncidents;
         private Button btnReport;
+        private Button btnTimeline;
         private ComboBox cboProfile;
         private Button btnSaveProfile;
         private Button btnDeleteProfile;

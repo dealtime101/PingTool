@@ -52,7 +52,7 @@ namespace PingTool
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
                 lblSlow, numSlow, lblLoss, numLoss,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
+                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -643,6 +643,20 @@ namespace PingTool
             {
                 Debug.WriteLine($"Path capture for {session.Address} failed: {ex}");
             }
+        }
+
+        // The whole session of a host, not just the last 180 pings of the live graph.
+        private void btnTimeline_Click(object? sender, EventArgs e)
+        {
+            var hosts = sessions.Select(s => s.Address).Where(a => log.Entries.Any(x => x.Host == a)).ToList();
+            if (hosts.Count == 0)
+            {
+                MessageBox.Show("Nothing to show yet: start pinging first.", "PingTool");
+                return;
+            }
+
+            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address);
+            dialog.ShowDialog(this);
         }
 
         private void UpdateIncidentButton() =>

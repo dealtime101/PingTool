@@ -14,6 +14,9 @@ namespace PingTool
 
         public int Count => entries.Count;
 
+        // Oldest first. Read-only: the timeline draws from it.
+        public IReadOnlyCollection<LogEntry> Entries => entries;
+
         public void Clear() => entries.Clear();
 
         public void Add(DateTimeOffset time, string host, string status, long? rttMs, string detail = "")
