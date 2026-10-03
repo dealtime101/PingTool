@@ -682,6 +682,7 @@ namespace PingTool
 
             while (!token.IsCancellationRequested)
             {
+                var probeClock = Stopwatch.StartNew();
                 try
                 {
                     // Ping, TCP connect, web request or name lookup, depending on the prefix typed.
@@ -703,7 +704,8 @@ namespace PingTool
 
                 try
                 {
-                    await Task.Delay(interval, token);
+                    // Probes start one interval apart, whatever the answer took (see Cadence).
+                    await Task.Delay(Cadence.WaitMs(interval, probeClock.ElapsedMilliseconds), token);
                 }
                 catch (TaskCanceledException)
                 {

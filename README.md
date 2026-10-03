@@ -50,7 +50,7 @@ The thresholds are the three boxes **Slow above (ms)**, **Loss at least (%)** an
 
 | Setting | Range | Default |
 |---|---|---|
-| Interval between probes | 100 – 60 000 ms | 1 000 ms |
+| Interval between probes (start to start, whatever the answer took) | 100 – 60 000 ms | 1 000 ms |
 | Timeout | 100 – 10 000 ms | 1 000 ms |
 | Packet size (ping only) | 1 – 65 500 bytes | 32 bytes |
 | Slow above | 1 – 60 000 ms | 150 ms |
