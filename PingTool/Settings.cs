@@ -7,6 +7,7 @@ namespace PingTool
     internal sealed class Settings
     {
         public const int MaxRecent = 10;
+        private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
         public string Address { get; set; } = "google.ca";
         public List<string> Recent { get; set; } = new();
@@ -47,7 +48,7 @@ namespace PingTool
         {
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             string temp = path + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(temp, JsonSerializer.Serialize(this, WriteOptions));
             File.Move(temp, path, overwrite: true);
         }
 
