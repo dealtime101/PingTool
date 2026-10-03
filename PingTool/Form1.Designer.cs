@@ -113,7 +113,7 @@
             //
             // graphLatency
             //
-            graphLatency.Location = new Point(30, 245);
+            graphLatency.Location = new Point(30, 277);
             graphLatency.Name = "graphLatency";
             graphLatency.Size = new Size(224, 90);
             graphLatency.TabIndex = 5;
@@ -122,7 +122,7 @@
             //
             lblInterval.AutoSize = true;
             lblInterval.ForeColor = Color.White;
-            lblInterval.Location = new Point(30, 335);
+            lblInterval.Location = new Point(30, 367);
             lblInterval.Name = "lblInterval";
             lblInterval.TabIndex = 6;
             lblInterval.Text = "Interval (ms)";
@@ -131,7 +131,7 @@
             //
             lblTimeout.AutoSize = true;
             lblTimeout.ForeColor = Color.White;
-            lblTimeout.Location = new Point(106, 335);
+            lblTimeout.Location = new Point(106, 367);
             lblTimeout.Name = "lblTimeout";
             lblTimeout.TabIndex = 7;
             lblTimeout.Text = "Timeout (ms)";
@@ -140,7 +140,7 @@
             //
             lblSize.AutoSize = true;
             lblSize.ForeColor = Color.White;
-            lblSize.Location = new Point(182, 335);
+            lblSize.Location = new Point(182, 367);
             lblSize.Name = "lblSize";
             lblSize.TabIndex = 8;
             lblSize.Text = "Size (bytes)";
@@ -148,7 +148,7 @@
             // numInterval
             //
             numInterval.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            numInterval.Location = new Point(30, 353);
+            numInterval.Location = new Point(30, 385);
             numInterval.Maximum = new decimal(new int[] { 60000, 0, 0, 0 });
             numInterval.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numInterval.Name = "numInterval";
@@ -159,7 +159,7 @@
             // numTimeout
             //
             numTimeout.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            numTimeout.Location = new Point(106, 353);
+            numTimeout.Location = new Point(106, 385);
             numTimeout.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             numTimeout.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numTimeout.Name = "numTimeout";
@@ -169,7 +169,7 @@
             //
             // numSize
             //
-            numSize.Location = new Point(182, 353);
+            numSize.Location = new Point(182, 385);
             numSize.Maximum = new decimal(new int[] { 65500, 0, 0, 0 });
             numSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numSize.Name = "numSize";
@@ -183,7 +183,7 @@
             chkAlert.Checked = true;
             chkAlert.CheckState = CheckState.Checked;
             chkAlert.ForeColor = Color.White;
-            chkAlert.Location = new Point(30, 385);
+            chkAlert.Location = new Point(30, 417);
             chkAlert.Name = "chkAlert";
             chkAlert.TabIndex = 12;
             chkAlert.Text = "Alert on outage / slowdown / recovery";

@@ -30,7 +30,7 @@ namespace PingTool
 
         private static readonly Size FullSize = new(580, 460);
         // Tall enough for address, big result, Start/Stop and the stats label.
-        private static readonly Size CompactSize = new(284, 250);
+        private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
         private readonly NotifyIcon notifyIcon = new() { Icon = SystemIcons.Application, Text = "PingTool" };
 
@@ -551,7 +551,8 @@ namespace PingTool
             lblStats.Text =
                 $"Min {ms(stats.Min)} / Avg {ms(stats.Avg)} / Max {ms(stats.Max)} ms\n" +
                 $"Jitter {ms(stats.Jitter)} ms | Loss {stats.LossPercent:0.#}% ({stats.Lost}/{stats.Sent})\n" +
-                (selected?.IpText ?? "-");
+                (selected?.IpText ?? "-") + "\n" +
+                RecentStats.From(selected?.History ?? new Queue<long>()).Describe();
         }
     }
 
@@ -600,6 +601,7 @@ namespace PingTool
 
             foreach (var s in series) DrawSeries(g, s, top);
             if (compare) DrawLegend(g);
+            else if (series.Count == 1) DrawP95(g, series[0].Samples, top);
         }
 
         private void DrawSeries(Graphics g, GraphSeries s, long top)
@@ -626,6 +628,20 @@ namespace PingTool
                 if (prev is PointF q) g.DrawLine(line, q, p);
                 prev = p;
             }
+        }
+
+        // A dotted line at the recent p95: "95 % of the last pings were at or below this".
+        private void DrawP95(Graphics g, IReadOnlyCollection<long> samples, long top)
+        {
+            if (RecentStats.From(samples).P95 is not double p95) return;
+
+            float y = Height - 1 - (Height - 1f) * (float)p95 / top;
+            using var pen = new Pen(Color.Silver) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            g.DrawLine(pen, 0, y, Width, y);
+
+            string label = "p95 " + p95.ToString("0", CultureInfo.CurrentCulture);
+            using var brush = new SolidBrush(Color.Silver);
+            g.DrawString(label, Font, brush, Width - g.MeasureString(label, Font).Width - 2, Math.Max(0, y - Font.Height));
         }
 
         private void DrawLegend(Graphics g)
