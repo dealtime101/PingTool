@@ -48,9 +48,9 @@ namespace PingTool
 
         public void WriteCsv(TextWriter writer)
         {
-            writer.NewLine = "\r\n";
-            writer.WriteLine(CsvHeader);
-            foreach (var e in entries) writer.WriteLine(CsvLine(e));
+            // CR LF written explicitly: the writer belongs to the caller, whose own line ending is none of our business.
+            writer.Write(CsvHeader + "\r\n");
+            foreach (var e in entries) writer.Write(CsvLine(e) + "\r\n");
         }
 
         // One row, shared by the export and the automatic log so the two files read the same.
