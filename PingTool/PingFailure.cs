@@ -32,7 +32,9 @@ namespace PingTool
             IPStatus.TimeExceeded
                 => new("TTL", "Time exceeded in transit: usually the TTL (hop limit) ran out; this status can also mean a fragment-reassembly timeout"),
             IPStatus.NoResources => new("Busy", "Not enough resources on the path"),
-            IPStatus.SourceQuench => new("Busy", "Destination asked the sender to slow down"),
+            // Source Quench can come from ANY router on the way, not only from the host that was pinged.
+            // It is also obsolete (RFC 6633): seeing it at all is unusual.
+            IPStatus.SourceQuench => new("Busy", "A router on the path, or the destination, asked the sender to slow down (ICMP source quench, obsolete). The host you pinged is not necessarily the one that asked."),
             _ => new("Error", "ICMP error: " + status),
         };
 
