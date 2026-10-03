@@ -422,7 +422,7 @@ namespace PingTool
 
         private void UpdateStatsUI()
         {
-            string ms(double? v) => v is null ? "-" : v.Value.ToString("0.#");
+            string ms(double? v) => v is null ? "-" : v.Value.ToString("0.#", CultureInfo.CurrentCulture);
             var stats = selected?.Stats ?? new SessionStats();
             lblStats.Text =
                 $"Min {ms(stats.Min)} / Avg {ms(stats.Avg)} / Max {ms(stats.Max)} ms\n" +
