@@ -26,6 +26,8 @@ namespace PingTool
         private AutoLog? autoLog;
         private bool autoLogWarned;
         private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
+        // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
+        private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
         private readonly IncidentLog incidents = new();
         // Route captures running in the background; the run waits for them before releasing its token.
         private List<Task> pathCaptures = new();
@@ -69,6 +71,7 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+            trayIconTimer.Tick += (_, _) => HideTrayIconIfWindowShown();
 
             // --minimized hides the window in the notification area (alerts still show as balloons);
             // --start then begins the monitoring: no click needed.
@@ -96,6 +99,7 @@ namespace PingTool
                 closing = true;
                 cts?.Cancel();
                 autoLogTimer.Stop();
+                trayIconTimer.Stop();
                 FlushAutoLog();
                 SaveSettings();
             };
@@ -577,8 +581,7 @@ namespace PingTool
             else if (!autoLogWarned && !closing)
             {
                 autoLogWarned = true;
-                notifyIcon.Visible = true;
-                notifyIcon.ShowBalloonTip(5000, "PingTool", "Log file not written, will retry: " + autoLog.LastError, ToolTipIcon.Warning);
+                ShowBalloon("Log file not written, will retry: " + autoLog.LastError, ToolTipIcon.Warning);
             }
         }
 
@@ -934,8 +937,25 @@ namespace PingTool
             };
 
             sound.Play();
+            ShowBalloon(text, icon);
+        }
+
+        // The icon exists to carry the balloon. Once the balloon has had its time it goes away again,
+        // unless the window is hidden in the notification area (then the icon is the way back in).
+        // A timer rather than BalloonTipClosed: Windows 10/11 do not always raise that event, and a second
+        // alert must not have its balloon cut by the end of the first one (each balloon restarts the timer).
+        private void ShowBalloon(string text, ToolTipIcon icon)
+        {
             notifyIcon.Visible = true;
             notifyIcon.ShowBalloonTip(5000, "PingTool", text, icon);
+            trayIconTimer.Stop();
+            trayIconTimer.Start();
+        }
+
+        private void HideTrayIconIfWindowShown()
+        {
+            trayIconTimer.Stop();
+            if (Visible && !closing) notifyIcon.Visible = false;
         }
 
         private void UpdateStatsUI()

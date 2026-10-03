@@ -31,8 +31,9 @@
          1.12.0 = profiles can be exported to a file and imported from one (PIN456.9);
          1.12.1 = export and timeline say when the log let its oldest pings go (PIN456.27);
          1.12.2 = the "Stopped" hint no longer survives a restart (PIN456.10);
-         1.12.3 = full and compact window sizes follow the screen scaling (PIN456.12). -->
-    <Version>1.12.3</Version>
+         1.12.3 = full and compact window sizes follow the screen scaling (PIN456.12);
+         1.12.4 = the notification icon goes away after its balloon (PIN456.13). -->
+    <Version>1.12.4</Version>
   </PropertyGroup>
 
 </Project>
