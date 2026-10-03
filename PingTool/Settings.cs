@@ -2,6 +2,20 @@ using System.Text.Json;
 
 namespace PingTool
 {
+    // The range each numeric setting may take: the same limits as the boxes in the window.
+    // A settings.json that is valid JSON can still hold -5 or 2147483647; those are pulled
+    // back to the nearest limit when loaded, instead of travelling on to the code that probes.
+    internal static class Limits
+    {
+        public static readonly (int Min, int Max) IntervalMs = (100, 60_000);
+        public static readonly (int Min, int Max) TimeoutMs = (100, 10_000);
+        public static readonly (int Min, int Max) PacketSize = (1, 65_500);
+        public static readonly (int Min, int Max) DegradedLatencyMs = (1, 60_000);
+        public static readonly (int Min, int Max) DegradedLossPercent = (1, 100);
+
+        public static int Clamp(int value, (int Min, int Max) range) => Math.Clamp(value, range.Min, range.Max);
+    }
+
     // What survives between two launches. A missing, unreadable or hand-broken
     // file must never stop the app from starting: it just means defaults.
     internal sealed class Settings
@@ -36,12 +50,7 @@ namespace PingTool
             try
             {
                 var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path)) ?? new Settings();
-                // "Recent": null in the file would otherwise throw later, far from the cause.
-                s.Recent ??= new();
-                s.Hosts ??= new();
-                s.Address ??= "";
-                s.ActiveProfile ??= "";
-                s.Profiles = ProfileBook.Sanitize(s.Profiles);
+                s.Normalize();
                 return s;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
@@ -51,6 +60,26 @@ namespace PingTool
                 System.Diagnostics.Debug.WriteLine($"Settings not loaded from {path}: {ex}");
                 return new Settings();
             }
+        }
+
+        // Makes whatever was read usable: numbers pulled into range, lists free of nulls, blanks,
+        // duplicates and excess ("Recent": null would otherwise throw later, far from the cause).
+        private void Normalize()
+        {
+            IntervalMs = Limits.Clamp(IntervalMs, Limits.IntervalMs);
+            TimeoutMs = Limits.Clamp(TimeoutMs, Limits.TimeoutMs);
+            PacketSize = Limits.Clamp(PacketSize, Limits.PacketSize);
+            DegradedLatencyMs = Limits.Clamp(DegradedLatencyMs, Limits.DegradedLatencyMs);
+            DegradedLossPercent = Limits.Clamp(DegradedLossPercent, Limits.DegradedLossPercent);
+
+            Address = (Address ?? "").Trim();
+            ActiveProfile ??= "";
+            Recent = (Recent ?? new List<string>())
+                .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent).ToList();
+            Hosts = (Hosts ?? new List<string>())
+                .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
+            Profiles = ProfileBook.Sanitize(Profiles);
         }
 
         // Written beside the target and moved over it, so a crash mid-write

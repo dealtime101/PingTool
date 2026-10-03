@@ -66,6 +66,11 @@ namespace PingTool
                 if (Find(clean, name) is not null) continue;
 
                 p.Name = name;
+                p.IntervalMs = Limits.Clamp(p.IntervalMs, Limits.IntervalMs);
+                p.TimeoutMs = Limits.Clamp(p.TimeoutMs, Limits.TimeoutMs);
+                p.PacketSize = Limits.Clamp(p.PacketSize, Limits.PacketSize);
+                p.DegradedLatencyMs = Limits.Clamp(p.DegradedLatencyMs, Limits.DegradedLatencyMs);
+                p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
                 clean.Add(p);
                 if (clean.Count == MaxProfiles) break;
