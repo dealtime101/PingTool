@@ -15,6 +15,8 @@ namespace PingTool
     {
         private bool isRunning;
         private bool hasRun;
+        // Set when the window starts closing: late callbacks must leave the screen alone.
+        private bool closing;
         private CancellationTokenSource? cts;
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
@@ -47,7 +49,15 @@ namespace PingTool
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
-            FormClosing += (_, _) => SaveSettings();
+            FormClosing += (_, _) =>
+            {
+                // Stop the loops BEFORE FormClosed disposes the notification icon and the
+                // tooltip: a ping answering during the close would touch them (and the
+                // controls) after disposal.
+                closing = true;
+                cts?.Cancel();
+                SaveSettings();
+            };
         }
 
         private void chkCompact_CheckedChanged(object? sender, EventArgs e) => ApplyCompact(chkCompact.Checked);
@@ -257,6 +267,7 @@ namespace PingTool
         // Back to the idle screen: button, locked settings, state word, stale-value cue.
         private void FinishRun()
         {
+            if (closing) return;
             isRunning = false;
             btnStartStop.Text = "Start";
             SetSettingsEnabled(true);
@@ -372,6 +383,7 @@ namespace PingTool
 
         private void UpdatePingUI(HostSession session, long ping, PingFailure? failure = null)
         {
+            if (closing) return;
             session.Add(ping, failure);
             var why = session.LastFailure;
             log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
@@ -419,6 +431,7 @@ namespace PingTool
         // Big value, stats and graph all follow the host selected in the list.
         private void RenderSelected()
         {
+            if (closing) return;
             Text = selected == null ? "PingTool" : "PingTool - " + selected.Address;
             if (chkCompare.Checked)
                 graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.Address, HostPalette.ColorFor(i), s.History)).ToList());
@@ -472,7 +485,7 @@ namespace PingTool
 
         private void Alert(HostSession session, HostChange change)
         {
-            if (change == HostChange.None || !chkAlert.Checked) return;
+            if (closing || change == HostChange.None || !chkAlert.Checked) return;
 
             var monitor = session.Monitor;
             string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs);
