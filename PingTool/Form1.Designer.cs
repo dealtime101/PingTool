@@ -467,7 +467,6 @@
             // MainForm
             //
             AutoScaleDimensions = new SizeF(7F, 15F);
-            AcceptButton = btnStartStop;
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
             ClientSize = new Size(580, 519);

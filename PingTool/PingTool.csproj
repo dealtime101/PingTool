@@ -34,8 +34,9 @@
          1.12.3 = full and compact window sizes follow the screen scaling (PIN456.12);
          1.12.4 = the notification icon goes away after its balloon (PIN456.13);
          1.12.5 = probes start one interval apart, whatever the answer took (PIN456.14);
-         1.12.6 = the empty-address message says what to do (PIN456.15). -->
-    <Version>1.12.6</Version>
+         1.12.6 = the empty-address message says what to do (PIN456.15);
+         1.12.7 = Enter no longer stops a run: it only starts one from the address box (PIN456.17). -->
+    <Version>1.12.7</Version>
   </PropertyGroup>
 
 </Project>

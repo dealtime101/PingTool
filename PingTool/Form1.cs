@@ -71,6 +71,16 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            // Enter in the address box STARTS the monitoring, and only that. There is no default button any
+            // more: Start and Stop are one button, so Enter used to flip the state - and could stop a run
+            // from anywhere in the window. (The box is locked while running, so it never stops anything.)
+            cmbAddress.KeyDown += (_, e) =>
+            {
+                if (e.KeyCode != Keys.Enter) return;
+                e.SuppressKeyPress = true;
+                if (!isRunning) btnStartStop_Click(this, EventArgs.Empty);
+            };
             trayIconTimer.Tick += (_, _) => HideTrayIconIfWindowShown();
 
             // --minimized hides the window in the notification area (alerts still show as balloons);
