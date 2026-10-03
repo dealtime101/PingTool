@@ -892,19 +892,15 @@ namespace PingTool
 
                 // Stopped: keep the number but drop the green/orange/red verdict,
                 // which would pass an old reading off as a live one.
-                if (!isRunning && hasRun)
-                {
-                    lblPingResult.ForeColor = Color.Silver;
-                    toolTip.SetToolTip(lblPingResult, "Stopped: last value, no longer live");
-                }
+                if (!isRunning && hasRun) lblPingResult.ForeColor = Color.Silver;
             }
+
+            // The full sentence is on hover (the label only has room for a word); empty when there is no value.
+            toolTip.SetToolTip(lblPingResult, ResultHint.For(ping, selected?.LastFailure, !isRunning && hasRun));
         }
 
         private void ShowPing(long ping, PingFailure? failure)
         {
-            // The full sentence is on hover; the label only has room for a word.
-            toolTip.SetToolTip(lblPingResult, failure?.Detail ?? "");
-
             if (ping >= 0)
             {
                 lblPingResult.Text = ping + " ms";
