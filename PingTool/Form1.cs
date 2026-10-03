@@ -38,6 +38,7 @@ namespace PingTool
         {
             InitializeComponent();
             Text = AppVersion.Title(null);
+            toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
             FormClosed += (_, _) =>
             {
                 notifyIcon.Dispose();
@@ -150,7 +151,19 @@ namespace PingTool
             return session;
         }
 
-        private void btnAddHost_Click(object? sender, EventArgs e) => AddHost(cmbAddress.Text.Trim());
+        // False (with a message) when the text is not a valid target.
+        private static bool IsValidTarget(string address)
+        {
+            if (ProbeTarget.TryParse(address, out _, out string problem)) return true;
+            MessageBox.Show(problem, "PingTool");
+            return false;
+        }
+
+        private void btnAddHost_Click(object? sender, EventArgs e)
+        {
+            string address = cmbAddress.Text.Trim();
+            if (IsValidTarget(address)) AddHost(address);
+        }
 
         private void btnRemoveHost_Click(object? sender, EventArgs e)
         {
@@ -209,11 +222,7 @@ namespace PingTool
                 if (sessions.Count == 0)
                 {
                     string address = cmbAddress.Text.Trim();
-                    if (string.IsNullOrWhiteSpace(address))
-                    {
-                        MessageBox.Show("No address");
-                        return;
-                    }
+                    if (!IsValidTarget(address)) return;
 
                     AddHost(address);
                 }
@@ -318,6 +327,11 @@ namespace PingTool
         private async Task PingLoop(HostSession session, CancellationToken token)
         {
             string address = session.Address;
+            // The box validates what is typed, but a hand-edited settings.json can hold anything:
+            // a bad address ends THIS host with the reason (see StartPinging).
+            if (!ProbeTarget.TryParse(address, out var target, out string problem))
+                throw new ArgumentException(problem);
+
             // The numeric boxes are locked while running, so one read is enough.
             int interval = (int)numInterval.Value;
             int timeout = (int)numTimeout.Value;
@@ -328,49 +342,46 @@ namespace PingTool
             using var cancelPing = token.Register(ping.SendAsyncCancel);
 
             // Resolve first so the IP shows even for a host that never answers.
-            try
+            // Not for dns://, whose probe IS the lookup and sets the address itself.
+            if (target.Kind != ProbeKind.Dns)
             {
-                var resolved = await Dns.GetHostAddressesAsync(address, token);
-                if (resolved.Length > 0) session.SetIp(resolved[0]);
+                try
+                {
+                    var resolved = await Dns.GetHostAddressesAsync(target.Host, token);
+                    if (resolved.Length > 0) session.SetIp(resolved[0]);
+                }
+                catch (SocketException ex)
+                {
+                    Debug.WriteLine($"DNS lookup of {address} failed: {ex.SocketErrorCode}");
+                    session.SetUnresolved();
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
             }
-            catch (SocketException ex)
-            {
-                Debug.WriteLine($"DNS lookup of {address} failed: {ex.SocketErrorCode}");
-                session.SetUnresolved();
-            }
-            catch (OperationCanceledException)
-            {
-                return;
-            }
+
             if (session == selected) RenderSelected();
 
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    var reply = await ping.SendPingAsync(address, timeout, buffer);
+                    // Ping, TCP connect, web request or name lookup, depending on the prefix typed.
+                    var outcome = await ProbeRunner.RunAsync(target, timeout, ping, buffer, token);
 
                     // A reply that lands after Stop must not touch the display.
                     if (token.IsCancellationRequested) break;
 
-                    if (reply.Status == IPStatus.Success)
-                    {
-                        // What actually answered beats what DNS listed first.
-                        session.SetIp(reply.Address);
-                        UpdatePingUI(session, reply.RoundtripTime);
-                    }
-                    else
-                        UpdatePingUI(session, -1, PingFailure.From(reply.Status));
+                    if (outcome.Error is not null) Debug.WriteLine($"Probe of {address} threw: {outcome.Error}");
+
+                    // What actually answered beats what DNS listed first.
+                    if (outcome.Ip is not null) session.SetIp(outcome.Ip);
+                    UpdatePingUI(session, outcome.Rtt, outcome.Failure);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
                     break;
-                }
-                catch (Exception ex)
-                {
-                    if (token.IsCancellationRequested) break;
-                    Debug.WriteLine($"Ping {address} threw: {ex}");
-                    UpdatePingUI(session, -1, PingFailure.From(ex));
                 }
 
                 try

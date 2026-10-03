@@ -37,7 +37,14 @@ namespace PingTool
                     => new("No host", "Name could not be resolved"),
                 SocketError.NetworkUnreachable or SocketError.HostUnreachable
                     => new("No route", "No route to the destination: " + socket.Message),
+                SocketError.ConnectionRefused
+                    => new("Refused", "Connection refused: nothing is listening on that port"),
+                SocketError.TimedOut => Timeout,
+                SocketError.ConnectionReset or SocketError.ConnectionAborted
+                    => new("Reset", "The connection was closed by the other side"),
                 _ when ex is ArgumentException => new("Bad addr", "Invalid address: " + ex.Message),
+                _ when ex.InnerException is System.Security.Authentication.AuthenticationException tls
+                    => new("TLS", "The secure connection could not be set up: " + tls.Message),
                 _ => new("Error", ex.InnerException?.Message ?? ex.Message),
             };
         }
