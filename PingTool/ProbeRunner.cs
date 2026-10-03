@@ -60,7 +60,7 @@ namespace PingTool
 
             return reply.Status == IPStatus.Success
                 ? new ProbeOutcome(reply.RoundtripTime, null, reply.Address)
-                : new ProbeOutcome(-1, PingFailure.From(reply.Status), null);
+                : new ProbeOutcome(-1, PingFailure.From(reply.Status, reply.Address?.AddressFamily), null);
         }
 
         // The time to open the connection, nothing more: that is "the port is reachable".

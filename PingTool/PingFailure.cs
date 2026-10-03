@@ -9,13 +9,15 @@ namespace PingTool
     {
         public static readonly PingFailure Timeout = new("Timeout", "No reply within the timeout");
 
-        public static PingFailure From(IPStatus status) => status switch
+        // family = the address family of the target, when known: status 11004 means two different
+        // things depending on it (see ProtocolOrProhibited).
+        public static PingFailure From(IPStatus status, AddressFamily? family = null) => status switch
         {
             IPStatus.TimedOut => Timeout,
             IPStatus.DestinationNetworkUnreachable => new("No route", "Destination network unreachable"),
             IPStatus.DestinationHostUnreachable => new("Unreach", "Destination host unreachable"),
             IPStatus.DestinationUnreachable => new("Unreach", "Destination unreachable"),
-            IPStatus.DestinationProtocolUnreachable => new("Refused", "Destination refused the protocol (or prohibited)"),
+            IPStatus.DestinationProtocolUnreachable => ProtocolOrProhibited(family),
             IPStatus.DestinationPortUnreachable => new("Refused", "Destination port unreachable"),
             IPStatus.DestinationScopeMismatch => new("Bad dest", "Source and destination address scopes do not match"),
             IPStatus.BadDestination => new("Bad dest", "Bad destination address"),
@@ -25,6 +27,20 @@ namespace PingTool
             IPStatus.NoResources => new("Busy", "Not enough resources on the path"),
             IPStatus.SourceQuench => new("Busy", "Destination asked the sender to slow down"),
             _ => new("Error", "ICMP error: " + status),
+        };
+
+        // .NET gives ONE status code (11004, named both DestinationProtocolUnreachable and
+        // DestinationProhibited) to two different errors: ICMPv4 "protocol unreachable" (the host
+        // does not implement the protocol: not a filtering rule at all) and ICMPv6 "communication
+        // administratively prohibited" (a filtering rule). Saying "refused" for both pointed IPv4
+        // users at a firewall that is not the cause. The address family tells them apart.
+        private static PingFailure ProtocolOrProhibited(AddressFamily? family) => family switch
+        {
+            AddressFamily.InterNetwork
+                => new("No proto", "The destination host does not support the protocol (ICMP protocol unreachable). This is not a filtering rule."),
+            AddressFamily.InterNetworkV6
+                => new("Blocked", "Communication with the destination is administratively prohibited: a filtering rule is in the way."),
+            _ => new("Rejected", "The destination reports the protocol as unreachable or the traffic as prohibited (one status code covers both). If the host is known to be up, look for a filtering rule."),
         };
 
         public static PingFailure From(Exception ex)
