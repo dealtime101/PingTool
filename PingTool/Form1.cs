@@ -237,20 +237,31 @@ namespace PingTool
                 }
                 finally
                 {
+                    bool mine = ReferenceEquals(cts, runCts);
                     runCts.Dispose();
-                    if (ReferenceEquals(cts, runCts)) cts = null;
+                    if (mine) cts = null;
+
+                    // The loops ended by themselves (every host failed), not through Stop:
+                    // the run is over, so the screen must say so. Only for THIS run: after a
+                    // quick Stop then Start, the old run finishing must not end the new one.
+                    if (mine && isRunning) FinishRun();
                 }
             }
             else
             {
-                isRunning = false;
-                btnStartStop.Text = "Start";
-                SetSettingsEnabled(true);
-                ShowRunState();
-                RenderSelected();
-
+                FinishRun();
                 cts?.Cancel();
             }
+        }
+
+        // Back to the idle screen: button, locked settings, state word, stale-value cue.
+        private void FinishRun()
+        {
+            isRunning = false;
+            btnStartStop.Text = "Start";
+            SetSettingsEnabled(true);
+            ShowRunState();
+            RenderSelected();
         }
 
         // Word and colour: the value on screen is only live while "Running".
@@ -270,7 +281,27 @@ namespace PingTool
             btnRemoveHost.Enabled = enabled;
         }
 
+        // One host's loop. An error it cannot survive (0.0.0.0 and :: make Dns throw
+        // ArgumentException, a 300-character name ArgumentOutOfRangeException) ends THAT
+        // host and shows why. It must not escape: Task.WhenAll would fail and the screen
+        // would stay on "Running" with nothing being measured.
         private async Task StartPinging(HostSession session, CancellationToken token)
+        {
+            try
+            {
+                await PingLoop(session, token);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ping loop for {session.Address} ended: {ex}");
+                UpdatePingUI(session, -1, PingFailure.From(ex));
+            }
+        }
+
+        private async Task PingLoop(HostSession session, CancellationToken token)
         {
             string address = session.Address;
             // The numeric boxes are locked while running, so one read is enough.
