@@ -40,8 +40,16 @@ namespace PingTool
         private readonly ToolTip toolTip = new();
         private readonly NotifyIcon notifyIcon = new() { Icon = SystemIcons.Application, Text = "PingTool" };
 
-        public MainForm()
+        // How the program was started (command line); None when opened normally.
+        private readonly StartupOptions startup;
+
+        public MainForm() : this(null)
         {
+        }
+
+        internal MainForm(StartupOptions? startup)
+        {
+            this.startup = startup ?? StartupOptions.None;
             InitializeComponent();
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
@@ -61,6 +69,19 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            // --minimized hides the window in the notification area (alerts still show as balloons);
+            // --start then begins the monitoring: no click needed.
+            Shown += (_, _) =>
+            {
+                if (startup.Minimized)
+                {
+                    notifyIcon.Visible = true;
+                    Hide();
+                }
+
+                if (startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
+            };
 
             // Right-click (or the menu key) on a host: where does the path to it stop?
             var hostMenu = new ContextMenuStrip();
@@ -138,14 +159,18 @@ namespace PingTool
             RefreshProfileList();
             cboProfile.Text = settings.ActiveProfile;
 
-            foreach (var host in settings.Hosts) AddHost(host);
+            // Targets and interval from the command line win for this launch (and are not saved: see SaveSettings).
+            if (startup.IntervalMs is int ms)
+                numInterval.Value = Math.Clamp(ms, (int)numInterval.Minimum, (int)numInterval.Maximum);
+            foreach (var host in startup.Hosts.Count > 0 ? startup.Hosts : settings.Hosts) AddHost(host);
         }
 
         private void SaveSettings()
         {
             settings.Address = cmbAddress.Text.Trim();
-            settings.Hosts = sessions.Select(s => s.Address).ToList();
-            settings.IntervalMs = (int)numInterval.Value;
+            // What the command line imposed for this launch is not what the user chose: keep the saved values.
+            if (startup.Hosts.Count == 0) settings.Hosts = sessions.Select(s => s.Address).ToList();
+            if (startup.IntervalMs is null) settings.IntervalMs = (int)numInterval.Value;
             settings.TimeoutMs = (int)numTimeout.Value;
             settings.PacketSize = (int)numSize.Value;
             settings.DegradedLatencyMs = (int)numSlow.Value;

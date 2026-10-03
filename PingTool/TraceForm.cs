@@ -54,7 +54,7 @@ namespace PingTool
                 var notes = PathCapture.Compare(session.BaselinePath, path);
                 string text = path.Describe() + (notes.Count > 0 ? "\n\n" + string.Join("\n", notes) : "");
                 // A multi-line TextBox only breaks lines on CR LF: a bare LF would run the hops together.
-                output.Text = text.Replace("\r\n", "\n").Replace("\n", "\r\n");
+                output.Text = text.Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
             }
             catch (OperationCanceledException)
             {

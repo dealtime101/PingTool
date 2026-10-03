@@ -61,6 +61,21 @@ They are saved in `%APPDATA%\PingTool\settings.json`. A hand-edited file is chec
 
 Up to 20 profiles and the 10 most recent addresses are kept.
 
+## Command line
+
+```
+PingTool.exe --start --minimized 8.8.8.8 router.lan tcp://example.com:443
+```
+
+| Option | Effect |
+|---|---|
+| `--start` | start monitoring as soon as the window is up |
+| `--minimized` | start hidden in the notification area (double-click the icon to open the window; alerts still show as balloons) |
+| `--interval <ms>` | time between probes, 100 to 60 000 |
+| `--help` | show the options |
+
+Targets are written as in the address box and replace the saved list **for that launch only**; what the command line imposes is not saved, so a shortcut never overwrites the list built in the window. A mistyped option or target is reported in a box and nothing starts. To monitor from logon, put a shortcut with these arguments in the Startup folder (`shell:startup`).
+
 ## Requirements
 
 - Windows.
