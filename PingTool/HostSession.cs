@@ -14,7 +14,12 @@ namespace PingTool
 
         public string Address { get; }
         public SessionStats Stats { get; } = new();
-        public HostMonitor Monitor { get; }
+        public HostMonitor Monitor { get; private set; }
+
+        // The user can change the thresholds between two runs: the monitor is built with them, so
+        // it is replaced (starting from a clean state), not edited.
+        public void ApplyThresholds(int degradedLatencyMs, int degradedLossPercent) =>
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent);
         public Queue<long> History { get; } = new();
 
         // null until the first reply or timeout of the current run.

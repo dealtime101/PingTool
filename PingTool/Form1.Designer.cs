@@ -58,6 +58,12 @@
             numInterval = new NumericUpDown();
             numTimeout = new NumericUpDown();
             numSize = new NumericUpDown();
+            lblSlow = new Label();
+            lblLoss = new Label();
+            numSlow = new NumericUpDown();
+            numLoss = new NumericUpDown();
+            ((System.ComponentModel.ISupportInitialize)numSlow).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numLoss).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numInterval).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numTimeout).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numSize).BeginInit();
@@ -185,13 +191,53 @@
             numSize.TabIndex = 11;
             numSize.Value = new decimal(new int[] { 32, 0, 0, 0 });
             //
+            // lblSlow
+            //
+            lblSlow.AutoSize = true;
+            lblSlow.ForeColor = Color.White;
+            lblSlow.Location = new Point(30, 417);
+            lblSlow.Name = "lblSlow";
+            lblSlow.TabIndex = 26;
+            lblSlow.Text = "Slow above (ms)";
+            //
+            // numSlow
+            //
+            numSlow.AccessibleName = "Slow above (ms)";
+            numSlow.Location = new Point(30, 435);
+            numSlow.Maximum = new decimal(new int[] { 60000, 0, 0, 0 });
+            numSlow.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numSlow.Name = "numSlow";
+            numSlow.Size = new Size(80, 23);
+            numSlow.TabIndex = 27;
+            numSlow.Value = new decimal(new int[] { 150, 0, 0, 0 });
+            //
+            // lblLoss
+            //
+            lblLoss.AutoSize = true;
+            lblLoss.ForeColor = Color.White;
+            lblLoss.Location = new Point(140, 417);
+            lblLoss.Name = "lblLoss";
+            lblLoss.TabIndex = 28;
+            lblLoss.Text = "Loss at least (%)";
+            //
+            // numLoss
+            //
+            numLoss.AccessibleName = "Loss at least (%)";
+            numLoss.Location = new Point(140, 435);
+            numLoss.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
+            numLoss.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            numLoss.Name = "numLoss";
+            numLoss.Size = new Size(80, 23);
+            numLoss.TabIndex = 29;
+            numLoss.Value = new decimal(new int[] { 30, 0, 0, 0 });
+            //
             // chkAlert
             //
             chkAlert.AutoSize = true;
             chkAlert.Checked = true;
             chkAlert.CheckState = CheckState.Checked;
             chkAlert.ForeColor = Color.White;
-            chkAlert.Location = new Point(30, 417);
+            chkAlert.Location = new Point(30, 467);
             chkAlert.Name = "chkAlert";
             chkAlert.TabIndex = 12;
             chkAlert.Text = "Alert on outage / slowdown / recovery";
@@ -358,7 +404,7 @@
             AcceptButton = btnStartStop;
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
-            ClientSize = new Size(580, 460);
+            ClientSize = new Size(580, 495);
             Controls.Add(chkCompare);
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
@@ -373,6 +419,10 @@
             Controls.Add(btnAddHost);
             Controls.Add(lstHosts);
             Controls.Add(chkAlert);
+            Controls.Add(numLoss);
+            Controls.Add(lblLoss);
+            Controls.Add(numSlow);
+            Controls.Add(lblSlow);
             Controls.Add(numSize);
             Controls.Add(numTimeout);
             Controls.Add(numInterval);
@@ -393,6 +443,8 @@
             ((System.ComponentModel.ISupportInitialize)numInterval).EndInit();
             ((System.ComponentModel.ISupportInitialize)numTimeout).EndInit();
             ((System.ComponentModel.ISupportInitialize)numSize).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numSlow).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numLoss).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -429,5 +481,9 @@
         private NumericUpDown numInterval;
         private NumericUpDown numTimeout;
         private NumericUpDown numSize;
+        private Label lblSlow;
+        private Label lblLoss;
+        private NumericUpDown numSlow;
+        private NumericUpDown numLoss;
     }
 }

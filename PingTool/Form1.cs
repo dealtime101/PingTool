@@ -30,7 +30,7 @@ namespace PingTool
         // Everything below the top block: hidden in compact mode.
         private Control[] detailControls = Array.Empty<Control>();
 
-        private static readonly Size FullSize = new(580, 460);
+        private static readonly Size FullSize = new(580, 495);
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
@@ -51,6 +51,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
+                lblSlow, numSlow, lblLoss, numLoss,
                 chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
@@ -113,6 +114,8 @@ namespace PingTool
             numInterval.Value = Math.Clamp(settings.IntervalMs, (int)numInterval.Minimum, (int)numInterval.Maximum);
             numTimeout.Value = Math.Clamp(settings.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
             numSize.Value = Math.Clamp(settings.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
+            numSlow.Value = Math.Clamp(settings.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
+            numLoss.Value = Math.Clamp(settings.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
             chkAlert.Checked = settings.Alert;
             chkCompact.Checked = settings.Compact;
             RefreshProfileList();
@@ -128,6 +131,8 @@ namespace PingTool
             settings.IntervalMs = (int)numInterval.Value;
             settings.TimeoutMs = (int)numTimeout.Value;
             settings.PacketSize = (int)numSize.Value;
+            settings.DegradedLatencyMs = (int)numSlow.Value;
+            settings.DegradedLossPercent = (int)numLoss.Value;
             settings.Alert = chkAlert.Checked;
             settings.Compact = chkCompact.Checked;
 
@@ -148,7 +153,7 @@ namespace PingTool
             var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
             if (existing != null) return existing;
 
-            var session = new HostSession(address, settings.DegradedLatencyMs, settings.DegradedLossPercent);
+            var session = new HostSession(address, (int)numSlow.Value, (int)numLoss.Value);
             sessions.Add(session);
             var item = new ListViewItem(new[] { address, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
@@ -193,8 +198,8 @@ namespace PingTool
                 TimeoutMs = (int)numTimeout.Value,
                 PacketSize = (int)numSize.Value,
                 Alert = chkAlert.Checked,
-                DegradedLatencyMs = settings.DegradedLatencyMs,
-                DegradedLossPercent = settings.DegradedLossPercent,
+                DegradedLatencyMs = (int)numSlow.Value,
+                DegradedLossPercent = (int)numLoss.Value,
             };
 
             if (!ProfileBook.Upsert(settings.Profiles, profile))
@@ -239,8 +244,8 @@ namespace PingTool
         {
             if (isRunning) return;
 
-            settings.DegradedLatencyMs = profile.DegradedLatencyMs;
-            settings.DegradedLossPercent = profile.DegradedLossPercent;
+            numSlow.Value = Math.Clamp(profile.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
+            numLoss.Value = Math.Clamp(profile.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
             numInterval.Value = Math.Clamp(profile.IntervalMs, (int)numInterval.Minimum, (int)numInterval.Maximum);
             numTimeout.Value = Math.Clamp(profile.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
             numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
@@ -357,7 +362,13 @@ namespace PingTool
                 SetSettingsEnabled(false);
                 ShowRunState();
 
-                foreach (var s in sessions) s.Reset();
+                // The limits may have been changed since the hosts were added: each session takes the
+                // ones in the boxes (it builds a fresh monitor with them).
+                foreach (var s in sessions)
+                {
+                    s.ApplyThresholds((int)numSlow.Value, (int)numLoss.Value);
+                    s.Reset();
+                }
                 runStart = DateTimeOffset.Now;
                 log.Clear();
                 incidents.Clear();
@@ -425,6 +436,8 @@ namespace PingTool
             numInterval.Enabled = enabled;
             numTimeout.Enabled = enabled;
             numSize.Enabled = enabled;
+            numSlow.Enabled = enabled;
+            numLoss.Enabled = enabled;
             btnAddHost.Enabled = enabled;
             btnRemoveHost.Enabled = enabled;
             cboProfile.Enabled = enabled;
@@ -572,7 +585,7 @@ namespace PingTool
             var data = new ReportData(now, runStart, Environment.MachineName,
                 AppVersion.Display,
                 (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
-                settings.DegradedLatencyMs, settings.DegradedLossPercent,
+                (int)numSlow.Value, (int)numLoss.Value,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
