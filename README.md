@@ -16,6 +16,7 @@ It started as a one-address ping window. It now watches several targets at once,
 - **Network path at each outage**: when a target goes down, the route to it is traced and compared with the route seen while it was healthy, so a changed or silent router is named.
 - **Session timeline**: the *whole* session of a target in one picture with a time axis, with outages and slowdowns shaded and a summary of when it was slowest and when it lost the most.
 - **Readable failures**: a short word on the big result ("Timeout", "No host", "Refused", "HTTP 503", "TLS", "Frag"...) and the full explanation on hover, instead of one generic "Timeout".
+- **Automatic log** (optional, **Save the log to disk**): every ping appended to a daily CSV per host in `%APPDATA%\PingTool\logs` (change the folder with `LogFolder` in `settings.json`), so a night of monitoring or a crash loses nothing. A file open in a spreadsheet is retried, never a reason to stop.
 - **Export**: a timestamped CSV log, and a **self-contained HTML report** (one file, no script, graphs drawn inline) for an ISP or an IT team.
 - **Profiles**: save a set of targets and settings under a name (a quick check, a long watch, the office network, a hotel wifi) and switch with one click.
 - **Compact mode**: a small always-on-top window that minimizes to the notification area.

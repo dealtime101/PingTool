@@ -38,6 +38,7 @@
             lblTimeout = new Label();
             lblSize = new Label();
             chkAlert = new CheckBox();
+            chkSaveLog = new CheckBox();
             lstHosts = new ListView();
             cboProfile = new ComboBox();
             btnSaveProfile = new Button();
@@ -234,6 +235,15 @@
             numLoss.Size = new Size(80, 23);
             numLoss.TabIndex = 29;
             numLoss.Value = new decimal(new int[] { 30, 0, 0, 0 });
+            //
+            // chkSaveLog
+            //
+            chkSaveLog.AutoSize = true;
+            chkSaveLog.ForeColor = Color.White;
+            chkSaveLog.Location = new Point(30, 491);
+            chkSaveLog.Name = "chkSaveLog";
+            chkSaveLog.TabIndex = 33;
+            chkSaveLog.Text = "Save the log to disk (daily CSV per host)";
             //
             // lblDownAfter
             //
@@ -438,7 +448,7 @@
             AcceptButton = btnStartStop;
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
-            ClientSize = new Size(580, 495);
+            ClientSize = new Size(580, 519);
             Controls.Add(chkCompare);
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
@@ -453,6 +463,7 @@
             Controls.Add(btnRemoveHost);
             Controls.Add(btnAddHost);
             Controls.Add(lstHosts);
+            Controls.Add(chkSaveLog);
             Controls.Add(chkAlert);
             Controls.Add(numDownAfter);
             Controls.Add(lblDownAfter);
@@ -499,6 +510,7 @@
         private Label lblTimeout;
         private Label lblSize;
         private CheckBox chkAlert;
+        private CheckBox chkSaveLog;
         private ListView lstHosts;
         private ColumnHeader colHost;
         private ColumnHeader colLast;

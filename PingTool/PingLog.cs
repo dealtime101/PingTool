@@ -19,26 +19,31 @@ namespace PingTool
 
         public void Clear() => entries.Clear();
 
-        public void Add(DateTimeOffset time, string host, string status, long? rttMs, string detail = "")
+        // Returns the entry, so the automatic log writes exactly what the in-memory log holds.
+        public LogEntry Add(DateTimeOffset time, string host, string status, long? rttMs, string detail = "")
         {
-            entries.Enqueue(new LogEntry(time, host, status, rttMs, detail));
+            var entry = new LogEntry(time, host, status, rttMs, detail);
+            entries.Enqueue(entry);
             while (entries.Count > MaxEntries) entries.Dequeue();
+            return entry;
         }
+
+        public const string CsvHeader = "timestamp,host,status,rtt_ms,detail";
 
         public void WriteCsv(TextWriter writer)
         {
             writer.NewLine = "\r\n";
-            writer.WriteLine("timestamp,host,status,rtt_ms,detail");
-            foreach (var e in entries)
-            {
-                writer.WriteLine(string.Join(",",
-                    e.Time.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture),
-                    Field(e.Host),
-                    Field(e.Status),
-                    e.RttMs?.ToString(CultureInfo.InvariantCulture) ?? "",
-                    Field(e.Detail)));
-            }
+            writer.WriteLine(CsvHeader);
+            foreach (var e in entries) writer.WriteLine(CsvLine(e));
         }
+
+        // One row, shared by the export and the automatic log so the two files read the same.
+        public static string CsvLine(LogEntry e) => string.Join(",",
+            e.Time.ToString("yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture),
+            Field(e.Host),
+            Field(e.Status),
+            e.RttMs?.ToString(CultureInfo.InvariantCulture) ?? "",
+            Field(e.Detail));
 
         // A spreadsheet runs a field as a formula when it begins with = + - @, or with a tab or a CR.
         // Looking at the very first character is not enough: spaces, a no-break space, a line feed, a

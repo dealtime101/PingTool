@@ -22,6 +22,10 @@ namespace PingTool
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
         private readonly PingLog log = new();
+        // Every ping on disk as it happens (when "Save log to disk" is ticked); written every few seconds.
+        private AutoLog? autoLog;
+        private bool autoLogWarned;
+        private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
         private readonly IncidentLog incidents = new();
         // Route captures running in the background; the run waits for them before releasing its token.
         private List<Task> pathCaptures = new();
@@ -30,7 +34,7 @@ namespace PingTool
         // Everything below the top block: hidden in compact mode.
         private Control[] detailControls = Array.Empty<Control>();
 
-        private static readonly Size FullSize = new(580, 495);
+        private static readonly Size FullSize = new(580, 519);
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
@@ -52,10 +56,11 @@ namespace PingTool
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
                 lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
+                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
+            autoLogTimer.Tick += (_, _) => FlushAutoLog();
             FormClosing += (_, _) =>
             {
                 // Stop the loops BEFORE FormClosed disposes the notification icon and the
@@ -63,6 +68,8 @@ namespace PingTool
                 // controls) after disposal.
                 closing = true;
                 cts?.Cancel();
+                autoLogTimer.Stop();
+                FlushAutoLog();
                 SaveSettings();
             };
         }
@@ -118,6 +125,9 @@ namespace PingTool
             numLoss.Value = Math.Clamp(settings.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
             numDownAfter.Value = Math.Clamp(settings.DownAfter, (int)numDownAfter.Minimum, (int)numDownAfter.Maximum);
             chkAlert.Checked = settings.Alert;
+            chkSaveLog.Checked = settings.SaveLog;
+            toolTip.SetToolTip(chkSaveLog, "Every ping is appended to a CSV file per host and per day, in " +
+                (settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder) + ". Choose before Start.");
             chkCompact.Checked = settings.Compact;
             RefreshProfileList();
             cboProfile.Text = settings.ActiveProfile;
@@ -136,6 +146,7 @@ namespace PingTool
             settings.DegradedLossPercent = (int)numLoss.Value;
             settings.DownAfter = (int)numDownAfter.Value;
             settings.Alert = chkAlert.Checked;
+            settings.SaveLog = chkSaveLog.Checked;
             settings.Compact = chkCompact.Checked;
 
             try
@@ -375,6 +386,7 @@ namespace PingTool
                 }
                 runStart = DateTimeOffset.Now;
                 log.Clear();
+                StartAutoLog();
                 incidents.Clear();
                 UpdateIncidentButton();
                 foreach (ListViewItem item in lstHosts.Items) RenderRow(item);
@@ -420,6 +432,32 @@ namespace PingTool
             }
         }
 
+        // A new run starts a new log. Whatever the previous run could not write yet gets one last try.
+        private void StartAutoLog()
+        {
+            FlushAutoLog();
+            string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
+            autoLog = chkSaveLog.Checked ? new AutoLog(folder) : null;
+            autoLogWarned = false;
+            // The timer keeps running after Stop: pings still in flight are written by the next tick.
+            autoLogTimer.Enabled = autoLog is not null;
+        }
+
+        // A file that cannot be written (open in a spreadsheet, disk full) never stops the monitoring:
+        // one balloon says so, the entries wait and go out at the next tick that works.
+        private void FlushAutoLog()
+        {
+            if (autoLog is null) return;
+
+            if (autoLog.Flush()) autoLogWarned = false;
+            else if (!autoLogWarned && !closing)
+            {
+                autoLogWarned = true;
+                notifyIcon.Visible = true;
+                notifyIcon.ShowBalloonTip(5000, "PingTool", "Log file not written, will retry: " + autoLog.LastError, ToolTipIcon.Warning);
+            }
+        }
+
         // Back to the idle screen: button, locked settings, state word, stale-value cue.
         private void FinishRun()
         {
@@ -447,6 +485,7 @@ namespace PingTool
             numSlow.Enabled = enabled;
             numLoss.Enabled = enabled;
             numDownAfter.Enabled = enabled;
+            chkSaveLog.Enabled = enabled;
             btnAddHost.Enabled = enabled;
             btnRemoveHost.Enabled = enabled;
             cboProfile.Enabled = enabled;
@@ -550,7 +589,8 @@ namespace PingTool
             if (closing) return;
             session.Add(ping, failure);
             var why = session.LastFailure;
-            log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
+            var entry = log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
+            autoLog?.Add(entry);
             var change = session.Monitor.Update(ping);
             incidents.Observe(DateTimeOffset.Now, session.Address, ping, session.LastFailure, change,
                 session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs);

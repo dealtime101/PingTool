@@ -33,6 +33,11 @@ namespace PingTool
         public bool Alert { get; set; } = true;
         public bool Compact { get; set; }
 
+        // "Save log to disk": every ping appended to a daily CSV per host (see AutoLog), in this
+        // folder; blank = %APPDATA%\PingTool\logs. The folder is edited in settings.json.
+        public bool SaveLog { get; set; }
+        public string LogFolder { get; set; } = "";
+
         // A host is "degraded" when the last 10 pings show this much loss or this
         // average latency (see HostMonitor). Edited in settings.json.
         public int DegradedLatencyMs { get; set; } = 150;
@@ -76,6 +81,7 @@ namespace PingTool
             DownAfter = Limits.Clamp(DownAfter, Limits.DownAfter);
 
             Address = (Address ?? "").Trim();
+            LogFolder = (LogFolder ?? "").Trim();
             ActiveProfile ??= "";
             Recent = (Recent ?? new List<string>())
                 .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())
