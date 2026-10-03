@@ -46,6 +46,7 @@
             btnAddHost = new Button();
             btnRemoveHost = new Button();
             btnExport = new Button();
+            btnIncidents = new Button();
             chkCompact = new CheckBox();
             lblState = new Label();
             lblDiagnosis = new Label();
@@ -245,11 +246,21 @@
             //
             btnExport.Location = new Point(300, 362);
             btnExport.Name = "btnExport";
-            btnExport.Size = new Size(260, 28);
+            btnExport.Size = new Size(126, 28);
             btnExport.TabIndex = 16;
-            btnExport.Text = "Export log to CSV...";
+            btnExport.Text = "Export CSV...";
             btnExport.UseVisualStyleBackColor = true;
             btnExport.Click += btnExport_Click;
+            //
+            // btnIncidents
+            //
+            btnIncidents.Location = new Point(434, 362);
+            btnIncidents.Name = "btnIncidents";
+            btnIncidents.Size = new Size(126, 28);
+            btnIncidents.TabIndex = 21;
+            btnIncidents.Text = "Incidents (0)";
+            btnIncidents.UseVisualStyleBackColor = true;
+            btnIncidents.Click += btnIncidents_Click;
             //
             // chkCompact
             //
@@ -303,6 +314,7 @@
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
             Controls.Add(chkCompact);
+            Controls.Add(btnIncidents);
             Controls.Add(btnExport);
             Controls.Add(btnRemoveHost);
             Controls.Add(btnAddHost);
@@ -352,6 +364,7 @@
         private Button btnAddHost;
         private Button btnRemoveHost;
         private Button btnExport;
+        private Button btnIncidents;
         private CheckBox chkCompact;
         private Label lblState;
         private Label lblDiagnosis;

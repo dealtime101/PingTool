@@ -19,6 +19,7 @@ namespace PingTool
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
         private readonly PingLog log = new();
+        private readonly IncidentLog incidents = new();
         private readonly Settings settings = Settings.Load(Settings.DefaultPath);
         private static readonly string[] DefaultAddresses = { "google.ca", "8.8.8.8", "1.1.1.1", "192.168.0.1" };
         // Everything below the top block: hidden in compact mode.
@@ -42,7 +43,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, lblDiagnosis, chkCompare,
+                chkAlert, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -217,6 +218,8 @@ namespace PingTool
 
                 foreach (var s in sessions) s.Reset();
                 log.Clear();
+                incidents.Clear();
+                UpdateIncidentButton();
                 foreach (ListViewItem item in lstHosts.Items) RenderRow(item);
                 RenderSelected();
                 // One source per run, owned by this call: a quick Stop then Start
@@ -341,7 +344,11 @@ namespace PingTool
             session.Add(ping, failure);
             var why = session.LastFailure;
             log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
-            Alert(session, session.Monitor.Update(ping));
+            var change = session.Monitor.Update(ping);
+            incidents.Observe(DateTimeOffset.Now, session.Address, ping, session.LastFailure, change,
+                session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs);
+            if (change != HostChange.None) UpdateIncidentButton();
+            Alert(session, change);
 
             foreach (ListViewItem item in lstHosts.Items)
                 if (item.Tag == session) RenderRow(item);
@@ -357,6 +364,16 @@ namespace PingTool
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
             item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
+        }
+
+        private void UpdateIncidentButton() =>
+            btnIncidents.Text = "Incidents (" + incidents.Incidents.Count.ToString(CultureInfo.CurrentCulture) + ")";
+
+        private void btnIncidents_Click(object? sender, EventArgs e)
+        {
+            var now = DateTimeOffset.Now;
+            using var dialog = new IncidentsForm(incidents.Incidents, incidents.Summary(now), now);
+            dialog.ShowDialog(this);
         }
 
         private void chkCompare_CheckedChanged(object? sender, EventArgs e) => RenderSelected();
