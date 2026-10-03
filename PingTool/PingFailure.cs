@@ -63,8 +63,12 @@ namespace PingTool
                 // A passing failure of the DNS server, not a wrong name: say so, or the user "fixes" a good name.
                 SocketError.TryAgain
                     => new("DNS fail", "The DNS server failed for the moment (temporary): the name may be right, try again"),
-                SocketError.NetworkUnreachable or SocketError.HostUnreachable
-                    => new("No route", "No route to the destination: " + socket.Message),
+                // The same two words as the ICMP statuses above, so one fault has one label whether it came as an
+                // exception or as a reply (the big label and the CSV can then be filtered on it).
+                SocketError.NetworkUnreachable
+                    => new("No route", "Destination network unreachable: " + socket.Message),
+                SocketError.HostUnreachable
+                    => new("Unreach", "Destination host unreachable: " + socket.Message),
                 SocketError.ConnectionRefused
                     => new("Refused", "Connection refused: nothing is listening on that port"),
                 SocketError.TimedOut => Timeout,

@@ -39,8 +39,9 @@
          1.12.8 = the Compact box comes right after the address box in the tab order (PIN456.18);
          1.12.9 = the host list columns fit beside the scroll bar (PIN456.19);
          1.12.10 = a damaged settings file is kept aside and reported, not overwritten (PIN456.21);
-         1.12.11 = a temporary DNS failure is no longer reported as an unknown name (PIN456.24). -->
-    <Version>1.12.11</Version>
+         1.12.11 = a temporary DNS failure is no longer reported as an unknown name (PIN456.24);
+         1.12.12 = an unreachable host has one label whether it came as an exception or as an ICMP reply (PIN456.25). -->
+    <Version>1.12.12</Version>
   </PropertyGroup>
 
 </Project>
