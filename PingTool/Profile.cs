@@ -28,6 +28,8 @@ namespace PingTool
             error = "";
 
             if (name.Length == 0) error = "Give the profile a name.";
+            else if (string.Equals(name, DiagnosticTargets.ProfileName, StringComparison.OrdinalIgnoreCase))
+                error = "That name is reserved for the built-in diagnosis: choose another.";
             else if (name.Length > MaxNameLength) error = $"The name is limited to {MaxNameLength} characters.";
             else if (name.Any(char.IsControl)) error = "The name cannot contain control characters.";
 

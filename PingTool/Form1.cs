@@ -205,14 +205,17 @@ namespace PingTool
             // Targets and interval from the command line win for this launch (and are not saved: see SaveSettings).
             if (startup.IntervalMs is int ms)
                 numInterval.Value = Math.Clamp(ms, (int)numInterval.Minimum, (int)numInterval.Maximum);
-            foreach (var host in startup.Hosts.Count > 0 ? startup.Hosts : settings.Hosts) AddHost(host);
+            IEnumerable<string> hostsOfThisLaunch = settings.Hosts;
+            if (startup.OverridesHosts)
+                hostsOfThisLaunch = (startup.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(startup.Hosts);
+            foreach (var host in hostsOfThisLaunch.Distinct(StringComparer.OrdinalIgnoreCase)) AddHost(host);
         }
 
         private void SaveSettings()
         {
             settings.Address = cmbAddress.Text.Trim();
             // What the command line imposed for this launch is not what the user chose: keep the saved values.
-            if (startup.Hosts.Count == 0) settings.Hosts = sessions.Select(s => s.Address).ToList();
+            if (!startup.OverridesHosts) settings.Hosts = sessions.Select(s => s.Address).ToList();
             if (startup.IntervalMs is null) settings.IntervalMs = (int)numInterval.Value;
             settings.TimeoutMs = (int)numTimeout.Value;
             settings.PacketSize = (int)numSize.Value;
@@ -252,6 +255,8 @@ namespace PingTool
         {
             string typed = cboProfile.Text;
             cboProfile.Items.Clear();
+            // The built-in diagnosis comes first: it is not saved, its targets are read from the network cards when it is picked.
+            cboProfile.Items.Add(DiagnosticTargets.ProfileName);
             cboProfile.Items.AddRange(settings.Profiles.Select(p => p.Name).ToArray<object>());
             cboProfile.Text = typed;
         }
@@ -406,8 +411,37 @@ namespace PingTool
                 MessageBox.Show($"{notFitting} profile(s) did not fit: at most {ProfileBook.MaxProfiles} profiles, delete some first.", "PingTool");
         }
 
+        // Targets = default gateway, DNS servers and Internet references (see DiagnosticTargets); every other setting stays as it is.
+        private void ApplyDiagnosis()
+        {
+            if (isRunning) return;
+
+            var targets = DiagnosticTargets.Discover(out bool gatewayFound);
+            ApplyProfile(new Profile
+            {
+                Name = DiagnosticTargets.ProfileName,
+                Hosts = targets,
+                IntervalMs = (int)numInterval.Value,
+                TimeoutMs = (int)numTimeout.Value,
+                PacketSize = (int)numSize.Value,
+                Alert = chkAlert.Checked,
+                DegradedLatencyMs = (int)numSlow.Value,
+                DegradedLossPercent = (int)numLoss.Value,
+                DownAfter = (int)numDownAfter.Value,
+            });
+
+            if (!gatewayFound)
+                MessageBox.Show("No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.", "PingTool");
+        }
+
         private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)
         {
+            if (string.Equals(cboProfile.SelectedItem?.ToString(), DiagnosticTargets.ProfileName, StringComparison.Ordinal))
+            {
+                ApplyDiagnosis();
+                return;
+            }
+
             var profile = ProfileBook.Find(settings.Profiles, cboProfile.SelectedItem?.ToString());
             if (profile is not null) ApplyProfile(profile);
         }
