@@ -114,8 +114,9 @@
          1.21.36 = the diagnosis says "their paths" when several targets are concerned (PIN461.73);
          1.21.37 = a target without a resolved address is no longer counted as an Internet target by the diagnosis (PIN461.74);
          1.21.38 = the diagnosis no longer says the others answer when they are slow: it points at the shared link (PIN461.75);
-         1.21.39 = the comment on the capacity of the automatic log queue gives the right figures (PIN461.76). -->
-    <Version>1.21.39</Version>
+         1.21.39 = the comment on the capacity of the automatic log queue gives the right figures (PIN461.76);
+         1.21.40 = pings thrown away by a log folder that stays unwritable are counted and reported (PIN461.77). -->
+    <Version>1.21.40</Version>
   </PropertyGroup>
 
   <ItemGroup>

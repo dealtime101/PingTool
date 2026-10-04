@@ -25,6 +25,8 @@ namespace PingTool
         // Every ping on disk as it happens (when "Save log to disk" is ticked); written every few seconds.
         private AutoLog? autoLog;
         private bool autoLogWarned;
+        private int droppedReported;
+        private bool dropWarned;
         private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
         // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
         private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
@@ -764,6 +766,8 @@ namespace PingTool
             string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
             autoLog = chkSaveLog.Checked ? new AutoLog(folder) : null;
             autoLogWarned = false;
+            droppedReported = 0;
+            dropWarned = false;
             // The timer keeps running after Stop: pings still in flight are written by the next tick.
             autoLogTimer.Enabled = autoLog is not null;
         }
@@ -774,12 +778,24 @@ namespace PingTool
         {
             if (autoLog is null) return;
 
-            if (autoLog.Flush()) autoLogWarned = false;
+            bool written = autoLog.Flush();
+            if (written) autoLogWarned = false;
             else if (!autoLogWarned && !closing)
             {
                 autoLogWarned = true;
-                ShowBalloon("Log file not written, will retry: " + autoLog.LastError, ToolTipIcon.Warning);
+                ShowBalloon("Log file not written, will retry: " + autoLog.LastError + (autoLog.DropNote is { } lost ? " " + lost : ""), ToolTipIcon.Warning);
             }
+
+            // Pings that were thrown away because the folder stayed unwritable too long, never silently: said when it first happens,
+            // and again with the final figures when the folder works again (not at every tick of a long failure).
+            if (autoLog.Dropped > droppedReported && !closing && (written || !dropWarned))
+            {
+                droppedReported = autoLog.Dropped;
+                dropWarned = !written;
+                ShowBalloon(autoLog.DropNote!, ToolTipIcon.Warning);
+            }
+
+            if (written) dropWarned = false;
         }
 
         // Back to the idle screen: button, locked settings, state word, stale-value cue.

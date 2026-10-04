@@ -31,10 +31,26 @@ namespace PingTool
         // Why the last Flush could not write everything; null when it did.
         public string? LastError { get; private set; }
 
+        // The pings that were thrown away because the folder stayed unwritable too long: how many, and the time they span. The log
+        // would otherwise look complete with hours missing.
+        public int Dropped { get; private set; }
+        public DateTimeOffset? DroppedFrom { get; private set; }
+        public DateTimeOffset? DroppedTo { get; private set; }
+
+        // The sentence for the user; null when nothing was lost.
+        public string? DropNote => Dropped == 0 ? null : string.Create(CultureInfo.CurrentCulture,
+            $"{Dropped} ping(s) from {DroppedFrom?.ToLocalTime():G} to {DroppedTo?.ToLocalTime():G} could not be saved to the log files: the log folder was not writable for too long. The log has a gap there.");
+
         public void Add(LogEntry entry)
         {
             pending.Add(entry);
-            if (pending.Count > MaxPending) pending.RemoveRange(0, pending.Count - MaxPending);
+            int over = pending.Count - MaxPending;
+            if (over <= 0) return;
+
+            DroppedFrom ??= pending[0].Time;
+            DroppedTo = pending[over - 1].Time;
+            Dropped += over;
+            pending.RemoveRange(0, over);
         }
 
         // "PingTool-8.8.8.8-2026-10-03.csv". The host is whatever the user typed (tcp://x:443,
