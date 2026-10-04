@@ -53,6 +53,7 @@
             btnIncidents = new Button();
             btnReport = new Button();
             btnTimeline = new Button();
+            btnOpenLog = new Button();
             btnImportProfiles = new Button();
             btnExportProfiles = new Button();
             chkCompact = new CheckBox();
@@ -244,7 +245,7 @@
             chkSaveLog.ForeColor = Color.White;
             chkSaveLog.Location = new Point(30, 491);
             chkSaveLog.Name = "chkSaveLog";
-            chkSaveLog.TabIndex = 33;
+            chkSaveLog.TabIndex = 34;
             chkSaveLog.Text = "Save the log to disk (daily CSV per host)";
             //
             // lblDownAfter
@@ -253,7 +254,7 @@
             lblDownAfter.ForeColor = Color.White;
             lblDownAfter.Location = new Point(225, 417);
             lblDownAfter.Name = "lblDownAfter";
-            lblDownAfter.TabIndex = 31;
+            lblDownAfter.TabIndex = 32;
             lblDownAfter.Text = "Down after";
             //
             // numDownAfter
@@ -264,7 +265,7 @@
             numDownAfter.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numDownAfter.Name = "numDownAfter";
             numDownAfter.Size = new Size(60, 23);
-            numDownAfter.TabIndex = 32;
+            numDownAfter.TabIndex = 33;
             numDownAfter.Value = new decimal(new int[] { 3, 0, 0, 0 });
             //
             // chkAlert
@@ -368,18 +369,28 @@
             //
             btnTimeline.Location = new Point(300, 456);
             btnTimeline.Name = "btnTimeline";
-            btnTimeline.Size = new Size(260, 28);
+            btnTimeline.Size = new Size(126, 28);
             btnTimeline.TabIndex = 30;
             btnTimeline.Text = "Session timeline...";
             btnTimeline.UseVisualStyleBackColor = true;
             btnTimeline.Click += btnTimeline_Click;
+            //
+            // btnOpenLog
+            //
+            btnOpenLog.Location = new Point(434, 456);
+            btnOpenLog.Name = "btnOpenLog";
+            btnOpenLog.Size = new Size(126, 28);
+            btnOpenLog.TabIndex = 31;
+            btnOpenLog.Text = "Open a log...";
+            btnOpenLog.UseVisualStyleBackColor = true;
+            btnOpenLog.Click += btnOpenLog_Click;
             //
             // btnImportProfiles
             //
             btnImportProfiles.Location = new Point(300, 488);
             btnImportProfiles.Name = "btnImportProfiles";
             btnImportProfiles.Size = new Size(126, 28);
-            btnImportProfiles.TabIndex = 34;
+            btnImportProfiles.TabIndex = 35;
             btnImportProfiles.Text = "Import profiles...";
             btnImportProfiles.UseVisualStyleBackColor = true;
             btnImportProfiles.Click += btnImportProfiles_Click;
@@ -389,7 +400,7 @@
             btnExportProfiles.Location = new Point(434, 488);
             btnExportProfiles.Name = "btnExportProfiles";
             btnExportProfiles.Size = new Size(126, 28);
-            btnExportProfiles.TabIndex = 35;
+            btnExportProfiles.TabIndex = 36;
             btnExportProfiles.Text = "Export profiles...";
             btnExportProfiles.UseVisualStyleBackColor = true;
             btnExportProfiles.Click += btnExportProfiles_Click;
@@ -479,6 +490,7 @@
             Controls.Add(cboProfile);
             Controls.Add(btnExportProfiles);
             Controls.Add(btnImportProfiles);
+            Controls.Add(btnOpenLog);
             Controls.Add(btnTimeline);
             Controls.Add(btnReport);
             Controls.Add(btnIncidents);
@@ -545,6 +557,7 @@
         private Button btnIncidents;
         private Button btnReport;
         private Button btnTimeline;
+        private Button btnOpenLog;
         private Button btnImportProfiles;
         private Button btnExportProfiles;
         private ComboBox cboProfile;

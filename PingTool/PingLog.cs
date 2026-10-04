@@ -65,7 +65,7 @@ namespace PingTool
         // Looking at the very first character is not enough: spaces, a no-break space, a line feed, a
         // zero-width space or a byte-order mark in front hide the formula character from a check on
         // value[0] while a spreadsheet may still skip them. So: the first VISIBLE character decides.
-        private static bool StartsLikeFormula(string value)
+        internal static bool StartsLikeFormula(string value)
         {
             if (value.Length > 0 && (value[0] == '\t' || value[0] == '\r')) return true;
 

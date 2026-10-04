@@ -9,7 +9,10 @@ namespace PingTool
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
-        IReadOnlyList<HostReport> Hosts, string? Diagnosis, string IncidentSummary, IReadOnlyList<Incident> Incidents);
+        IReadOnlyList<HostReport> Hosts, string? Diagnosis, string IncidentSummary, IReadOnlyList<Incident> Incidents,
+        // A report rebuilt from log files (see LogReplay): the period ends at the last ping of the log (not "now"), and what a log
+        // does not record - the probe settings, the computer, the limits used - is not invented.
+        bool FromLogFile = false, DateTimeOffset? PeriodEnd = null);
 
     // A self-contained diagnostic report: ONE html file, no script, no external resource, graphs
     // drawn as inline SVG. Meant to be sent to an ISP or an IT team who do not have PingTool.
@@ -46,11 +49,13 @@ namespace PingTool
 
             h.AppendLine("<table class=\"meta\">");
             Row(h, "Generated", T(d.GeneratedAt), E);
-            Row(h, "Monitoring period", $"{T(d.RunStart)} to {T(d.GeneratedAt)} ({IncidentLog.FormatDuration(d.GeneratedAt - d.RunStart)})", E);
-            Row(h, "Computer", d.Machine, E);
+            var end = d.PeriodEnd ?? d.GeneratedAt;
+            Row(h, "Monitoring period", $"{T(d.RunStart)} to {T(end)} ({IncidentLog.FormatDuration(end - d.RunStart)})", E);
+            if (d.FromLogFile) Row(h, "Source", "rebuilt from PingTool log files (the computer and the probe settings are not recorded in them)", E);
+            else Row(h, "Computer", d.Machine, E);
             Row(h, "PingTool version", d.Version, E);
-            Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
-            Row(h, "Degraded when (last 10 pings)", $"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
+            if (!d.FromLogFile) Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
+            Row(h, d.FromLogFile ? "Degraded when (last 10 pings; default limits, the log does not record them)" : "Degraded when (last 10 pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
             h.AppendLine("</table>");
 
             h.AppendLine("<h2>Where is the fault?</h2>");
@@ -90,7 +95,7 @@ namespace PingTool
                     bool outage = i.Kind == IncidentKind.Outage;
                     string detail = outage ? i.Cause : $"{N(i.LossPercent)}% loss, average {N(i.AvgMs)} ms";
                     h.AppendLine(c, $"<tr><td>{E(i.Host)}</td><td>{(outage ? "Outage" : "Slowdown")}</td><td>{E(T(i.Start))}</td>"
-                        + $"<td>{(i.End is null ? "ongoing" : E(T(i.End.Value)))}</td><td>{E(IncidentLog.FormatDuration(i.Duration(d.GeneratedAt)))}</td>"
+                        + $"<td>{(i.End is null ? "ongoing" : E(T(i.End.Value)))}</td><td>{E(IncidentLog.FormatDuration(i.Duration(end)))}</td>"
                         + $"<td class=\"n\">{(outage ? i.FailedPings.ToString(c) : "-")}</td><td>{E(detail)}</td><td class=\"n\">{i.Occurrence.ToString(c)}</td></tr>");
                 }
 

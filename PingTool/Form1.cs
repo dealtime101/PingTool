@@ -69,7 +69,7 @@ namespace PingTool
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
                 lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
-                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
+                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnOpenLog, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
@@ -892,6 +892,69 @@ namespace PingTool
 
             using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote);
             dialog.ShowDialog(this);
+        }
+
+        private const long MaxLogFileBytes = 200L * 1024 * 1024;
+
+        // Looks again at a recorded night: one or several log files (the CSV of the export, or the daily files of
+        // "Save the log to disk"). Reading and replaying happen off the window's thread; the result is read-only.
+        private async void btnOpenLog_Click(object? sender, EventArgs e)
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "PingTool log (*.csv)|*.csv|All files (*.*)|*.*",
+                Multiselect = true,
+                InitialDirectory = Directory.Exists(settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder)
+                    ? (settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder) : "",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            string[] paths = dialog.FileNames;
+            btnOpenLog.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                var (replay, entries, error) = await Task.Run(() => LoadLogs(paths));
+                if (replay is null || entries is null)
+                {
+                    MessageBox.Show(error, "PingTool");
+                    return;
+                }
+
+                using var viewer = new LogViewerForm(replay, entries,
+                    paths.Length == 1 ? Path.GetFileName(paths[0]) : paths.Length.ToString(CultureInfo.CurrentCulture) + " log files");
+                viewer.ShowDialog(this);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                btnOpenLog.Enabled = true;
+            }
+        }
+
+        private static (ReplayResult? Replay, List<LogEntry>? Entries, string? Error) LoadLogs(string[] paths)
+        {
+            var all = new List<LogEntry>();
+            foreach (string path in paths)
+            {
+                string name = Path.GetFileName(path);
+                string text;
+                try
+                {
+                    if (new FileInfo(path).Length > MaxLogFileBytes) return (null, null, name + " is too large to be a PingTool log.");
+                    text = File.ReadAllText(path);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    return (null, null, "Could not read " + name + ": " + ex.Message);
+                }
+
+                if (!PingLogReader.TryParse(text, out var part, out string error)) return (null, null, name + ": " + error);
+                all.AddRange(part);
+                if (all.Count > PingLogReader.MaxEntries) return (null, null, "These files hold too many pings to open together.");
+            }
+
+            return (LogReplay.Run(all), all, null);
         }
 
         private void UpdateIncidentButton() =>

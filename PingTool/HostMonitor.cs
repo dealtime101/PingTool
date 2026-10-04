@@ -32,7 +32,10 @@ namespace PingTool
 
         public HostState State => state;
 
-        public HostMonitor(int latencyMs = 150, int lossPercent = 30, int downAfter = DefaultDownAfter)
+        public const int DefaultLatencyMs = 150;
+        public const int DefaultLossPercent = 30;
+
+        public HostMonitor(int latencyMs = DefaultLatencyMs, int lossPercent = DefaultLossPercent, int downAfter = DefaultDownAfter)
         {
             this.latencyMs = Math.Max(1, latencyMs);
             this.lossPercent = Math.Clamp(lossPercent, 1, 100);
