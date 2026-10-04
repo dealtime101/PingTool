@@ -31,7 +31,9 @@ namespace PingTool
             // The IPv6 status covers both causes without saying which; the TTL is the usual one.
             IPStatus.TimeExceeded
                 => new("TTL", "Time exceeded in transit: usually the TTL (hop limit) ran out; this status can also mean a fragment-reassembly timeout"),
-            IPStatus.NoResources => new("Busy", "Not enough resources on the path"),
+            // The status only says the network resources were not enough: this computer's own as well as a device's on the way. Naming
+            // "the path" sent users to look at routers for what is often their own machine.
+            IPStatus.NoResources => new("Busy", "Not enough network resources to carry the probe. The status does not say whether they ran short on this computer or on the way."),
             // Source Quench can come from ANY router on the way, not only from the host that was pinged.
             // It is also obsolete (RFC 6633): seeing it at all is unusual.
             IPStatus.SourceQuench => new("Busy", "A router on the path, or the destination, asked the sender to slow down (ICMP source quench, obsolete). The host you pinged is not necessarily the one that asked."),

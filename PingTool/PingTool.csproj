@@ -157,8 +157,9 @@
          1.21.79 = the route comparison reports a hop whose address is the same but whose answer changed: destination reached then unreachable, or the reverse (PIN461.132);
          1.21.80 = the time labels of the timeline axis stay inside the control: the first and the last are no longer cut by its edge (PIN461.134);
          1.21.81 = what a screen reader is told about the timeline now includes the session period by period (average reply, share lost), not only the summary (PIN461.135);
-         1.21.82 = a connection aborted by this computer is no longer reported as closed by the other side (PIN461.138). -->
-    <Version>1.21.82</Version>
+         1.21.82 = a connection aborted by this computer is no longer reported as closed by the other side (PIN461.138);
+         1.21.83 = the "not enough resources" ping status no longer says the shortage is on the path (PIN461.139). -->
+    <Version>1.21.83</Version>
   </PropertyGroup>
 
   <ItemGroup>
