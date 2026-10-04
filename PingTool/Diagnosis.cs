@@ -14,6 +14,8 @@ namespace PingTool
     {
         private const int MaxNames = 3;
 
+        private static bool IsLoopback(IPAddress ip) => IPAddress.IsLoopback(ip.IsIPv4MappedToIPv6 ? ip.MapToIPv4() : ip);
+
         // Private, loopback and link-local ranges: reachable without the Internet.
         public static bool IsLocal(IPAddress ip)
         {
@@ -35,7 +37,10 @@ namespace PingTool
         // null = nothing useful to say (fewer than two targets have answered or timed out yet).
         public static string? For(IReadOnlyList<Target> all)
         {
-            var targets = all.Where(t => t.HasData).ToList();
+            // A loopback target (127.0.0.1, ::1) answers from this PC's own stack whatever its network card does: it proves nothing about
+            // the link, the router or the Internet, and would make "Local targets answer" true with the cable unplugged. It is left
+            // out of the comparison (the window still shows its state).
+            var targets = all.Where(t => t.HasData && !(t.Ip is { } ip && IsLoopback(ip))).ToList();
             int n = targets.Count;
             if (n < 2) return null;
 

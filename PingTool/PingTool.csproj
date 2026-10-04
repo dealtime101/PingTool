@@ -159,8 +159,9 @@
          1.21.81 = what a screen reader is told about the timeline now includes the session period by period (average reply, share lost), not only the summary (PIN461.135);
          1.21.82 = a connection aborted by this computer is no longer reported as closed by the other side (PIN461.138);
          1.21.83 = the "not enough resources" ping status no longer says the shortage is on the path (PIN461.139);
-         1.21.84 = the incident summary wraps over two lines inside the window instead of running past its edge (PIN461.142). -->
-    <Version>1.21.84</Version>
+         1.21.84 = the incident summary wraps over two lines inside the window instead of running past its edge (PIN461.142);
+         1.21.85 = a loopback target (127.0.0.1, ::1) no longer counts as proof that the local network answers in the diagnosis (PIN461.145). -->
+    <Version>1.21.85</Version>
   </PropertyGroup>
 
   <ItemGroup>
