@@ -83,16 +83,27 @@ namespace PingTool
                 }
                 else if (root.ValueKind == JsonValueKind.Object)
                 {
-                    if (Find(root, "Format") is { ValueKind: JsonValueKind.String } f && f.GetString() != FormatName)
+                    // Absent is fine (a list written by hand); PRESENT, it must be what we write: a number, null or another name there
+                    // means a file from somewhere else.
+                    if (Find(root, "Format") is { } f && !(f.ValueKind == JsonValueKind.String && f.GetString() == FormatName))
                     {
                         error = "This file is not a PingTool profiles file.";
                         return false;
                     }
 
-                    if (Find(root, "Version") is { ValueKind: JsonValueKind.Number } v && v.TryGetInt32(out int version) && version > FormatVersion)
+                    if (Find(root, "Version") is { } v)
                     {
-                        error = "This file was made by a newer PingTool: update PingTool to read it.";
-                        return false;
+                        if (!(v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int version) && version >= 1))
+                        {
+                            error = "This file has a version number that PingTool cannot read.";
+                            return false;
+                        }
+
+                        if (version > FormatVersion)
+                        {
+                            error = "This file was made by a newer PingTool: update PingTool to read it.";
+                            return false;
+                        }
                     }
 
                     if (Find(root, "Profiles") is not { ValueKind: JsonValueKind.Array } p)
