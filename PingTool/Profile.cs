@@ -79,7 +79,9 @@ namespace PingTool
                 p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
                 p.DownAfter = Limits.Clamp(p.DownAfter, Limits.DownAfter);
                 p.TargetOptions = PingTool.TargetOptions.Clean(p.TargetOptions!);
-                p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
+                // Same rules as an imported profile: one entry per address (case ignored), at most MaxHostsPerProfile.
+                p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Take(ProfileExchange.MaxHostsPerProfile).ToList();
                 clean.Add(p);
                 if (clean.Count == MaxProfiles) break;
             }

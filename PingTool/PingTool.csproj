@@ -120,8 +120,9 @@
          1.21.42 = a flush that fails no longer rebuilds a file name for every queued ping, a full queue costs 4-11 ms and 0.5 MB per try instead of 17-32 ms and 10 MB (PIN461.79);
          1.21.43 = tcp://host:port/ with a trailing slash is accepted, as dns:// already was (PIN461.81);
          1.21.44 = an address without prefix that holds a space, a slash or a port is refused with a message naming tcp:// and https:// (PIN461.82);
-         1.21.45 = the host of a tcp:// address is checked: a space, a slash or another character a host cannot hold is refused at once (PIN461.83). -->
-    <Version>1.21.45</Version>
+         1.21.45 = the host of a tcp:// address is checked: a space, a slash or another character a host cannot hold is refused at once (PIN461.83);
+         1.21.46 = the hosts of a profile read from settings.json are de-duplicated (case ignored) and capped at 100, like an imported profile (PIN461.84). -->
+    <Version>1.21.46</Version>
   </PropertyGroup>
 
   <ItemGroup>
