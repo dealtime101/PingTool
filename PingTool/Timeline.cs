@@ -106,9 +106,10 @@ namespace PingTool
             if (slowest is not null)
                 lines += "\n" + Loc.T("timeline.slowest", num(slowest.AvgMs!.Value), when(slowest.Start));
 
-            var lossiest = d.Buckets.Where(b => b.Lost > 0).OrderByDescending(b => (double)b.Lost / b.Sent).FirstOrDefault();
+            // The most pings lost, then the larger share: "1 of 1 lost" must not hide "50 of 60 lost" (the earliest column wins a tie).
+            var lossiest = d.Buckets.Where(b => b.Lost > 0).OrderByDescending(b => b.Lost).ThenByDescending(b => (double)b.Lost / b.Sent).FirstOrDefault();
             if (lossiest is not null)
-                lines += "\n" + Loc.T("timeline.lossiest", num(100.0 * lossiest.Lost / lossiest.Sent), when(lossiest.Start));
+                lines += "\n" + Loc.T("timeline.lossiest", num(100.0 * lossiest.Lost / lossiest.Sent), lossiest.Lost, lossiest.Sent, when(lossiest.Start));
 
             if (d.IsClipped) lines += "\n" + Loc.T("timeline.peak", d.PeakMs, d.TopMs);
 
