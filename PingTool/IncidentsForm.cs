@@ -39,9 +39,9 @@ namespace PingTool
             list.Columns.Add("Start", W(130));
             list.Columns.Add("End", W(130));
             list.Columns.Add("Duration", W(80));
-            list.Columns.Add("Failed", W(50));
+            list.Columns.Add("Failed", W(58));
             var causeColumn = list.Columns.Add("Cause / detail", W(100));
-            list.Columns.Add("#", W(25));
+            list.Columns.Add("#", W(36));
 
             // "Cause / detail" is the most informative column: it takes everything the others leave, now and whenever the list
             // is resized, instead of a width written for one window (a fixed 100 px cut every cause after a few letters).
@@ -54,6 +54,19 @@ namespace PingTool
             list.HandleCreated += (_, _) => FitCause();
             list.SizeChanged += (_, _) => FitCause();
             FitCause();
+
+            // A click on a header sorts by that column (again: the other way round), on the values and not on the text shown.
+            // Until then the order is the newest first. The arrow in the title says which column and which way.
+            string[] titles = list.Columns.Cast<ColumnHeader>().Select(c => c.Text).ToArray();
+            int sortColumn = -1;
+            bool ascending = true;
+            list.ColumnClick += (_, e) =>
+            {
+                (sortColumn, ascending) = IncidentOrder.Click(sortColumn, ascending, e.Column);
+                list.ListViewItemSorter = new ItemSorter(sortColumn, ascending, now);
+                list.Sort();
+                for (int c = 0; c < titles.Length; c++) list.Columns[c].Text = titles[c] + (c == sortColumn ? (ascending ? " ▲" : " ▼") : "");
+            };
 
             foreach (var i in incidents.Reverse())
             {
@@ -131,6 +144,15 @@ namespace PingTool
             Controls.Add(split);
             Controls.Add(lblNote);
             Controls.Add(close);
+        }
+
+        private sealed class ItemSorter(int column, bool ascending, DateTimeOffset now) : System.Collections.IComparer
+        {
+            public int Compare(object? x, object? y)
+            {
+                int c = IncidentOrder.Compare((Incident)((ListViewItem)x!).Tag!, (Incident)((ListViewItem)y!).Tag!, column, now);
+                return ascending ? c : -c;
+            }
         }
 
         private static string DetailsOf(Incident i)

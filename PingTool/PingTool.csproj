@@ -107,8 +107,9 @@
          1.21.29 = in the incident list the Cause column takes the remaining width, in a wider window (PIN461.65);
          1.21.30 = the incident window can be resized, with a splitter between the list and the route text (PIN461.66);
          1.21.31 = the incident window follows the screen scaling, its columns too (PIN461.68);
-         1.21.32 = the help text of the incident window and the report is built from the detector's own window size (PIN461.69). -->
-    <Version>1.21.32</Version>
+         1.21.32 = the help text of the incident window and the report is built from the detector's own window size (PIN461.69);
+         1.21.33 = a click on a column of the incident list sorts it, on the values (PIN461.70). -->
+    <Version>1.21.33</Version>
   </PropertyGroup>
 
   <ItemGroup>
