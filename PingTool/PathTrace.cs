@@ -100,6 +100,10 @@ namespace PingTool
         public const int MaxHops = 20;
         public const int GiveUpAfter = 3;
 
+        // Routers often rate-limit their "time exceeded" replies, so one lost probe proves nothing: each hop is tried up to this many
+        // times (like traceroute) and is called silent only when every try went unanswered. An answer stops the tries at once.
+        public const int ProbesPerHop = 3;
+
         // "PingException: An exception occurred during a Ping request. (SocketException: ...)" on one line.
         internal static string Why(Exception ex)
         {
@@ -109,7 +113,7 @@ namespace PingTool
         }
 
         public static async Task<PathCapture> RunAsync(string host, IPAddress target, HopProbe probe, DateTimeOffset time,
-            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default)
+            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default, int probesPerHop = ProbesPerHop)
         {
             var hops = new List<Hop>();
             int silent = 0;
@@ -118,16 +122,23 @@ namespace PingTool
             {
                 token.ThrowIfCancellationRequested();
 
-                HopReply reply;
-                try
+                HopReply reply = new(HopStatus.Timeout, null, 0);
+                for (int attempt = 0; attempt < Math.Max(1, probesPerHop); attempt++)
                 {
-                    reply = await probe(target, ttl, token);
-                }
-                catch (Exception ex) when (!token.IsCancellationRequested)
-                {
-                    // A probe that cannot even be sent is not a silent router: it is said so, and the trace stops (the next
-                    // hops would fail the same way and each look like "nothing answers").
-                    reply = new HopReply(HopStatus.Failed, null, 0, Why(ex));
+                    token.ThrowIfCancellationRequested();
+                    try
+                    {
+                        reply = await probe(target, ttl, token);
+                    }
+                    catch (Exception ex) when (!token.IsCancellationRequested)
+                    {
+                        // A probe that cannot even be sent is not a silent router: it is said so, and the trace stops (the next
+                        // hops would fail the same way and each look like "nothing answers"). Trying again would not help.
+                        reply = new HopReply(HopStatus.Failed, null, 0, Why(ex));
+                        break;
+                    }
+
+                    if (reply.Status != HopStatus.Timeout) break;   // any answer ends the tries for this hop
                 }
 
                 hops.Add(new Hop(ttl, reply.Address, reply.Status is HopStatus.Timeout or HopStatus.Failed ? null : reply.RttMs, reply.Status, reply.Detail));
