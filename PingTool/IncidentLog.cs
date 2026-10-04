@@ -53,6 +53,8 @@ namespace PingTool
             public readonly Dictionary<string, int> StreakCauses = new();
             public Incident? Outage;
             public Incident? Slow;
+            // How many of each kind this host has had: the next incident's "#", without counting the whole list each time.
+            public int Outages, Slowdowns;
         }
 
         private readonly List<Incident> incidents = new();
@@ -96,11 +98,11 @@ namespace PingTool
                         // The outage is dated at the first failed ping, which can come BEFORE the moment the slowdown was noticed
                         // (the first failures push the loss of the window over the limit): that "slowdown" is the beginning of
                         // the outage, not a separate event, and keeping it would give it an end before its start.
-                        if (t.Slow.Start >= begin) incidents.Remove(t.Slow);
+                        if (t.Slow.Start >= begin) { incidents.Remove(t.Slow); t.Slowdowns--; }   // it never counted
                         else t.Slow.End = begin;
                         t.Slow = null;
                     }
-                    t.Outage = Open(host, IncidentKind.Outage, begin, 0, null);
+                    t.Outage = Open(t, host, IncidentKind.Outage, begin, 0, null);
                     t.Outage.FailedPings = t.StreakCount;
                     t.Outage.Cause = Top(t.StreakCauses);
                     break;
@@ -113,7 +115,7 @@ namespace PingTool
                     // One slowdown at a time: a second "Degraded" without a "Recovered" in between closes the first instead of
                     // leaving it "ongoing" for ever with nothing left that could end it.
                     if (t.Slow is not null) t.Slow.End = time;
-                    t.Slow = Open(host, IncidentKind.Slowdown, time, windowLossPercent, windowAvgMs);
+                    t.Slow = Open(t, host, IncidentKind.Slowdown, time, windowLossPercent, windowAvgMs);
                     break;
 
                 case HostChange.Recovered:
@@ -129,7 +131,7 @@ namespace PingTool
             }
         }
 
-        private Incident Open(string host, IncidentKind kind, DateTimeOffset start, double loss, double? avg)
+        private Incident Open(Track t, string host, IncidentKind kind, DateTimeOffset start, double loss, double? avg)
         {
             var incident = new Incident
             {
@@ -138,7 +140,7 @@ namespace PingTool
                 Start = start,
                 LossPercent = loss,
                 AvgMs = avg,
-                Occurrence = incidents.Count(i => i.Host == host && i.Kind == kind) + 1,
+                Occurrence = kind == IncidentKind.Outage ? ++t.Outages : ++t.Slowdowns,
             };
             incidents.Add(incident);
             return incident;
