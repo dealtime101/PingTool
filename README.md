@@ -134,7 +134,7 @@ The summary goes to the standard output and any problem to the error output (red
 ## Requirements
 
 - Windows.
-- The [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (the program is framework-dependent).
+- The [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (the program is framework-dependent).
 
 ## Build
 
