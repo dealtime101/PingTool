@@ -68,6 +68,10 @@ namespace PingTool
             return "PingTool-" + safe + "-" + time.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".csv";
         }
 
+        // What a file that cannot be written throws: a full disk comes out as ArgumentOutOfRangeException on some platforms.
+        private static bool IsFileFailure(Exception ex) =>
+            ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException;
+
         // True when everything pending is on disk.
         public bool Flush()
         {
@@ -85,19 +89,30 @@ namespace PingTool
                     string path = Path.Combine(folder, group.Key);
                     // ReadWrite sharing lets a spreadsheet that does not lock the file read it meanwhile.
                     using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                    bool isNew = stream.Length == 0;
-                    // The whole batch goes out in ONE write, so a failure leaves the batch either on disk
-                    // or not at all (a half-written batch would come out twice at the retry).
+                    long start = stream.Length;
+                    bool isNew = start == 0;
                     var text = new StringBuilder();
                     if (isNew) text.Append(PingLog.CsvHeader).Append("\r\n");
                     foreach (var e in group) text.Append(PingLog.CsvLine(e)).Append("\r\n");
                     byte[] body = new UTF8Encoding(false).GetBytes(text.ToString());
                     // The byte-order mark makes a spreadsheet read the file as UTF-8; once, at the start.
-                    stream.Write(isNew ? new UTF8Encoding(true).GetPreamble().Concat(body).ToArray() : body);
-                    stream.Flush();
+                    try
+                    {
+                        stream.Write(isNew ? new UTF8Encoding(true).GetPreamble().Concat(body).ToArray() : body);
+                        stream.Flush();
+                    }
+                    catch (Exception ex) when (IsFileFailure(ex))
+                    {
+                        // A full disk or a share that drops can leave part of the batch on disk before it throws. The batch
+                        // stays queued, so cut the file back to where it was: otherwise the retry would append the rows a
+                        // second time after a half-written line (and a new file would lose its header).
+                        try { stream.SetLength(start); }
+                        catch (Exception cut) when (IsFileFailure(cut)) { }
+                        throw;
+                    }
                     foreach (var e in group) written.Add(e);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+                catch (Exception ex) when (IsFileFailure(ex))
                 {
                     LastError = ex.Message;
                 }
