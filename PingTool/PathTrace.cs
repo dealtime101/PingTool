@@ -170,10 +170,11 @@ namespace PingTool
         public static HopProbe Create(int timeoutMs) => async (target, ttl, token) =>
         {
             using var ping = new Ping();
-            using var cancel = token.Register(ping.SendAsyncCancel);
 
+            // The token goes to the call itself: a Stop that arrives before the probe is on the wire cancels it too (the
+            // SendAsyncCancel method did nothing then, and the probe waited its whole timeout).
             var clock = Stopwatch.StartNew();
-            var reply = await ping.SendPingAsync(target, TimeSpan.FromMilliseconds(timeoutMs), null, new PingOptions(ttl, true));
+            var reply = await ping.SendPingAsync(target, TimeSpan.FromMilliseconds(timeoutMs), null, new PingOptions(ttl, true), token);
             long ms = clock.ElapsedMilliseconds;   // RoundtripTime reads 0 for the routers on some platforms
             token.ThrowIfCancellationRequested();
 

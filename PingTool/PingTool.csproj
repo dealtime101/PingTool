@@ -87,8 +87,9 @@
          1.21.9 = a trace whose probe cannot be sent says so, instead of blaming this PC or its link (PIN461.43);
          1.21.10 = a hop is tried up to 3 times before it is called silent: rate-limited routers no longer cut or falsify the route (PIN461.44);
          1.21.11 = a trace where nothing answers no longer concludes that the fault is on this PC (PIN461.45);
-         1.21.12 = the routers seen at each hop are kept as a set: a load-balanced path is no longer reported as a route change (PIN461.46). -->
-    <Version>1.21.12</Version>
+         1.21.12 = the routers seen at each hop are kept as a set: a load-balanced path is no longer reported as a route change (PIN461.46);
+         1.21.13 = Stop cancels a trace probe even before it is on the wire (PIN461.47). -->
+    <Version>1.21.13</Version>
   </PropertyGroup>
 
   <ItemGroup>
