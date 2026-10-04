@@ -138,8 +138,9 @@
          1.21.60 = the alert texts are in Loc: French under a French display language, English otherwise (PIN461.102);
          1.21.61 = a degraded alert with no reply at all says so instead of "average - ms" (PIN461.103);
          1.21.62 = a refused command line is shown in a box with the error icon and a title that says so; the usage text keeps an information icon (PIN461.104);
-         1.21.63 = an error nobody caught is written to crash.log next to settings.json and said in a box, once per run; PingTool carries on after an error of the window's thread (PIN461.105). -->
-    <Version>1.21.63</Version>
+         1.21.63 = an error nobody caught is written to crash.log next to settings.json and said in a box, once per run; PingTool carries on after an error of the window's thread (PIN461.105);
+         1.21.64 = the narrowest the Host column can get follows the screen scaling (PIN461.106). -->
+    <Version>1.21.64</Version>
   </PropertyGroup>
 
   <ItemGroup>

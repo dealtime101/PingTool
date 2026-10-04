@@ -238,7 +238,7 @@ namespace PingTool
 
         private void FitHostColumns() =>
             colHost.Width = ColumnFit.HostWidth(lstHosts.ClientSize.Width, SystemInformation.VerticalScrollBarWidth,
-                colLast.Width + colAvg.Width + colLoss.Width);
+                colLast.Width + colAvg.Width + colLoss.Width, DeviceDpi);
 
         protected override void OnResize(EventArgs e)
         {
