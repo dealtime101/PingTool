@@ -124,8 +124,9 @@
          1.21.46 = the hosts of a profile read from settings.json are de-duplicated (case ignored) and capped at 100, like an imported profile (PIN461.84);
          1.21.47 = a profile name cannot hold invisible formatting characters (zero width, bidi); profiles already saved with one keep their place under the visible name (PIN461.85);
          1.21.48 = the profile book trims a name before adding it, as it does to find or remove one: no duplicate under "Home " (PIN461.86);
-         1.21.49 = the command line help takes the limits of the interval option from the settings limits instead of repeating them (PIN461.87). -->
-    <Version>1.21.49</Version>
+         1.21.49 = the command line help takes the limits of the interval option from the settings limits instead of repeating them (PIN461.87);
+         1.21.50 = a command line switch written with a value (start=false and the like) is refused instead of switching the option on (PIN461.88). -->
+    <Version>1.21.50</Version>
   </PropertyGroup>
 
   <ItemGroup>
