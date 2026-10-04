@@ -58,8 +58,9 @@
          1.20.3 = PingTool has its own icon: window, notification area and exe (PIN461.11);
          1.20.4 = started minimized, the window never appears, not even for a frame (PIN461.13);
          1.20.5 = after the report is saved, say where and offer to open it (PIN461.14);
-         1.20.6 = the latency graph tells a screen reader its figures (PIN461.15). -->
-    <Version>1.20.6</Version>
+         1.20.6 = the latency graph tells a screen reader its figures (PIN461.15);
+         1.20.7 = the latency graph follows a high-contrast theme (PIN461.16). -->
+    <Version>1.20.7</Version>
   </PropertyGroup>
 
   <ItemGroup>

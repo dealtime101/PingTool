@@ -1250,11 +1250,26 @@ namespace PingTool
         private const int MaxLegend = 5;
         private IReadOnlyList<GraphSeries> series = Array.Empty<GraphSeries>();
         private bool compare;
+        private GraphPalette palette = GraphPalette.For(SystemInformation.HighContrast);
+        private static readonly System.Drawing.Drawing2D.DashStyle[] LinePatterns =
+        {
+            System.Drawing.Drawing2D.DashStyle.Solid, System.Drawing.Drawing2D.DashStyle.Dash,
+            System.Drawing.Drawing2D.DashStyle.Dot, System.Drawing.Drawing2D.DashStyle.DashDot,
+        };
+
+        // The user switched to (or away from) a high-contrast theme while the program runs.
+        protected override void OnSystemColorsChanged(EventArgs e)
+        {
+            base.OnSystemColorsChanged(e);
+            palette = GraphPalette.For(SystemInformation.HighContrast);
+            BackColor = palette.Back;
+            Invalidate();
+        }
 
         public LatencyGraph()
         {
             DoubleBuffered = true;
-            BackColor = Color.FromArgb(40, 40, 40);
+            BackColor = palette.Back;
             AccessibleName = "Latency graph";
             AccessibleRole = AccessibleRole.Chart;
         }
@@ -1291,24 +1306,25 @@ namespace PingTool
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             long top = Math.Max(50, series.Count == 0 ? 0 : series.Max(s => s.Samples.Count == 0 ? 0 : s.Samples.Max()));
-            using var grey = new SolidBrush(Color.Silver);
+            using var grey = new SolidBrush(palette.Text);
             g.DrawString(top + " ms", Font, grey, 2, 0);
             g.DrawString("0", Font, grey, 2, Height - Font.Height);
 
-            foreach (var s in series) DrawSeries(g, s, top);
+            for (int i = 0; i < series.Count; i++) DrawSeries(g, series[i], top, i);
             if (compare) DrawLegend(g);
             else if (series.Count == 1) DrawP95(g, series[0].Samples, top);
         }
 
-        private void DrawSeries(Graphics g, GraphSeries s, long top)
+        private void DrawSeries(Graphics g, GraphSeries s, long top, int index)
         {
             // Where everything goes is computed by GraphLayout (and tested there); this only paints.
             var shapes = GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples);
 
-            using var line = new Pen(s.Color, 1.5f);
+            var color = palette.Series(index, s.Color);
+            using var line = new Pen(color, 1.5f) { DashStyle = LinePatterns[palette.Dash(index)] };
             // Alone, a loss is red; compared, it keeps its host's colour so you can tell whose it is.
-            using var lost = new Pen(compare ? s.Color : Color.Red, 2f);
-            using var dot = new SolidBrush(s.Color);
+            using var lost = new Pen(palette.Loss(compare, color), 2f);
+            using var dot = new SolidBrush(color);
 
             foreach (var (from, to) in shapes.Lines) g.DrawLine(line, from.X, from.Y, to.X, to.Y);
             // A reply with no neighbour to be joined to (the first one, or one between two losses)
@@ -1323,28 +1339,29 @@ namespace PingTool
             if (RecentStats.From(samples).P95 is not double p95) return;
 
             float y = Height - 1 - (Height - 1f) * (float)p95 / top;
-            using var pen = new Pen(Color.Silver) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            using var pen = new Pen(palette.Text) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
             g.DrawLine(pen, 0, y, Width, y);
 
             string label = "p95 " + p95.ToString("0", CultureInfo.CurrentCulture);
-            using var brush = new SolidBrush(Color.Silver);
+            using var brush = new SolidBrush(palette.Text);
             g.DrawString(label, Font, brush, Width - g.MeasureString(label, Font).Width - 2, Math.Max(0, y - Font.Height));
         }
 
         private void DrawLegend(Graphics g)
         {
             float y = 0;
-            foreach (var s in series.Take(MaxLegend))
+            for (int i = 0; i < Math.Min(series.Count, MaxLegend); i++)
             {
+                var s = series[i];
                 string name = s.Name.Length > 14 ? s.Name[..13] + "…" : s.Name;
-                using var brush = new SolidBrush(s.Color);
+                using var brush = new SolidBrush(palette.Series(i, s.Color));
                 g.DrawString(name, Font, brush, Width - g.MeasureString(name, Font).Width - 2, y);
                 y += Font.Height;
             }
 
             if (series.Count > MaxLegend)
             {
-                using var grey = new SolidBrush(Color.Silver);
+                using var grey = new SolidBrush(palette.Text);
                 string more = "+" + (series.Count - MaxLegend) + " more";
                 g.DrawString(more, Font, grey, Width - g.MeasureString(more, Font).Width - 2, y);
             }
