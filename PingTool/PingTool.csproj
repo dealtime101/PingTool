@@ -136,8 +136,9 @@
          1.21.58 = the graph layout no longer divides by a scale of zero (PIN461.99);
          1.21.59 = before the first ping the loss reads "-" instead of "0%", in the window and in the reports (PIN461.101);
          1.21.60 = the alert texts are in Loc: French under a French display language, English otherwise (PIN461.102);
-         1.21.61 = a degraded alert with no reply at all says so instead of "average - ms" (PIN461.103). -->
-    <Version>1.21.61</Version>
+         1.21.61 = a degraded alert with no reply at all says so instead of "average - ms" (PIN461.103);
+         1.21.62 = a refused command line is shown in a box with the error icon and a title that says so; the usage text keeps an information icon (PIN461.104). -->
+    <Version>1.21.62</Version>
   </PropertyGroup>
 
   <ItemGroup>

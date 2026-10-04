@@ -15,7 +15,14 @@ namespace PingTool
             if (!StartupOptions.TryParse(args, out var startup, out string message))
             {
                 if (headlessAsked) Console.Error.WriteLine(message);
-                else MessageBox.Show(message, "PingTool");
+                else
+                {
+                    // --help comes back here too, with the usage text: that is not an error and must not wear the error icon.
+                    bool help = message == StartupOptions.Usage;
+                    MessageBox.Show(message, help ? "PingTool - help" : "PingTool - invalid command line", MessageBoxButtons.OK,
+                        help ? MessageBoxIcon.Information : MessageBoxIcon.Error);
+                }
+
                 return HeadlessRunner.ErrorCode;
             }
 
