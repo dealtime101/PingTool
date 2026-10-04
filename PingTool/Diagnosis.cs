@@ -53,9 +53,13 @@ namespace PingTool
                 return $"All {n} targets are down: likely this PC or its network link, not the targets.";
 
             var local = targets.Where(t => t.Ip is not null && IsLocal(t.Ip)).ToList();
-            var remote = targets.Except(local).ToList();
+            var remote = targets.Where(t => t.Ip is not null && !IsLocal(t.Ip)).ToList();
 
-            if (local.Count > 0 && remote.Count > 0)
+            // A target whose address is not known (a local name that does not resolve, "nas.local") is neither local nor Internet:
+            // counting it as Internet would blame the router or the link for a device that may be off. Without an address for
+            // every target the local / Internet reading is not made, and the general sentence below is used.
+            bool allKnown = targets.All(t => t.Ip is not null);
+            if (allKnown && local.Count > 0 && remote.Count > 0)
             {
                 if (local.All(t => t.State != HostState.Down) && remote.All(t => t.State == HostState.Down))
                     return "Local targets answer but every Internet target is down: likely the router or the Internet link.";

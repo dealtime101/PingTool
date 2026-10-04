@@ -111,8 +111,9 @@
          1.21.33 = a click on a column of the incident list sorts it, on the values (PIN461.70);
          1.21.34 = the incident rows are added to the list in one go (PIN461.71);
          1.21.35 = the incident list and the route box have an accessible name and description (PIN461.72);
-         1.21.36 = the diagnosis says "their paths" when several targets are concerned (PIN461.73). -->
-    <Version>1.21.36</Version>
+         1.21.36 = the diagnosis says "their paths" when several targets are concerned (PIN461.73);
+         1.21.37 = a target without a resolved address is no longer counted as an Internet target by the diagnosis (PIN461.74). -->
+    <Version>1.21.37</Version>
   </PropertyGroup>
 
   <ItemGroup>
