@@ -64,8 +64,9 @@
          1.20.9 = the text of the graphs is drawn with ClearType (PIN461.18);
          1.20.10 = the tab order follows the screen, left column then right column (PIN461.19, PIN461.20);
          1.20.11 = a host name cut by the narrow column shows whole on hover (PIN461.22);
-         1.20.12 = the window can be resized and maximized, and remembers its size (PIN461.23). -->
-    <Version>1.20.12</Version>
+         1.20.12 = the window can be resized and maximized, and remembers its size (PIN461.23);
+         1.20.13 = the failures-before-down box says its unit on screen and on hover (PIN461.24). -->
+    <Version>1.20.13</Version>
   </PropertyGroup>
 
   <ItemGroup>

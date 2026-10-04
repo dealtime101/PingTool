@@ -255,11 +255,11 @@
             lblDownAfter.Location = new Point(225, 417);
             lblDownAfter.Name = "lblDownAfter";
             lblDownAfter.TabIndex = 18;
-            lblDownAfter.Text = "Down after";
+            lblDownAfter.Text = "Fails to down";
             //
             // numDownAfter
             //
-            numDownAfter.AccessibleName = "Down after (consecutive failures)";
+            numDownAfter.AccessibleName = "Fails to down (consecutive failures)";
             numDownAfter.Location = new Point(225, 435);
             numDownAfter.Maximum = new decimal(new int[] { 20, 0, 0, 0 });
             numDownAfter.Minimum = new decimal(new int[] { 1, 0, 0, 0 });

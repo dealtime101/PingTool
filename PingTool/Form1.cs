@@ -63,6 +63,10 @@ namespace PingTool
             Icon = AppIcon.Load();   // the title bar, Alt+Tab and the taskbar
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
+            // The label is short (the column is narrow): the unit and what happens are said here, and in the accessible name.
+            const string downHelp = "Number of consecutive failed pings after which the host is reported down.";
+            toolTip.SetToolTip(lblDownAfter, downHelp);
+            toolTip.SetToolTip(numDownAfter, downHelp);
             toolTip.SetToolTip(cboProfile, "Profile = the target list and all settings, under a name. Pick one to load it; type a name and press Save to keep the current setup.");
             FormClosed += (_, _) =>
             {
