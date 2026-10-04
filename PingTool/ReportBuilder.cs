@@ -118,7 +118,7 @@ namespace PingTool
             {
                 long top = Math.Max(50, x.History.Count == 0 ? 0 : x.History.Max());
                 h.AppendLine(c, $"<p><b>{Who(x)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
-                h.AppendLine(Svg(x.History, top, c));
+                h.AppendLine(Svg(x.History, top, c, GraphAlt(x.Label ?? x.Address, x.History, top, c)));
                 h.AppendLine("</p>");
             }
 
@@ -192,11 +192,24 @@ namespace PingTool
         private static void Row(StringBuilder h, string label, string value, Func<string, string> e) =>
             h.AppendLine(CultureInfo.InvariantCulture, $"<tr><td>{e(label)}</td><td>{e(value)}</td></tr>");
 
+        // What the picture says, for a screen reader or a text-only mail client: the figures the eye reads off the curve.
+        internal static string GraphAlt(string name, IReadOnlyList<long> history, long top, CultureInfo c)
+        {
+            var ok = history.Where(v => v >= 0).ToList();
+            int lost = history.Count - ok.Count;
+            string head = $"Latency of {name}: ";
+            if (history.Count == 0) return head + "no ping yet.";
+            string figures = ok.Count == 0 ? "no ping answered"
+                : $"minimum {ok.Min().ToString(c)} ms, average {ok.Average().ToString("0.#", c)} ms, maximum {ok.Max().ToString(c)} ms";
+            return $"{head}{figures}, {lost.ToString(c)} of {history.Count.ToString(c)} pings lost; scale 0 to {top.ToString(c)} ms, oldest ping on the left.";
+        }
+
         // Oldest on the left. A lost ping breaks the line and leaves a red tick; a lone success is a dot.
-        private static string Svg(IReadOnlyList<long> history, long top, CultureInfo c)
+        private static string Svg(IReadOnlyList<long> history, long top, CultureInfo c, string alt)
         {
             var s = new StringBuilder();
-            s.Append(c, $"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{GraphWidth}\" height=\"{GraphHeight}\" viewBox=\"0 0 {GraphWidth} {GraphHeight}\">");
+            string a = WebUtility.HtmlEncode(alt);
+            s.Append(c, $"<svg xmlns=\"http://www.w3.org/2000/svg\" role=\"img\" aria-label=\"{a}\" width=\"{GraphWidth}\" height=\"{GraphHeight}\" viewBox=\"0 0 {GraphWidth} {GraphHeight}\"><title>{a}</title>");
             int n = history.Count;
             double step = n > 1 ? (GraphWidth - 8.0) / (n - 1) : 0;
             double X(int i) => 4 + i * step;
