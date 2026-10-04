@@ -60,8 +60,11 @@ namespace PingTool
             {
                 // The window was closed.
             }
-            catch (Exception ex) when (!IsDisposed)
+            catch (Exception ex)
             {
+                // Tested inside the block, not in a filter: a failure that lands after the window is gone must be swallowed here,
+                // because nothing above this method (an async void handler) can catch it and PingTool would stop on it.
+                if (IsDisposed) return;
                 output.Text = "The trace failed: " + ex.Message;
             }
         }
