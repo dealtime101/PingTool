@@ -6,8 +6,25 @@ namespace PingTool
     //   PingTool.exe --start --minimized 8.8.8.8 router.lan tcp://example.com:443
     // Hosts and --interval are for THIS launch only: they win over the saved settings, which stay as
     // they were (a shortcut must not overwrite the list the user built in the window).
-    internal sealed record StartupOptions(IReadOnlyList<string> Hosts, bool Start, bool Minimized, int? IntervalMs, bool TestWebhooks = false, bool Diagnose = false)
+    internal sealed record StartupOptions(IReadOnlyList<string> Hosts, bool Start, bool Minimized, int? IntervalMs, bool TestWebhooks = false, bool Diagnose = false,
+        bool Headless = false, TimeSpan? Duration = null, string? ReportPath = null)
     {
+        public static readonly TimeSpan MinDuration = TimeSpan.FromSeconds(5);
+        public static readonly TimeSpan MaxDuration = TimeSpan.FromDays(30);
+
+        // "30s", "10m", "8h", "2d": a number and its unit, 5 seconds to 30 days.
+        public static bool TryParseDuration(string? text, out TimeSpan duration)
+        {
+            duration = default;
+            string t = (text ?? "").Trim().ToLowerInvariant();
+            if (t.Length < 2 || !int.TryParse(t[..^1], NumberStyles.None, CultureInfo.InvariantCulture, out int n)) return false;
+
+            var unit = t[^1] switch { 's' => TimeSpan.FromSeconds(n), 'm' => TimeSpan.FromMinutes(n), 'h' => TimeSpan.FromHours(n), 'd' => TimeSpan.FromDays(n), _ => (TimeSpan?)null };
+            if (unit is not TimeSpan d || d < MinDuration || d > MaxDuration) return false;
+            duration = d;
+            return true;
+        }
+
         // The targets of this launch are not the saved ones (and the saved list is left as it was).
         public bool OverridesHosts => Hosts.Count > 0 || Diagnose;
 
@@ -18,6 +35,9 @@ namespace PingTool
             "  --start            start monitoring as soon as the window is up\r\n" +
             "  --minimized        start hidden in the notification area (double-click its icon to open)\r\n" +
             "  --interval <ms>    time between probes, 100 to 60000\r\n" +
+            "  --headless         no window: probe for --duration, write --report, exit (exit code 0 = no incident, 1 = an outage or a slowdown, 2 = error)\r\n" +
+            "  --duration <t>     with --headless: how long to probe, 5s to 30d (30s, 10m, 8h, 2d)\r\n" +
+            "  --report <file>    with --headless: where to write the HTML report at the end (refreshed every 10 minutes meanwhile)\r\n" +
             "  --diagnose         monitor the default gateway, the DNS servers and a few Internet references (to see where a fault is)\r\n" +
             "  --test-webhooks    send a test alert to the webhooks of settings.json, show the result and exit\r\n" +
             "  --help             show this text\r\n\r\n" +
@@ -30,8 +50,10 @@ namespace PingTool
             options = None;
             message = "";
             var hosts = new List<string>();
-            bool start = false, minimized = false, testWebhooks = false, diagnose = false;
+            bool start = false, minimized = false, testWebhooks = false, diagnose = false, headless = false;
             int? interval = null;
+            TimeSpan? duration = null;
+            string? reportPath = null;
 
             for (int i = 0; i < args.Count; i++)
             {
@@ -51,6 +73,26 @@ namespace PingTool
                     case "--minimized": minimized = true; break;
                     case "--test-webhooks": testWebhooks = true; break;
                     case "--diagnose": diagnose = true; break;
+                    case "--headless": headless = true; break;
+                    case "--duration":
+                        if (!TryParseDuration(inline ?? (i + 1 < args.Count ? args[++i] : null), out var d))
+                        {
+                            message = "--duration needs a number and a unit from 5s to 30d, for example --duration 8h (30s, 10m, 8h, 2d).";
+                            return false;
+                        }
+
+                        duration = d;
+                        break;
+                    case "--report":
+                        string? path = inline ?? (i + 1 < args.Count ? args[++i] : null);
+                        if (string.IsNullOrWhiteSpace(path) || path.StartsWith('-') || path.Any(char.IsControl))
+                        {
+                            message = "--report needs the file to write, for example --report C:\\temp\\night.html";
+                            return false;
+                        }
+
+                        reportPath = path.Trim();
+                        break;
                     case "--help" or "-h" or "-?" or "/?":
                         message = Usage;
                         return false;
@@ -84,7 +126,19 @@ namespace PingTool
                 }
             }
 
-            options = new StartupOptions(hosts, start, minimized, interval, testWebhooks, diagnose);
+            if (headless && duration is null)
+            {
+                message = "--headless needs --duration (how long to probe), for example --headless --duration 8h --report night.html";
+                return false;
+            }
+
+            if (!headless && (duration is not null || reportPath is not null))
+            {
+                message = "--duration and --report only work with --headless.";
+                return false;
+            }
+
+            options = new StartupOptions(hosts, start, minimized, interval, testWebhooks, diagnose, headless, duration, reportPath);
             return true;
         }
     }

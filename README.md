@@ -106,10 +106,30 @@ PingTool.exe --start --minimized 8.8.8.8 router.lan tcp://example.com:443
 | `--start` | start monitoring as soon as the window is up |
 | `--minimized` | start hidden in the notification area (double-click the icon to open the window; alerts still show as balloons) |
 | `--interval <ms>` | time between probes, 100 to 60 000 |
+| `--headless` | **no window**: probe for `--duration`, write the report, exit (see below) |
+| `--duration <time>` | with `--headless`: how long to probe, `5s` to `30d` (`30s`, `10m`, `8h`, `2d`) |
+| `--report <file>` | with `--headless`: the HTML report to write (the folder is created if needed) |
+| `--diagnose` | monitor the default gateway, the DNS servers and a few Internet references |
 | `--test-webhooks` | send a test alert to the webhooks of `settings.json`, show the result and exit |
 | `--help` | show the options |
 
 Targets are written as in the address box and replace the saved list **for that launch only**; what the command line imposes is not saved, so a shortcut never overwrites the list built in the window. A mistyped option or target is reported in a box and nothing starts. To monitor from logon, put a shortcut with these arguments in the Startup folder (`shell:startup`).
+
+### Without a window (Task Scheduler, scripts)
+
+```
+PingTool.exe --headless --duration 8h --report C:\reports\night.html 8.8.8.8 router.lan tcp://example.com:443
+```
+
+It probes with the same probes, monitor, incident detection and report as the window (the interval, timeout, limits, names and webhooks come from your `settings.json`; `--interval` and the targets win for this run), then writes the report and exits. The targets are the ones given, or `--diagnose`, or else the list saved in the window. The report is also **refreshed every 10 minutes** while it runs, so a process killed in the night still leaves one.
+
+| Exit code | Meaning |
+|---|---|
+| `0` | no incident: no outage and no slowdown |
+| `1` | at least one outage or slowdown (a target went down, or was slow or lossy beyond its limits) |
+| `2` | it could not run: a wrong option or target, no probe made, or the report could not be written |
+
+The summary goes to the standard output and any problem to the error output (redirect them with `>` and `2>` in a script); nothing is ever shown in a box, so a scheduled run never waits for a click. A `down` alert still goes to the webhooks while it runs.
 
 ## Requirements
 
