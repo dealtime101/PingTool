@@ -58,11 +58,24 @@ namespace PingTool
             base.Dispose(disposing);
         }
 
+        // A route can take tens of seconds (a second per silent hop): show the hops as they come, so the window is seen to work.
+        // Called from the trace, which resumes on this window's thread.
+        private void ShowProgress(HostSession session, IPAddress ip, IReadOnlyList<Hop> hops)
+        {
+            if (IsDisposed) return;
+            var partial = new PathCapture { Host = session.Address, Target = ip, Time = DateTimeOffset.Now, Hops = hops.ToList() };
+            output.Text = "Tracing the route to " + session.Address + " (" + ip + "), " + hops.Count + " hop(s) so far...\r\n"
+                + string.Join("\r\n", partial.HopLines());
+            output.SelectionStart = output.TextLength;
+            output.ScrollToCaret();
+        }
+
         private async Task TraceAsync(HostSession session, IPAddress ip)
         {
             try
             {
-                var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: cts.Token);
+                var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: cts.Token,
+                    progress: hops => ShowProgress(session, ip, hops));
                 if (IsDisposed) return;
 
                 // Against the route seen while the host was healthy, when this run has one.

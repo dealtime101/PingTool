@@ -131,8 +131,9 @@
          1.21.53 = the recent figures show the loss even with fewer than 10 replies, so a host that answers nothing reads "loss 100%" (PIN461.93);
          1.21.54 = a route trace that fails after its window was closed is dropped quietly instead of escaping to the application (PIN461.94);
          1.21.55 = the route window releases its cancellation source when it is disposed (PIN461.95);
-         1.21.56 = the route window scales with the screen DPI and can be resized, its trace box and Close button anchored (PIN461.97). -->
-    <Version>1.21.56</Version>
+         1.21.56 = the route window scales with the screen DPI and can be resized, its trace box and Close button anchored (PIN461.97);
+         1.21.57 = the route window lists the hops as the trace finds them instead of one frozen line (PIN461.98). -->
+    <Version>1.21.57</Version>
   </PropertyGroup>
 
   <ItemGroup>

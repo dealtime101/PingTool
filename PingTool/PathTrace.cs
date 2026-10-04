@@ -42,17 +42,23 @@ namespace PingTool
                 $"Path to {Host} ({Target}) at {Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", c)}",
             };
 
+            lines.AddRange(HopLines());
+            lines.Add(Verdict());
+            return string.Join("\n", lines);
+        }
+
+        // One line per hop, without the header or the verdict: what is known so far of a trace still running.
+        public IEnumerable<string> HopLines()
+        {
+            var c = CultureInfo.InvariantCulture;
             foreach (var h in Hops)
             {
                 string who = h.Address?.ToString() ?? "*";
                 if (h.Seen.Count > 1) who += " (also " + string.Join(", ", h.Seen.Skip(1)) + ")";
                 string ms = h.RttMs is null ? "" : "  " + h.RttMs.Value.ToString(c) + " ms";
                 string flag = h.Status switch { HopStatus.Reached => "  (destination)", HopStatus.Unreachable => "  (reports: unreachable)", HopStatus.Failed => "  (probe failed)", _ => "" };
-                lines.Add($"{h.Ttl,3}  {who}{ms}{flag}");
+                yield return $"{h.Ttl,3}  {who}{ms}{flag}";
             }
-
-            lines.Add(Verdict());
-            return string.Join("\n", lines);
         }
 
         private string Verdict()
@@ -121,7 +127,8 @@ namespace PingTool
         }
 
         public static async Task<PathCapture> RunAsync(string host, IPAddress target, HopProbe probe, DateTimeOffset time,
-            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default, int probesPerHop = ProbesPerHop)
+            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default, int probesPerHop = ProbesPerHop,
+            Action<IReadOnlyList<Hop>>? progress = null)
         {
             var hops = new List<Hop>();
             int silent = 0;
@@ -153,6 +160,7 @@ namespace PingTool
                 var also = answered.Where(x => x.Address is not null).Select(x => x.Address!).Distinct().ToList();
                 long? best = answered.Count == 0 || reply.Status == HopStatus.Failed ? null : answered.Min(x => x.RttMs);
                 hops.Add(new Hop(ttl, reply.Address, best, reply.Status, reply.Detail, also));
+                progress?.Invoke(hops);   // the hops known so far; the caller reads them before the next await
                 if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
 
                 silent = reply.Status == HopStatus.Timeout ? silent + 1 : 0;
