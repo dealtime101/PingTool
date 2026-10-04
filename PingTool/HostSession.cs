@@ -6,7 +6,7 @@ namespace PingTool
     {
         public const int HistorySize = 180;
 
-        public HostSession(string address, int degradedLatencyMs = 150, int degradedLossPercent = 30, int downAfter = HostMonitor.DefaultDownAfter)
+        public HostSession(string address, int degradedLatencyMs = HostMonitor.DefaultLatencyMs, int degradedLossPercent = HostMonitor.DefaultLossPercent, int downAfter = HostMonitor.DefaultDownAfter)
         {
             Address = address;
             Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
