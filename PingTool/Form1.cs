@@ -77,7 +77,15 @@ namespace PingTool
                 chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnOpenLog, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
+            ApplyAnchors();
             ApplySettings();
+            if (chkCompact.Checked)
+            {
+                // Started compact: the full size to come back to is the saved one, not the designer's.
+                var saved = WindowSizing.Restore(settings.WindowWidth, settings.WindowHeight, FullSize) ?? FullSize;
+                normalClientSize = DpiScale.Scale(saved, DeviceDpi);
+            }
+            else ApplyCompact(false);   // the checkbox did not change, so nothing applied the resizable full window yet
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
 
             // The system says "something changed" several times for one real change (address, then availability, then
@@ -173,8 +181,53 @@ namespace PingTool
         {
             TopMost = compact;
             foreach (var c in detailControls) c.Visible = !compact;
+
             // The sizes are in pixels at 100 %: scaled to this screen, like the controls inside.
-            ClientSize = DpiScale.Scale(compact ? CompactSize : FullSize, DeviceDpi);
+            if (compact)
+            {
+                // The compact window has a size of its own and cannot be dragged: remember the one the user had.
+                if (FormBorderStyle == FormBorderStyle.Sizable && WindowState == FormWindowState.Normal) normalClientSize = ClientSize;
+                WindowState = FormWindowState.Normal;
+                MinimumSize = Size.Empty;
+                FormBorderStyle = FormBorderStyle.FixedSingle;
+                MaximizeBox = false;
+                ClientSize = DpiScale.Scale(CompactSize, DeviceDpi);
+                return;
+            }
+
+            // Back to the full window: resizable, never smaller than what its controls need, at the size it had before
+            // compact mode, or the size saved at the last close, or the default.
+            var minimum = DpiScale.Scale(FullSize, DeviceDpi);
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
+            MinimumSize = SizeFromClientSize(minimum);
+            var saved = WindowSizing.Restore(settings.WindowWidth, settings.WindowHeight, FullSize);
+            ClientSize = normalClientSize ?? (saved is Size s ? DpiScale.Scale(s, DeviceDpi) : minimum);
+            normalClientSize = null;
+        }
+
+        // The size the full window had when it went compact (null otherwise).
+        private Size? normalClientSize;
+
+        // Where the window can grow: the extra width goes to the right column (host list, profile box, buttons), the extra height to the
+        // host list and the graph; what sits at the bottom stays at the bottom. Without this a bigger window is just empty space.
+        private void ApplyAnchors()
+        {
+            const AnchorStyles T = AnchorStyles.Top, B = AnchorStyles.Bottom, L = AnchorStyles.Left, R = AnchorStyles.Right;
+            (Control Control, AnchorStyles Anchor)[] rules =
+            {
+                (graphLatency, T | B | L),
+                (lblInterval, B | L), (numInterval, B | L), (lblTimeout, B | L), (numTimeout, B | L), (lblSize, B | L), (numSize, B | L),
+                (lblSlow, B | L), (numSlow, B | L), (lblLoss, B | L), (numLoss, B | L), (lblDownAfter, B | L), (numDownAfter, B | L),
+                (chkAlert, B | L), (chkSaveLog, B | L),
+                (cboProfile, T | L | R), (btnSaveProfile, T | R), (btnDeleteProfile, T | R),
+                (lstHosts, T | B | L | R), (lblDiagnosis, B | L | R),
+                (btnAddHost, B | L), (btnRemoveHost, B | R),
+                (btnExport, B | L), (btnIncidents, B | R), (chkCompare, B | L),
+                (btnReport, B | L | R), (btnTimeline, B | L), (btnOpenLog, B | R),
+                (btnImportProfiles, B | L), (btnExportProfiles, B | R),
+            };
+            foreach (var (control, anchor) in rules) control.Anchor = anchor;
         }
 
         private void FitHostColumns() =>
@@ -271,6 +324,14 @@ namespace PingTool
             settings.Alert = chkAlert.Checked;
             settings.SaveLog = chkSaveLog.Checked;
             settings.Compact = chkCompact.Checked;
+            // The size of the full window (what it was before compact mode, when compact now); a maximized window is not a size to keep.
+            var full = normalClientSize ?? (WindowState == FormWindowState.Normal ? ClientSize : (Size?)null);
+            if (full is Size f)
+            {
+                var b = WindowSizing.ToBase(f, DeviceDpi);
+                settings.WindowWidth = b.Width;
+                settings.WindowHeight = b.Height;
+            }
 
             try
             {

@@ -519,8 +519,8 @@
             Controls.Add(btnStartStop);
             Controls.Add(cmbAddress);
             Controls.Add(lblAddress);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "PingTool";

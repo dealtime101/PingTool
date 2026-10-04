@@ -35,6 +35,10 @@ namespace PingTool
         public bool Alert { get; set; } = true;
         public bool Compact { get; set; }
 
+        // The size of the window the user chose (client area, pixels at 100 %); 0 = never resized, use the default.
+        public int WindowWidth { get; set; }
+        public int WindowHeight { get; set; }
+
         // "Save log to disk": every ping appended to a daily CSV per host (see AutoLog), in this
         // folder; blank = %APPDATA%\PingTool\logs. The folder is edited in settings.json.
         public bool SaveLog { get; set; }
@@ -143,6 +147,8 @@ namespace PingTool
 
             Address = (Address ?? "").Trim();
             LogFolder = (LogFolder ?? "").Trim();
+            WindowWidth = WindowWidth <= 0 ? 0 : Math.Min(WindowWidth, WindowSizing.MaxClientWidth);
+            WindowHeight = WindowHeight <= 0 ? 0 : Math.Min(WindowHeight, WindowSizing.MaxClientHeight);
 
             // Only http(s) addresses, no duplicates, at most MaxWebhooks. What is left out is said in the start-up message
             // (without echoing the address): a webhook that silently vanished would mean alerts nobody receives.
