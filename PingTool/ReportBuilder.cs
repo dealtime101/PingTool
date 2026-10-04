@@ -5,7 +5,7 @@ using System.Text;
 namespace PingTool
 {
     internal sealed record HostReport(string Address, string IpText, HostState State, int Sent, int Lost,
-        double LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History,
+        double? LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History,
         // Pings sent and lost per clock hour, for the hour-by-day grid (null = not recorded).
         IReadOnlyList<HourCell>? Hours = null,
         // The name the user gave the target and the limits it ran with, when they are not the defaults (see TargetOptions).
@@ -84,7 +84,7 @@ namespace PingTool
                     string Dur(TimeSpan? t) => t is null ? "-" : IncidentLog.FormatDuration(t.Value);
                     h.AppendLine(c, $"<tr><td>{Who(x)}</td><td class=\"n\">{(row.AvailabilityPercent is null ? "-" : Pct(row.AvailabilityPercent.Value) + " %")}</td>"
                         + $"<td class=\"n\">{row.Outages.ToString(c)}</td><td class=\"n\">{E(Dur(row.TotalDown))}</td><td class=\"n\">{E(Dur(row.Mean))}</td><td class=\"n\">{E(Dur(row.Longest))}</td>"
-                        + $"<td class=\"n\">{N(x.LossPercent)} %</td></tr>");
+                        + $"<td class=\"n\">{(x.LossPercent is null ? "-" : N(x.LossPercent) + " %")}</td></tr>");
                 }
 
                 h.AppendLine("</table>");

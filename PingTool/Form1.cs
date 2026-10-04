@@ -967,7 +967,7 @@ namespace PingTool
             item.ToolTipText = s.Options?.Label is null ? s.Address : s.Options.Label + " (" + s.Address + ")";
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
-            item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
+            item.SubItems[3].Text = s.Stats.LossPercent is double loss ? loss.ToString("0.#", CultureInfo.CurrentCulture) + "%" : "-";
         }
 
         // A report for someone who does not have PingTool: one self-contained HTML file.
@@ -1317,7 +1317,7 @@ namespace PingTool
             var stats = selected?.Stats ?? new SessionStats();
             lblStats.Text =
                 $"Min {ms(stats.Min)} / Avg {ms(stats.Avg)} / Max {ms(stats.Max)} ms\n" +
-                $"Jitter {ms(stats.Jitter)} ms | Loss {stats.LossPercent:0.#}% ({stats.Lost}/{stats.Sent})\n" +
+                $"Jitter {ms(stats.Jitter)} ms | Loss {(stats.LossPercent is null ? "-" : ms(stats.LossPercent) + $"% ({stats.Lost}/{stats.Sent})")}\n" +
                 (selected?.IpText ?? "-") + "\n" +
                 RecentStats.From(selected?.History ?? new Queue<long>()).Describe();
         }

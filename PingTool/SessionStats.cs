@@ -15,7 +15,8 @@ namespace PingTool
         public double? Max { get; private set; }
         public double? Avg => count == 0 ? null : (double)sum / count;
         public double? Jitter => jitterCount == 0 ? null : jitterSum / jitterCount;
-        public double LossPercent => Sent == 0 ? 0 : 100.0 * Lost / Sent;
+        // null before the first ping: 0 % would read as a measurement of "no loss" when nothing was measured.
+        public double? LossPercent => Sent == 0 ? null : 100.0 * Lost / Sent;
 
         public void Reset()
         {
