@@ -81,7 +81,10 @@ namespace PingTool
 
                 case "dns":
                     string name = rest.TrimEnd('/');
-                    if (name.Length == 0 || name.Contains(':', StringComparison.Ordinal) || name.Contains('/', StringComparison.Ordinal))
+                    // Just a name: the rest of what a URL can carry (?query, #fragment, user@, spaces) is not part of it, and would be sent to
+                    // the resolver as if it were. CheckHostName also refuses a leading dash or an empty label; internationalised names pass.
+                    if (name.Length == 0 || name.Contains(':', StringComparison.Ordinal) || name.Contains('/', StringComparison.Ordinal)
+                        || Uri.CheckHostName(name) == UriHostNameType.Unknown)
                     {
                         error = "dns:// needs just a name, for example dns://example.com";
                         return false;
