@@ -8,6 +8,11 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      recreate:
+        description: "Delete the release of the current version (the tag stays) and publish it again"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -20,7 +25,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      # The release is authored by whoever owns this token. With the secret RELEASE_TOKEN (a fine-grained personal
+      # access token of the repository owner, "Contents: read and write", this repository only) it is that person;
+      # without it, the built-in token is used and the author shown is github-actions[bot].
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+      RECREATE: ${{ inputs.recreate }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,6 +40,10 @@ jobs:
         run: |
           ver=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' PingTool/PingTool.csproj | head -1)
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          if [ "$RECREATE" = "true" ] && gh release view "v$ver" >/dev/null 2>&1; then
+            echo "Deleting the release v$ver (the tag stays) to publish it again."
+            gh release delete "v$ver" --yes
+          fi
           if ! git rev-parse -q --verify "refs/tags/v$ver" >/dev/null; then
             echo "No tag v$ver yet: nothing to release."; echo "go=no" >> "$GITHUB_OUTPUT"
           elif gh release view "v$ver" >/dev/null 2>&1; then
