@@ -112,7 +112,21 @@ namespace PingTool
             {
                 if (e.KeyCode != Keys.Enter) return;
                 e.SuppressKeyPress = true;
-                if (!isRunning) btnStartStop_Click(this, EventArgs.Empty);
+                if (isRunning) return;
+
+                string typed = cmbAddress.Text.Trim();
+                bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+                switch (AddressBoxEnter.Decide(typed, sessions.Count == 0, inList))
+                {
+                    case EnterOutcome.Refuse:
+                        IsValidTarget(typed);   // says why; nothing starts on a list that leaves out what was typed
+                        return;
+                    case EnterOutcome.AddAndStart:
+                        AddHost(typed);
+                        break;
+                }
+
+                btnStartStop_Click(this, EventArgs.Empty);
             };
             trayIconTimer.Tick += (_, _) => HideTrayIconIfWindowShown();
 

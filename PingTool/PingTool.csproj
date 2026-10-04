@@ -50,8 +50,9 @@
          1.17.0 = the report opens with an availability summary and a loss-by-hour grid (PIN461.5);
          1.18.0 = a name and limits of their own for each target (PIN461.6);
          1.19.0 = web targets can check the page content and warn before the certificate expires (PIN461.7);
-         1.20.0 = a headless mode for scheduled runs: a duration, a report, an exit code (PIN461.8). -->
-    <Version>1.20.0</Version>
+         1.20.0 = a headless mode for scheduled runs: a duration, a report, an exit code (PIN461.8);
+         1.20.1 = Enter in the address box adds the typed address before starting (PIN461.9). -->
+    <Version>1.20.1</Version>
   </PropertyGroup>
 
 </Project>
