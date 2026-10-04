@@ -166,8 +166,9 @@
          1.21.88 = a dns:// address must be just a name: a query, a fragment, a user part, a space or an empty label is refused (PIN461.150);
          1.21.89 = the in-memory ping log hands out a copy of its entries, not its own queue: it can no longer be changed behind its cap and counter (PIN461.154);
          1.21.90 = the recent figures give a percentile only once it differs from the maximum: p95 from 20 replies, p99 from 100 (never within the 60 pings of the window) (PIN461.158);
-         1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165). -->
-    <Version>1.21.91</Version>
+         1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165);
+         1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170). -->
+    <Version>1.21.92</Version>
   </PropertyGroup>
 
   <ItemGroup>

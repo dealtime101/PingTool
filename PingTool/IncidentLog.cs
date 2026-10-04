@@ -51,7 +51,16 @@ namespace PingTool
         {
             public DateTimeOffset? StreakStart;
             public int StreakCount;
-            public readonly Dictionary<string, int> StreakCauses = new();
+            // The causes of the streak with how often each was seen, in the order they were FIRST seen (a Dictionary does not promise an
+            // order of enumeration, and the tie-break below depends on it).
+            public readonly List<(string Cause, int Count)> StreakCauses = new();
+
+            public void CountCause(string cause)
+            {
+                int at = StreakCauses.FindIndex(c => c.Cause == cause);
+                if (at >= 0) StreakCauses[at] = (cause, StreakCauses[at].Count + 1);
+                else StreakCauses.Add((cause, 1));
+            }
             public Incident? Outage;
             public Incident? Slow;
             // How many of each kind this host has had: the next incident's "#", without counting the whole list each time.
@@ -81,7 +90,7 @@ namespace PingTool
                 t.StreakStart ??= time;
                 t.StreakCount++;
                 string cause = (failure ?? PingFailure.Timeout).Short;
-                t.StreakCauses[cause] = t.StreakCauses.GetValueOrDefault(cause) + 1;
+                t.CountCause(cause);
 
                 if (t.Outage is not null)
                 {
@@ -148,8 +157,15 @@ namespace PingTool
         }
 
         // Most frequent cause; ties go to the one seen first.
-        private static string Top(Dictionary<string, int> causes) =>
-            causes.Count == 0 ? "" : causes.MaxBy(kv => kv.Value).Key;
+        private static string Top(List<(string Cause, int Count)> causes)
+        {
+            string best = "";
+            int most = 0;
+            foreach (var (cause, count) in causes)
+                if (count > most) { best = cause; most = count; }   // strictly more: on a tie the first seen keeps it
+
+            return best;
+        }
 
         public string Summary(DateTimeOffset now)
         {
