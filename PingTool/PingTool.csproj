@@ -105,8 +105,9 @@
          1.21.27 = the TCP probe times the connection only: the name lookup is done first and not counted (PIN461.63);
          1.21.28 = Stop reaches an ICMP ping in flight through the token, in the window and in headless mode (PIN461.64);
          1.21.29 = in the incident list the Cause column takes the remaining width, in a wider window (PIN461.65);
-         1.21.30 = the incident window can be resized, with a splitter between the list and the route text (PIN461.66). -->
-    <Version>1.21.30</Version>
+         1.21.30 = the incident window can be resized, with a splitter between the list and the route text (PIN461.66);
+         1.21.31 = the incident window follows the screen scaling, its columns too (PIN461.68). -->
+    <Version>1.21.31</Version>
   </PropertyGroup>
 
   <ItemGroup>

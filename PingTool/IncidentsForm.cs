@@ -7,6 +7,11 @@ namespace PingTool
     {
         public IncidentsForm(IReadOnlyList<Incident> incidents, string summary, DateTimeOffset now)
         {
+            // Positions and sizes are written for 96 DPI: the form scales them to the screen, so that the text, which does grow
+            // with the scaling, keeps its room at 125 %, 150 % or 200 % (as TimelineForm and MainForm do).
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Incidents";
             ClientSize = new Size(900, 480);
             MinimumSize = SizeFromClientSize(new Size(640, 360));
@@ -27,21 +32,23 @@ namespace PingTool
                 GridLines = true,
                 Dock = DockStyle.Fill,
             };
-            list.Columns.Add("Host", 120);
-            list.Columns.Add("Type", 70);
-            list.Columns.Add("Start", 130);
-            list.Columns.Add("End", 130);
-            list.Columns.Add("Duration", 80);
-            list.Columns.Add("Failed", 50);
-            var causeColumn = list.Columns.Add("Cause / detail", 100);
-            list.Columns.Add("#", 25);
+            // Column widths are not scaled by the form: written for 96 DPI too, and scaled here.
+            int W(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
+            list.Columns.Add("Host", W(120));
+            list.Columns.Add("Type", W(70));
+            list.Columns.Add("Start", W(130));
+            list.Columns.Add("End", W(130));
+            list.Columns.Add("Duration", W(80));
+            list.Columns.Add("Failed", W(50));
+            var causeColumn = list.Columns.Add("Cause / detail", W(100));
+            list.Columns.Add("#", W(25));
 
             // "Cause / detail" is the most informative column: it takes everything the others leave, now and whenever the list
             // is resized, instead of a width written for one window (a fixed 100 px cut every cause after a few letters).
             void FitCause()
             {
                 int others = list.Columns.Cast<ColumnHeader>().Where(c => c != causeColumn).Sum(c => c.Width);
-                causeColumn.Width = ColumnFit.Fill(list.ClientSize.Width, SystemInformation.VerticalScrollBarWidth, others, 120);
+                causeColumn.Width = ColumnFit.Fill(list.ClientSize.Width, SystemInformation.VerticalScrollBarWidth, others, W(120));
             }
 
             list.HandleCreated += (_, _) => FitCause();
