@@ -128,7 +128,7 @@ namespace PingTool
                         }
 
                         string host = arg.Trim();
-                        if (!hosts.Contains(host, StringComparer.OrdinalIgnoreCase)) hosts.Add(host);
+                        if (!hosts.Contains(host, TargetKey.Comparer)) hosts.Add(host);
                         break;
                 }
             }

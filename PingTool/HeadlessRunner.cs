@@ -24,7 +24,7 @@ namespace PingTool
         {
             clock ??= () => DateTimeOffset.Now;
             var targets = new List<(string Address, ProbeTarget Target)>();
-            foreach (string address in addresses.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (string address in addresses.Distinct(TargetKey.Comparer))
             {
                 if (!ProbeTarget.TryParse(address, out var t, out string problem))
                     throw new ArgumentException($"\"{address}\": {problem}");

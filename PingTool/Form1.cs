@@ -132,7 +132,7 @@ namespace PingTool
                 if (isRunning) return;
 
                 string typed = cmbAddress.Text.Trim();
-                bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+                bool inList = sessions.Any(s => TargetKey.Same(s.Address, typed));
                 switch (AddressBoxEnter.Decide(typed, sessions.Count == 0, inList))
                 {
                     case EnterOutcome.Refuse:
@@ -287,7 +287,7 @@ namespace PingTool
             string typed = cmbAddress.Text;
             cmbAddress.Items.Clear();
             cmbAddress.Items.AddRange(settings.Recent.Concat(DefaultAddresses)
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToArray<object>());
+                .Distinct(TargetKey.Comparer).ToArray<object>());
             cmbAddress.Text = typed;
         }
 
@@ -316,7 +316,7 @@ namespace PingTool
             IEnumerable<string> hostsOfThisLaunch = settings.Hosts;
             if (startup.OverridesHosts)
                 hostsOfThisLaunch = (startup.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(startup.Hosts);
-            foreach (var host in hostsOfThisLaunch.Distinct(StringComparer.OrdinalIgnoreCase)) AddHost(host);
+            foreach (var host in hostsOfThisLaunch.Distinct(TargetKey.Comparer)) AddHost(host);
         }
 
         private void SaveSettings()
@@ -356,7 +356,7 @@ namespace PingTool
         private HostSession? AddHost(string address)
         {
             if (string.IsNullOrWhiteSpace(address)) return null;
-            var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
+            var existing = sessions.Find(s => TargetKey.Same(s.Address, address));
             if (existing != null) return existing;
 
             settings.TargetOptions.TryGetValue(address, out var options);
@@ -414,7 +414,7 @@ namespace PingTool
                 DownAfter = (int)numDownAfter.Value,
                 // The names and own limits of this profile's hosts go with it.
                 TargetOptions = hosts.Where(settings.TargetOptions.ContainsKey)
-                    .ToDictionary(h => h, h => settings.TargetOptions[h], StringComparer.OrdinalIgnoreCase),
+                    .ToDictionary(h => h, h => settings.TargetOptions[h], TargetKey.Comparer),
             };
 
             if (!ProfileBook.Upsert(settings.Profiles, profile))
@@ -771,7 +771,7 @@ namespace PingTool
         private bool ConfirmCompactTarget()
         {
             string typed = cmbAddress.Text.Trim();
-            bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+            bool inList = sessions.Any(s => TargetKey.Same(s.Address, typed));
             switch (AddressBoxEnter.Decide(typed, listIsEmpty: false, inList))
             {
                 case EnterOutcome.Refuse:

@@ -26,10 +26,10 @@ namespace PingTool
             return clean.IsEmpty ? null : clean;
         }
 
-        // What a file may hold: keys that are valid targets, values that say something, at most MaxEntries, one per target (case ignored).
+        // What a file may hold: keys that are valid targets, values that say something, at most MaxEntries, one per target (TargetKey: the case of a URL path counts).
         public static Dictionary<string, TargetOptions> Clean(IDictionary<string, TargetOptions?>? raw)
         {
-            var clean = new Dictionary<string, TargetOptions>(StringComparer.OrdinalIgnoreCase);
+            var clean = new Dictionary<string, TargetOptions>(TargetKey.Comparer);
             foreach (var (key, value) in raw ?? new Dictionary<string, TargetOptions?>())
             {
                 string address = (key ?? "").Trim();
