@@ -75,8 +75,9 @@
          1.20.20 = a value the settings reader cannot convert counts as a damaged file, kept aside, not as a locked one (PIN461.31);
          1.20.21 = the time axis labels stay right after a daylight-saving change (PIN461.32);
          1.20.22 = the dates on the time axis use the month name of the user's culture, never MM-dd (PIN461.33);
-         1.21.0 = the texts of the timeline summary exist in English and French, with a table that a test keeps complete (PIN461.34). -->
-    <Version>1.21.0</Version>
+         1.21.0 = the texts of the timeline summary exist in English and French, with a table that a test keeps complete (PIN461.34);
+         1.21.1 = the timeline scale follows the 98th percentile: one spike no longer flattens the chart, it is cut and marked (PIN461.35). -->
+    <Version>1.21.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

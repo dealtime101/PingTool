@@ -6,8 +6,10 @@ namespace PingTool
     internal sealed record TimelineBucket(DateTimeOffset Start, int Sent, int Lost, double? MinMs, double? AvgMs, double? MaxMs);
 
     internal sealed record TimelineData(string Host, DateTimeOffset From, DateTimeOffset To, TimeSpan BucketSpan,
-        IReadOnlyList<TimelineBucket> Buckets, long TopMs, int Sent, int Lost)
+        IReadOnlyList<TimelineBucket> Buckets, long TopMs, int Sent, int Lost, long PeakMs = 0)
     {
+        // TopMs is the scale of the chart; PeakMs is the true highest reply. They differ when a rare spike would flatten the rest.
+        public bool IsClipped => PeakMs > TopMs;
         public bool IsEmpty => Sent == 0;
         public TimeSpan Span => To - From;
     }
@@ -23,7 +25,9 @@ namespace PingTool
         IReadOnlyList<(float X, float Width, float Fraction)> LossCells,
         IReadOnlyList<(float X0, float X1, IncidentKind Kind)> Bands,
         // X of each network change of this PC that falls inside the time range (drawn as a vertical line).
-        IReadOnlyList<float>? NetworkMarkers = null);
+        IReadOnlyList<float>? NetworkMarkers = null,
+        // X of each column whose highest reply is above the scale (drawn as a mark at the top: the bar is cut there).
+        IReadOnlyList<float>? Clipped = null);
 
     // The WHOLE session of one host, squeezed into a fixed number of columns, instead of the last
     // 180 pings. The first ping is the left edge and the last one the right edge.
@@ -63,8 +67,27 @@ namespace PingTool
             for (int i = 0; i < buckets; i++)
                 list.Add(new TimelineBucket(from + TimeSpan.FromTicks(ticks * i), sent[i], lost[i], min[i], count[i] == 0 ? null : sum[i] / count[i], max[i]));
 
-            long top = Math.Max(50, (long)Math.Ceiling(list.Max(b => b.MaxMs ?? 0)));
-            return new TimelineData(host, from, to, TimeSpan.FromTicks(ticks), list, top, mine.Count, mine.Count(e => e.RttMs is null));
+            long peak = (long)Math.Ceiling(list.Max(b => b.MaxMs ?? 0));
+            long top = Scale(list.Where(b => b.MaxMs is not null).Select(b => b.MaxMs!.Value).ToList());
+            return new TimelineData(host, from, to, TimeSpan.FromTicks(ticks), list, top, mine.Count, mine.Count(e => e.RttMs is null), peak);
+        }
+
+        public const double ScalePercentile = 0.98;
+
+        // The top of the chart: the 98th percentile of the columns' highest replies, rounded up to 1, 2 or 5 times a power of ten,
+        // at least 50 ms. One reply of 3000 ms in a long session would otherwise squeeze every other column into a few pixels;
+        // the columns above the scale are cut and marked instead (see TimelineShapes.Clipped), and the true peak is written out.
+        internal static long Scale(IReadOnlyList<double> columnMaxima)
+        {
+            if (columnMaxima.Count == 0) return 50;
+            var sorted = columnMaxima.OrderBy(v => v).ToList();
+            double p = sorted[Math.Max(0, (int)Math.Ceiling(ScalePercentile * sorted.Count - 1e-9) - 1)];
+            double top = 50;
+            for (double decade = 10; ; decade *= 10)
+            {
+                foreach (double m in new[] { 1, 2, 5 })
+                    if (m * decade >= p) return (long)Math.Max(top, m * decade);
+            }
         }
 
         // Two lines under the chart: how long and how much, and WHEN it was worst.
@@ -86,6 +109,8 @@ namespace PingTool
             var lossiest = d.Buckets.Where(b => b.Lost > 0).OrderByDescending(b => (double)b.Lost / b.Sent).FirstOrDefault();
             if (lossiest is not null)
                 lines += "\n" + Loc.T("timeline.lossiest", num(100.0 * lossiest.Lost / lossiest.Sent), when(lossiest.Start));
+
+            if (d.IsClipped) lines += "\n" + Loc.T("timeline.peak", d.PeakMs, d.TopMs);
 
             return lines;
         }
@@ -165,7 +190,8 @@ namespace PingTool
             if (d.IsEmpty) return new TimelineShapes(bars, runs, cells, bands);
 
             float cell = Math.Max(1f, (float)width / d.Buckets.Count);
-            float Y(double v) => (float)(plotHeight - 1 - (plotHeight - 1.0) * v / d.TopMs);
+            float Y(double v) => (float)(plotHeight - 1 - (plotHeight - 1.0) * Math.Min(v, d.TopMs) / d.TopMs);   // above the scale = the top edge
+            var clipped = new List<float>();
             float X(DateTimeOffset t) => (float)((t - d.From).Ticks / (double)d.Span.Ticks * width);
 
             List<GraphPoint>? run = null;
@@ -181,6 +207,7 @@ namespace PingTool
                 }
 
                 bars.Add((x, Y(b.MinMs!.Value), Y(b.MaxMs!.Value)));
+                if (b.MaxMs!.Value > d.TopMs) clipped.Add(x + cell / 2);
                 if (run is null) runs.Add(run = new List<GraphPoint>());
                 run.Add(new GraphPoint(x + cell / 2, Y(b.AvgMs.Value)));
             }
@@ -201,7 +228,7 @@ namespace PingTool
                 .Where(n => n.Time >= d.From && n.Time <= d.To)
                 .Select(n => Math.Clamp(X(n.Time), 0f, width - 1f)).ToList();
 
-            return new TimelineShapes(bars, runs, cells, bands, markers);
+            return new TimelineShapes(bars, runs, cells, bands, markers, clipped);
         }
     }
 }

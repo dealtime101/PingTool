@@ -89,8 +89,13 @@ namespace PingTool
                 g.DrawString(label, Font, grey, x - g.MeasureString(label, Font).Width / 2, plotH + 5);
             }
 
+            // A column whose highest reply is above the scale is cut at the top: a small mark says so.
+            using var cutBrush = new SolidBrush(Color.OrangeRed);
+            foreach (float x in shapes.Clipped ?? Array.Empty<float>())
+                g.FillPolygon(cutBrush, new[] { new PointF(x - 3, 0), new PointF(x + 3, 0), new PointF(x, 5) });
+
             g.ResetTransform();
-            g.DrawString(data.TopMs + " ms", Font, grey, 2, TopMargin);
+            g.DrawString(data.IsClipped ? Loc.T("timeline.axis.clipped", data.TopMs, data.PeakMs) : data.TopMs + " ms", Font, grey, 2, TopMargin);
             g.DrawString("0", Font, grey, 2, TopMargin + plotH - Font.Height);
         }
     }

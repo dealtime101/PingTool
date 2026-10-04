@@ -20,6 +20,8 @@ namespace PingTool
             ["timeline.summary"] = ("{0} to {1} ({2}) | {3} pings, {4} lost ({5}%)", "{0} au {1} ({2}) | {3} pings, {4} perdu(s) ({5} %)"),
             ["timeline.slowest"] = ("Highest average: {0} ms around {1}", "Moyenne la plus haute : {0} ms vers {1}"),
             ["timeline.lossiest"] = ("Most losses: {0}% of the pings around {1}", "Plus de pertes : {0} % des pings vers {1}"),
+            ["timeline.peak"] = ("Highest reply: {0} ms, above the scale of the chart ({1} ms): those columns are cut at the top and marked.", "Réponse la plus haute : {0} ms, au-dessus de l'échelle du graphique ({1} ms) : ces colonnes sont coupées en haut et marquées."),
+            ["timeline.axis.clipped"] = ("{0} ms (peak {1})", "{0} ms (pic {1})"),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
             ["timeline.more"] = (" (+{0} more)", " (+{0} de plus)"),
         };
