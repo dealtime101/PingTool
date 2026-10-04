@@ -38,6 +38,12 @@ namespace PingTool
         // "Save log to disk": every ping appended to a daily CSV per host (see AutoLog), in this
         // folder; blank = %APPDATA%\PingTool\logs. The folder is edited in settings.json.
         public bool SaveLog { get; set; }
+
+        // Webhook addresses (Slack, Discord, ntfy, Teams, or any URL that accepts a JSON POST) that receive each
+        // alert besides the sound and the balloon. Edited in settings.json. A webhook address is a secret: anyone who
+        // has it can post to the channel, so it is never shown in a message or written to a log.
+        public const int MaxWebhooks = 5;
+        public List<string> Webhooks { get; set; } = new();
         public string LogFolder { get; set; } = "";
 
         // A host is "degraded" when the last 10 pings show this much loss or this
@@ -134,6 +140,14 @@ namespace PingTool
 
             Address = (Address ?? "").Trim();
             LogFolder = (LogFolder ?? "").Trim();
+
+            // Only http(s) addresses, no duplicates, at most MaxWebhooks. What is left out is said in the start-up message
+            // (without echoing the address): a webhook that silently vanished would mean alerts nobody receives.
+            var raw = (Webhooks ?? new List<string>()).Where(w => !string.IsNullOrWhiteSpace(w)).Select(w => w.Trim()).ToList();
+            var good = raw.Where(w => WebhookPayload.TryParseUrl(w, out _)).Distinct(StringComparer.Ordinal).Take(MaxWebhooks).ToList();
+            if (good.Count < raw.Count)
+                LoadProblem = $"{raw.Count - good.Count} webhook address(es) in settings.json were ignored: only distinct http:// or https:// addresses are used (at most {MaxWebhooks}).";
+            Webhooks = good;
             ActiveProfile ??= "";
             Recent = (Recent ?? new List<string>())
                 .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())

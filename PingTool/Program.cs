@@ -20,7 +20,31 @@ namespace PingTool
                 return;
             }
 
+            if (startup.TestWebhooks)
+            {
+                MessageBox.Show(TestWebhooks(), "PingTool");
+                return;
+            }
+
             Application.Run(new MainForm(startup));
+        }
+
+        // "PingTool.exe --test-webhooks": one test alert to every webhook of settings.json, the answer of each
+        // in a box. The alert goes out exactly as a real one does (same body, same retries), so a typo in an
+        // address or a refused request shows up here and not in the middle of the night. Up to ~20 s when a
+        // receiver does not answer (time limit and retries); the addresses themselves are never shown.
+        private static string TestWebhooks()
+        {
+            var settings = Settings.Load(Settings.DefaultPath);
+            if (settings.Webhooks.Count == 0)
+                return "No webhook is set. Put the addresses in \"Webhooks\" in " + Settings.DefaultPath + " (see the README).";
+
+            var urls = settings.Webhooks.Select(w => WebhookPayload.TryParseUrl(w, out var url) ? url : null).OfType<Uri>();
+            using var sender = new WebhookSender(urls, AppVersion.Number);
+            var test = new WebhookEvent("webhook-test", HostChange.None,
+                "PingTool webhook test: if you read this, alerts will reach this channel.", null, DateTimeOffset.Now);
+            var results = sender.SendNowAsync(test).GetAwaiter().GetResult();
+            return string.Join("\r\n", results.Select(r => (r.Ok ? "OK      " : "FAILED  ") + r.Label + " (" + r.Detail + ")"));
         }
     }
 }

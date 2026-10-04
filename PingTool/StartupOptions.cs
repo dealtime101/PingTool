@@ -6,7 +6,7 @@ namespace PingTool
     //   PingTool.exe --start --minimized 8.8.8.8 router.lan tcp://example.com:443
     // Hosts and --interval are for THIS launch only: they win over the saved settings, which stay as
     // they were (a shortcut must not overwrite the list the user built in the window).
-    internal sealed record StartupOptions(IReadOnlyList<string> Hosts, bool Start, bool Minimized, int? IntervalMs)
+    internal sealed record StartupOptions(IReadOnlyList<string> Hosts, bool Start, bool Minimized, int? IntervalMs, bool TestWebhooks = false)
     {
         public static readonly StartupOptions None = new(Array.Empty<string>(), false, false, null);
 
@@ -15,6 +15,7 @@ namespace PingTool
             "  --start            start monitoring as soon as the window is up\r\n" +
             "  --minimized        start hidden in the notification area (double-click its icon to open)\r\n" +
             "  --interval <ms>    time between probes, 100 to 60000\r\n" +
+            "  --test-webhooks    send a test alert to the webhooks of settings.json, show the result and exit\r\n" +
             "  --help             show this text\r\n\r\n" +
             "Targets are those of the address box: host, tcp://host:port, http(s)://url, dns://name.\r\n" +
             "Given targets replace the saved list for this launch only.";
@@ -25,7 +26,7 @@ namespace PingTool
             options = None;
             message = "";
             var hosts = new List<string>();
-            bool start = false, minimized = false;
+            bool start = false, minimized = false, testWebhooks = false;
             int? interval = null;
 
             for (int i = 0; i < args.Count; i++)
@@ -44,6 +45,7 @@ namespace PingTool
                 {
                     case "--start": start = true; break;
                     case "--minimized": minimized = true; break;
+                    case "--test-webhooks": testWebhooks = true; break;
                     case "--help" or "-h" or "-?" or "/?":
                         message = Usage;
                         return false;
@@ -77,7 +79,7 @@ namespace PingTool
                 }
             }
 
-            options = new StartupOptions(hosts, start, minimized, interval);
+            options = new StartupOptions(hosts, start, minimized, interval, testWebhooks);
             return true;
         }
     }

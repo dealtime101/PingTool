@@ -46,6 +46,23 @@ For each target, PingTool looks at the last 10 pings:
 
 The thresholds are the three boxes **Slow above (ms)**, **Loss at least (%)** and **Down after**.
 
+## Webhooks
+
+Besides the sound and the balloon, each alert (down, degraded, recovered, back up) can be posted to up to 5 webhooks, so that you hear about an outage on your phone or in your team's channel when nobody is at the PC. Put the addresses in `settings.json` (close PingTool first):
+
+```json
+"Webhooks": [ "https://hooks.slack.com/services/…", "https://ntfy.sh/my-private-topic" ]
+```
+
+The format follows the address: **Slack** (`{"text": …}`), **Discord** (`{"content": …}`), **ntfy** (plain text, with a priority), anything else a small JSON that carries `text`, `host`, `event` (`down`, `up`, `degraded`, `recovered`), `outageSeconds`, `time`, `source` and `version` (this also suits Teams workflows and Mattermost). The alert text is the one of the balloon, with the length of the outage once the host is back.
+
+- **It never holds up the monitoring**: alerts are queued and sent in the background, with a 5 s time limit and 2 retries (after 1 s, then 4 s) on network errors, timeouts, `429` and `5xx`. A `4xx` means a wrong address and is not retried. If a receiver stays down, at most 100 alerts are kept per webhook, the oldest going first.
+- **Only `http://` and `https://` addresses**, distinct, at most 5: others are ignored and a message at start-up says how many (never which, see below). Use `https://` unless the receiver is on your own network.
+- **A webhook address is a secret** (whoever has it can post to your channel). PingTool never shows it: messages name the host only. It is stored as plain text in `settings.json`, like the rest of the settings.
+- When an alert cannot be delivered after the retries, one balloon says so for that webhook, once per run.
+- It follows the **Alert on outage / slowdown / recovery** box: unticked, nothing is sent either.
+- **`PingTool.exe --test-webhooks`** sends a test message to every webhook, shows the result of each and exits (up to about 20 s if a receiver does not answer).
+
 ## Settings
 
 | Setting | Range | Default |
@@ -72,6 +89,7 @@ PingTool.exe --start --minimized 8.8.8.8 router.lan tcp://example.com:443
 | `--start` | start monitoring as soon as the window is up |
 | `--minimized` | start hidden in the notification area (double-click the icon to open the window; alerts still show as balloons) |
 | `--interval <ms>` | time between probes, 100 to 60 000 |
+| `--test-webhooks` | send a test alert to the webhooks of `settings.json`, show the result and exit |
 | `--help` | show the options |
 
 Targets are written as in the address box and replace the saved list **for that launch only**; what the command line imposes is not saved, so a shortcut never overwrites the list built in the window. A mistyped option or target is reported in a box and nothing starts. To monitor from logon, put a shortcut with these arguments in the Startup folder (`shell:startup`).

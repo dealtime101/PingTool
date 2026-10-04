@@ -28,6 +28,9 @@ namespace PingTool
         private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
         // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
         private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
+        // Alerts also go to the webhooks of settings.json, in the background (see WebhookSender); null when none.
+        private WebhookSender? webhooks;
+        private readonly HashSet<string> webhookWarned = new();
         private readonly IncidentLog incidents = new();
         // Route captures running in the background; the run waits for them before releasing its token.
         private List<Task> pathCaptures = new();
@@ -71,6 +74,18 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            if (settings.Webhooks.Count > 0)
+            {
+                webhooks = new WebhookSender(
+                    settings.Webhooks.Select(w => WebhookPayload.TryParseUrl(w, out var url) ? url : null).OfType<Uri>(),
+                    AppVersion.Number);
+                // The sender reports from a background thread: the window is touched on its own thread only.
+                webhooks.Failed += (label, reason) =>
+                {
+                    if (!closing && IsHandleCreated) BeginInvoke(() => WebhookFailed(label, reason));
+                };
+            }
 
             // A settings file that could not be read is said once the window is up, with where it went.
             if (settings.LoadProblem is string loadProblem)
@@ -118,6 +133,7 @@ namespace PingTool
                 cts?.Cancel();
                 autoLogTimer.Stop();
                 trayIconTimer.Stop();
+                webhooks?.Dispose();
                 FlushAutoLog();
                 SaveSettings();
             };
@@ -537,6 +553,7 @@ namespace PingTool
                 runStart = DateTimeOffset.Now;
                 log.Clear();
                 StartAutoLog();
+                webhookWarned.Clear();
                 incidents.Clear();
                 UpdateIncidentButton();
                 foreach (ListViewItem item in lstHosts.Items) RenderRow(item);
@@ -953,6 +970,7 @@ namespace PingTool
 
             var monitor = session.Monitor;
             string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
+            webhooks?.Send(new WebhookEvent(session.Address, change, text, outage, DateTimeOffset.Now));
             var (sound, icon) = change switch
             {
                 HostChange.Down => (System.Media.SystemSounds.Hand, ToolTipIcon.Error),
@@ -962,6 +980,14 @@ namespace PingTool
 
             sound.Play();
             ShowBalloon(text, icon);
+        }
+
+        // One balloon per webhook and per run, not one per lost alert: a receiver that is down would otherwise
+        // fill the screen. The address itself is never shown (see Settings.Webhooks).
+        private void WebhookFailed(string label, string reason)
+        {
+            if (closing || !webhookWarned.Add(label)) return;
+            ShowBalloon($"Alert not delivered to the webhook {label}: {reason}", ToolTipIcon.Warning);
         }
 
         // The icon exists to carry the balloon. Once the balloon has had its time it goes away again,
