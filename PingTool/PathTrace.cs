@@ -60,7 +60,14 @@ namespace PingTool
                 string who = h.Address?.ToString() ?? "*";
                 if (h.Seen.Count > 1) who += " (also " + string.Join(", ", h.Seen.Skip(1)) + ")";
                 string ms = h.RttMs is null ? "" : "  " + h.RttMs.Value.ToString(c) + " ms";
-                string flag = h.Status switch { HopStatus.Reached => "  (destination)", HopStatus.Unreachable => "  (reports: unreachable)", HopStatus.Failed => "  (probe failed)", _ => "" };
+                string flag = h.Status switch
+                {
+                    HopStatus.Reached => "  (destination)",
+                    HopStatus.Unreachable => "  (reports: unreachable)",
+                    HopStatus.Failed => "  (probe failed)",
+                    HopStatus.Expired when h.Detail is { Length: > 0 } => "  (" + h.Detail + ")",   // a router that answered something unusual
+                    _ => "",
+                };
                 yield return $"{h.Ttl,3}  {who}{ms}{flag}";
             }
         }
@@ -197,14 +204,24 @@ namespace PingTool
             long ms = clock.ElapsedMilliseconds;   // RoundtripTime reads 0 for the routers on some platforms
             token.ThrowIfCancellationRequested();
 
-            return reply.Status switch
-            {
-                IPStatus.Success => new HopReply(HopStatus.Reached, reply.Address, reply.RoundtripTime > 0 ? reply.RoundtripTime : ms),
-                IPStatus.TtlExpired or IPStatus.TimeExceeded or IPStatus.TtlReassemblyTimeExceeded
-                    => new HopReply(HopStatus.Expired, reply.Address, ms),
-                IPStatus.TimedOut => new HopReply(HopStatus.Timeout, null, 0),
-                _ => new HopReply(HopStatus.Unreachable, reply.Address, ms),
-            };
+            return Classify(reply.Status, reply.Address, reply.RoundtripTime, ms);
+        };
+
+        // What an ICMP status means for the trace. Only the "destination unreachable" family says a router declares the destination
+        // unreachable (and ends the trace). Another error from a router (a parameter problem, a source quench...) is still a router at
+        // that distance: the trace goes on, with the status written. No real answer (no resources, hardware error, unknown) is the
+        // probe's own failure, said as such, not a verdict on the network.
+        internal static HopReply Classify(IPStatus status, IPAddress? address, long roundtripMs, long measuredMs) => status switch
+        {
+            IPStatus.Success => new HopReply(HopStatus.Reached, address, roundtripMs > 0 ? roundtripMs : measuredMs),
+            IPStatus.TtlExpired or IPStatus.TimeExceeded or IPStatus.TtlReassemblyTimeExceeded => new HopReply(HopStatus.Expired, address, measuredMs),
+            IPStatus.TimedOut => new HopReply(HopStatus.Timeout, null, 0),
+            IPStatus.DestinationNetworkUnreachable or IPStatus.DestinationHostUnreachable or IPStatus.DestinationProtocolUnreachable
+                or IPStatus.DestinationPortUnreachable or IPStatus.DestinationUnreachable or IPStatus.DestinationScopeMismatch
+                or IPStatus.BadRoute or IPStatus.BadDestination => new HopReply(HopStatus.Unreachable, address, measuredMs),
+            IPStatus.NoResources or IPStatus.HardwareError or IPStatus.Unknown => new HopReply(HopStatus.Failed, null, 0, "ICMP status " + status),
+            _ when address is not null => new HopReply(HopStatus.Expired, address, measuredMs, "answered " + status),
+            _ => new HopReply(HopStatus.Failed, null, 0, "ICMP status " + status),
         };
     }
 }
