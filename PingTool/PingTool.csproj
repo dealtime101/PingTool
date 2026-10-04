@@ -169,8 +169,9 @@
          1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165);
          1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170);
          1.21.93 = the details of the selected incident start with its whole cause, for when the column of the list is too narrow for it (PIN461.177);
-         1.21.94 = the window built without start-up options no longer dereferences the null parameter (PIN461.189). -->
-    <Version>1.21.94</Version>
+         1.21.94 = the window built without start-up options no longer dereferences the null parameter (PIN461.189);
+         1.21.95 = the sent and lost counters of a session are 64-bit, so they no longer wrap after 2 147 483 647 probes (PIN461.186). -->
+    <Version>1.21.95</Version>
   </PropertyGroup>
 
   <ItemGroup>

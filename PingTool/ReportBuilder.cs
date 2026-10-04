@@ -4,7 +4,7 @@ using System.Text;
 
 namespace PingTool
 {
-    internal sealed record HostReport(string Address, string IpText, HostState State, int Sent, int Lost,
+    internal sealed record HostReport(string Address, string IpText, HostState State, long Sent, long Lost,
         double? LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History,
         // Pings sent and lost per clock hour, for the hour-by-day grid (null = not recorded).
         IReadOnlyList<HourCell>? Hours = null,

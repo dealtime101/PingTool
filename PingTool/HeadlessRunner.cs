@@ -122,7 +122,7 @@ namespace PingTool
             var report = Build();
             checkpoint?.Invoke(report);
 
-            int sent = sessions.Sum(s => s.Stats.Sent);
+            long sent = sessions.Sum(s => s.Stats.Sent);
             string summary = sent == 0
                 ? "No probe was made."
                 : $"{sent} probes on {sessions.Count} target(s) in {IncidentLog.FormatDuration(report.GeneratedAt - start)}. {report.IncidentSummary}";

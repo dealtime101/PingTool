@@ -3,7 +3,7 @@ using System.Globalization;
 namespace PingTool
 {
     // One clock hour of one host: the pings sent and lost in it. Hour = the start of the hour on the PC's wall clock.
-    internal sealed record HourCell(DateTime Hour, int Sent, int Lost)
+    internal sealed record HourCell(DateTime Hour, long Sent, long Lost)
     {
         public double LossPercent => Sent == 0 ? 0 : 100.0 * Lost / Sent;
     }

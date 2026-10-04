@@ -9,8 +9,8 @@ namespace PingTool
         private double jitterSum;
         private long jitterCount;
 
-        public int Sent { get; private set; }
-        public int Lost { get; private set; }
+        public long Sent { get; private set; }
+        public long Lost { get; private set; }
         public double? Min { get; private set; }
         public double? Max { get; private set; }
         public double? Avg => count == 0 ? null : (double)sum / count;
@@ -29,7 +29,7 @@ namespace PingTool
         }
 
         // Pings sent and lost per clock hour (for the pings that came with their time), oldest first.
-        private readonly SortedDictionary<DateTime, (int Sent, int Lost)> hours = new();
+        private readonly SortedDictionary<DateTime, (long Sent, long Lost)> hours = new();
         public IReadOnlyList<HourCell> Hours => hours.Select(kv => new HourCell(kv.Key, kv.Value.Sent, kv.Value.Lost)).ToList();
 
         // ping < 0 means timeout / failure.
