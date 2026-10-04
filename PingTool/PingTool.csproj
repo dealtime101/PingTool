@@ -153,8 +153,9 @@
          1.21.75 = the time axis of the timeline never carries more marks than its limit, whatever the range and where it starts (PIN461.123);
          1.21.76 = the timeline summary ends at the last ping really made: a single ping no longer reads as a one second session (PIN461.125);
          1.21.77 = a trace that gave up after three silent hops says it did not try the rest, and the trace asked for from the window never gives up early (PIN461.129);
-         1.21.78 = only the unreachable family of ICMP statuses ends a trace as "unreachable": another router error is shown and the trace goes on, a missing answer is a failed probe (PIN461.131). -->
-    <Version>1.21.78</Version>
+         1.21.78 = only the unreachable family of ICMP statuses ends a trace as "unreachable": another router error is shown and the trace goes on, a missing answer is a failed probe (PIN461.131);
+         1.21.79 = the route comparison reports a hop whose address is the same but whose answer changed: destination reached then unreachable, or the reverse (PIN461.132). -->
+    <Version>1.21.79</Version>
   </PropertyGroup>
 
   <ItemGroup>

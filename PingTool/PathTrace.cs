@@ -98,6 +98,15 @@ namespace PingTool
             return $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
         }
 
+        private static string Said(HopStatus s) => s switch
+        {
+            HopStatus.Reached => "answered as the destination",
+            HopStatus.Unreachable => "reported the destination unreachable",
+            HopStatus.Expired => "answered as a router on the way",
+            HopStatus.Timeout => "was silent",
+            _ => "could not be probed",
+        };
+
         // What differs from the path seen while the target was healthy. Empty when nothing does.
         public static List<string> Compare(PathCapture? healthy, PathCapture during)
         {
@@ -116,6 +125,15 @@ namespace PingTool
                     notes.Add($"Hop {ttl} changed: {string.Join(" / ", before)} when healthy, {string.Join(" / ", now)} now (the route changed).");
                 else if (before.Count > 0 && now.Count == 0 && i < during.Hops.Count && during.Hops[i].Status != HopStatus.Failed)
                     notes.Add($"Hop {ttl} ({string.Join(" / ", before)}) answered when healthy and is silent now.");
+                else if (before.Count > 0 && now.Count > 0 && i < healthy.Hops.Count && i < during.Hops.Count)
+                {
+                    // Same router, but not the same answer: the destination that answered now reports itself unreachable (or the
+                    // reverse). The addresses alone say nothing changed.
+                    var was = healthy.Hops[i].Status;
+                    var is_ = during.Hops[i].Status;
+                    if (was != is_ && (was is HopStatus.Reached or HopStatus.Unreachable || is_ is HopStatus.Reached or HopStatus.Unreachable))
+                        notes.Add($"Hop {ttl} ({string.Join(" / ", now)}) {Said(was)} when healthy and {Said(is_)} now.");
+                }
             }
 
             return notes;
