@@ -30,6 +30,8 @@ namespace PingTool
             ["timeline.small"] = ("The window is too small to draw the chart: make it taller.", "La fenêtre est trop petite pour dessiner le graphique : agrandissez-la."),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
             ["timeline.more"] = (" (+{0} more)", " (+{0} de plus)"),
+            ["timeline.periods"] = ("Over the session, period by period: {0}.", "Au fil de la session, période par période : {0}."),
+            ["timeline.period"] = ("from {0}: average {1} ms, {2}% lost", "dès {0} : moyenne {1} ms, {2} % perdus"),
             ["alert.down"] = ("{0} is down", "{0} ne répond plus"),
             ["alert.up"] = ("{0} is back up", "{0} répond de nouveau"),
             ["alert.up.after"] = ("{0} is back up after {1}", "{0} répond de nouveau après {1}"),

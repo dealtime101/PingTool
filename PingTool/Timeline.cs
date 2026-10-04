@@ -85,6 +85,33 @@ namespace PingTool
             return 0;
         }
 
+        public const int MaxPeriods = 8;
+
+        // The session read from left to right, as a screen reader needs it (the picture shows this at a glance): up to MaxPeriods
+        // consecutive periods, each with its start, the average reply and the share of pings lost. Null when there is nothing to
+        // tell apart (one column).
+        internal static string? DescribePeriods(TimelineData d, int periods = MaxPeriods)
+        {
+            if (d.IsEmpty || d.Buckets.Count < 2) return null;
+
+            var c = CultureInfo.CurrentCulture;
+            int n = Math.Min(Math.Max(1, periods), d.Buckets.Count);
+            var parts = new List<string>();
+            for (int p = 0; p < n; p++)
+            {
+                int from = p * d.Buckets.Count / n, to = (p + 1) * d.Buckets.Count / n;
+                var group = d.Buckets.Skip(from).Take(to - from).ToList();
+                int sent = group.Sum(b => b.Sent), lost = group.Sum(b => b.Lost);
+                if (sent == 0) continue;   // no ping in that stretch of the session
+
+                int replies = sent - lost;
+                string avg = replies == 0 ? "-" : (group.Where(b => b.AvgMs is not null).Sum(b => b.AvgMs!.Value * (b.Sent - b.Lost)) / replies).ToString("0.#", c);
+                parts.Add(Loc.T("timeline.period", group[0].Start.ToLocalTime().ToString("g", c), avg, (100.0 * lost / sent).ToString("0.#", c)));
+            }
+
+            return parts.Count == 0 ? null : Loc.T("timeline.periods", string.Join("; ", parts));
+        }
+
         // What a screen reader says about the chart: the summary, then the incidents of THIS host in order (the first few), then the
         // network changes - everything the stripes and the lines say to the eye.
         internal static string Accessible(TimelineData d, IReadOnlyList<Incident> incidents, IReadOnlyList<NetworkEvent> network, int shown = 5)
@@ -93,6 +120,8 @@ namespace PingTool
             if (d.IsEmpty) return text;
 
             var c = CultureInfo.CurrentCulture;
+            string? periods = DescribePeriods(d);
+            if (periods is not null) text += "\n" + periods;
             var mine = incidents.Where(i => i.Host == d.Host).OrderBy(i => i.Start).ToList();
             if (mine.Count == 0) text += "\n" + Loc.T("timeline.incidents.none");
             else
