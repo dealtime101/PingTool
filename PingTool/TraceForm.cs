@@ -11,11 +11,17 @@ namespace PingTool
 
         public TraceForm(HostSession session, IPAddress ip)
         {
+            // Positions and sizes below are written for 96 DPI: the form scales them to the screen (like TimelineForm and
+            // IncidentsForm), and the trace box grows with the window since a long route does not fit in a fixed one.
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Route to " + session.Address;
             ClientSize = new Size(560, 330);
+            MinimumSize = SizeFromClientSize(new Size(400, 200));
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
@@ -30,10 +36,12 @@ namespace PingTool
                 ForeColor = Color.White,
                 Location = new Point(10, 10),
                 Size = new Size(540, 276),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 AccessibleName = "Route to the host",
                 Text = "Tracing the route to " + session.Address + " (" + ip + ")...",
             };
-            var close = new Button { Text = "Close", Location = new Point(470, 294), Size = new Size(80, 28), DialogResult = DialogResult.Cancel };
+            var close = new Button { Text = "Close", Location = new Point(470, 294), Size = new Size(80, 28), DialogResult = DialogResult.Cancel,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
             Controls.Add(output);
             Controls.Add(close);
@@ -43,11 +51,32 @@ namespace PingTool
             Shown += async (_, _) => await TraceAsync(session, ip);
         }
 
+        // FormClosing has already cancelled the source: a trace still running holds a token that stays valid after this.
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) cts.Dispose();
+            base.Dispose(disposing);
+        }
+
+        // A route can take tens of seconds (a second per silent hop): show the hops as they come, so the window is seen to work.
+        // Called from the trace, which resumes on this window's thread.
+        private void ShowProgress(HostSession session, IPAddress ip, IReadOnlyList<Hop> hops)
+        {
+            if (IsDisposed) return;
+            var partial = new PathCapture { Host = session.Address, Target = ip, Time = DateTimeOffset.Now, Hops = hops.ToList() };
+            output.Text = "Tracing the route to " + session.Address + " (" + ip + "), " + hops.Count + " hop(s) so far...\r\n"
+                + string.Join("\r\n", partial.HopLines());
+            output.SelectionStart = output.TextLength;
+            output.ScrollToCaret();
+        }
+
         private async Task TraceAsync(HostSession session, IPAddress ip)
         {
             try
             {
-                var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: cts.Token);
+                var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: cts.Token,
+                    giveUpAfter: TraceRunner.MaxHops,   // asked for, watched and cancellable: no early stop on a few firewalled hops
+                    progress: hops => ShowProgress(session, ip, hops));
                 if (IsDisposed) return;
 
                 // Against the route seen while the host was healthy, when this run has one.
@@ -60,8 +89,11 @@ namespace PingTool
             {
                 // The window was closed.
             }
-            catch (Exception ex) when (!IsDisposed)
+            catch (Exception ex)
             {
+                // Tested inside the block, not in a filter: a failure that lands after the window is gone must be swallowed here,
+                // because nothing above this method (an async void handler) can catch it and PingTool would stop on it.
+                if (IsDisposed) return;
                 output.Text = "The trace failed: " + ex.Message;
             }
         }

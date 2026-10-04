@@ -31,7 +31,9 @@ namespace PingTool
             // The IPv6 status covers both causes without saying which; the TTL is the usual one.
             IPStatus.TimeExceeded
                 => new("TTL", "Time exceeded in transit: usually the TTL (hop limit) ran out; this status can also mean a fragment-reassembly timeout"),
-            IPStatus.NoResources => new("Busy", "Not enough resources on the path"),
+            // The status only says the network resources were not enough: this computer's own as well as a device's on the way. Naming
+            // "the path" sent users to look at routers for what is often their own machine.
+            IPStatus.NoResources => new("Busy", "Not enough network resources to carry the probe. The status does not say whether they ran short on this computer or on the way."),
             // Source Quench can come from ANY router on the way, not only from the host that was pinged.
             // It is also obsolete (RFC 6633): seeing it at all is unusual.
             IPStatus.SourceQuench => new("Busy", "A router on the path, or the destination, asked the sender to slow down (ICMP source quench, obsolete). The host you pinged is not necessarily the one that asked."),
@@ -58,8 +60,12 @@ namespace PingTool
             var socket = ex as SocketException ?? ex.InnerException as SocketException;
             return socket?.SocketErrorCode switch
             {
-                SocketError.HostNotFound or SocketError.NoData
+                SocketError.HostNotFound
                     => new("No host", "Name could not be resolved"),
+                // The name EXISTS but has no address of the kind asked for (no IPv6 record, say): calling it "no host" would send the
+                // user to correct a good name.
+                SocketError.NoData
+                    => new("No addr", "The name exists but has no address of the requested type (for example no IPv6 record)"),
                 // A passing failure of the DNS server, not a wrong name: say so, or the user "fixes" a good name.
                 SocketError.TryAgain
                     => new("DNS fail", "The DNS server failed for the moment (temporary): the name may be right, try again"),
@@ -72,10 +78,19 @@ namespace PingTool
                 SocketError.ConnectionRefused
                     => new("Refused", "Connection refused: nothing is listening on that port"),
                 SocketError.TimedOut => Timeout,
-                SocketError.ConnectionReset or SocketError.ConnectionAborted
+                SocketError.ConnectionReset
                     => new("Reset", "The connection was closed by the other side"),
+                // Aborted is the OTHER direction: the software of THIS computer (a firewall, an antivirus, a time limit of its own, a
+                // network change) cut the connection. Saying "the other side closed it" would send the user to the wrong machine.
+                SocketError.ConnectionAborted
+                    => new("Aborted", "The connection was aborted on this computer (its software or network settings), not necessarily by the other side"),
+                // A deadline that ran out is a Timeout whether the socket reported it or the HTTP layer did (a request that exceeds
+                // HttpClient.Timeout is a TaskCanceledException WITH a TimeoutException inside). A bare cancellation is not one:
+                // that is somebody pressing Stop.
+                _ when ex is TimeoutException || ex.InnerException is TimeoutException => Timeout,
                 _ when ex is ArgumentException => new("Bad addr", "Invalid address: " + ex.Message),
-                _ when ex.InnerException is System.Security.Authentication.AuthenticationException tls
+                // Raised by SslStream itself, or wrapped by the HTTP layer: both levels, as for the socket error above.
+                _ when (ex as System.Security.Authentication.AuthenticationException ?? ex.InnerException as System.Security.Authentication.AuthenticationException) is { } tls
                     => new("TLS", "The secure connection could not be set up: " + tls.Message),
                 _ => new("Error", ex.InnerException?.Message ?? ex.Message),
             };

@@ -18,17 +18,25 @@ namespace PingTool
         // Set when the window starts closing: late callbacks must leave the screen alone.
         private bool closing;
         private DateTimeOffset runStart = DateTimeOffset.Now;
+        private RunSettings? runSettings;   // the probe settings of the run in the list, fixed at Start
         private CancellationTokenSource? cts;
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
         private readonly PingLog log = new();
         // Every ping on disk as it happens (when "Save log to disk" is ticked); written every few seconds.
         private AutoLog? autoLog;
+        private readonly List<AutoLog> retiredLogs = new();   // logs of earlier runs that still hold pings to write
         private bool autoLogWarned;
+        private int droppedReported;
+        private bool dropWarned;
         private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
         // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
         private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
         // Alerts also go to the webhooks of settings.json, in the background (see WebhookSender); null when none.
+        // Changes of this PC's own network during the run (see NetworkWatch): cyan lines on the timeline, a table in the report.
+        private readonly List<NetworkEvent> networkEvents = new();
+        private List<NicState> lastNetwork = new();
+        private readonly System.Windows.Forms.Timer networkTimer = new() { Interval = 1500 };
         private WebhookSender? webhooks;
         private readonly HashSet<string> webhookWarned = new();
         private readonly IncidentLog incidents = new();
@@ -43,7 +51,7 @@ namespace PingTool
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
-        private readonly NotifyIcon notifyIcon = new() { Icon = SystemIcons.Application, Text = "PingTool" };
+        private readonly NotifyIcon notifyIcon = new() { Icon = AppIcon.Load(SystemInformation.SmallIconSize), Text = "PingTool" };
 
         // How the program was started (command line); None when opened normally.
         private readonly StartupOptions startup;
@@ -56,8 +64,13 @@ namespace PingTool
         {
             this.startup = startup ?? StartupOptions.None;
             InitializeComponent();
+            Icon = AppIcon.Load();   // the title bar, Alt+Tab and the taskbar
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
+            // The label is short (the column is narrow): the unit and what happens are said here, and in the accessible name.
+            const string downHelp = "Number of consecutive failed pings after which the host is reported down.";
+            toolTip.SetToolTip(lblDownAfter, downHelp);
+            toolTip.SetToolTip(numDownAfter, downHelp);
             toolTip.SetToolTip(cboProfile, "Profile = the target list and all settings, under a name. Pick one to load it; type a name and press Save to keep the current setup.");
             FormClosed += (_, _) =>
             {
@@ -69,11 +82,25 @@ namespace PingTool
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
                 lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
-                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
+                chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnOpenLog, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
+            ApplyAnchors();
             ApplySettings();
+            if (chkCompact.Checked)
+            {
+                // Started compact: the full size to come back to is the saved one, not the designer's.
+                var saved = WindowSizing.Restore(settings.WindowWidth, settings.WindowHeight, FullSize) ?? FullSize;
+                normalClientSize = DpiScale.Scale(saved, DeviceDpi);
+            }
+            else ApplyCompact(false);   // the checkbox did not change, so nothing applied the resizable full window yet
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            // The system says "something changed" several times for one real change (address, then availability, then
+            // the gateway): a short wait lets them settle, and only then the cards are compared with what they were.
+            networkTimer.Tick += (_, _) => ReadNetworkChange();
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+            System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
 
             if (settings.Webhooks.Count > 0)
             {
@@ -102,26 +129,39 @@ namespace PingTool
             {
                 if (e.KeyCode != Keys.Enter) return;
                 e.SuppressKeyPress = true;
-                if (!isRunning) btnStartStop_Click(this, EventArgs.Empty);
+                if (isRunning) return;
+
+                string typed = cmbAddress.Text.Trim();
+                bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+                switch (AddressBoxEnter.Decide(typed, sessions.Count == 0, inList))
+                {
+                    case EnterOutcome.Refuse:
+                        IsValidTarget(typed);   // says why; nothing starts on a list that leaves out what was typed
+                        return;
+                    case EnterOutcome.AddAndStart:
+                        AddHost(typed);
+                        break;
+                }
+
+                btnStartStop_Click(this, EventArgs.Empty);
             };
             trayIconTimer.Tick += (_, _) => HideTrayIconIfWindowShown();
 
             // --minimized hides the window in the notification area (alerts still show as balloons);
             // --start then begins the monitoring: no click needed.
+            // Started minimized, the window is never shown at all (see SetVisibleCore): hiding it from Shown made it flash on
+            // screen first. Started normally, --start begins when the window is up.
+            // this.startup, not the parameter: the parameter is null for the parameterless constructor (the field is StartupOptions.None then).
+            startHidden = this.startup.Minimized;
             Shown += (_, _) =>
             {
-                if (startup.Minimized)
-                {
-                    notifyIcon.Visible = true;
-                    Hide();
-                }
-
-                if (startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
+                if (this.startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
             };
 
             // Right-click (or the menu key) on a host: where does the path to it stop?
             var hostMenu = new ContextMenuStrip();
             hostMenu.Items.Add("Trace route to this host").Click += (_, _) => TraceSelected();
+            hostMenu.Items.Add("Name and limits of this host...").Click += (_, _) => EditSelectedTarget();
             hostMenu.Opening += (_, e) => e.Cancel = selected is null;
             lstHosts.ContextMenuStrip = hostMenu;
             FormClosing += (_, _) =>
@@ -133,6 +173,9 @@ namespace PingTool
                 cts?.Cancel();
                 autoLogTimer.Stop();
                 trayIconTimer.Stop();
+                networkTimer.Stop();
+                System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
+                System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
                 webhooks?.Dispose();
                 FlushAutoLog();
                 SaveSettings();
@@ -147,13 +190,58 @@ namespace PingTool
         {
             TopMost = compact;
             foreach (var c in detailControls) c.Visible = !compact;
+
             // The sizes are in pixels at 100 %: scaled to this screen, like the controls inside.
-            ClientSize = DpiScale.Scale(compact ? CompactSize : FullSize, DeviceDpi);
+            if (compact)
+            {
+                // The compact window has a size of its own and cannot be dragged: remember the one the user had.
+                if (FormBorderStyle == FormBorderStyle.Sizable && WindowState == FormWindowState.Normal) normalClientSize = ClientSize;
+                WindowState = FormWindowState.Normal;
+                MinimumSize = Size.Empty;
+                FormBorderStyle = FormBorderStyle.FixedSingle;
+                MaximizeBox = false;
+                ClientSize = DpiScale.Scale(CompactSize, DeviceDpi);
+                return;
+            }
+
+            // Back to the full window: resizable, never smaller than what its controls need, at the size it had before
+            // compact mode, or the size saved at the last close, or the default.
+            var minimum = DpiScale.Scale(FullSize, DeviceDpi);
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
+            MinimumSize = SizeFromClientSize(minimum);
+            var saved = WindowSizing.Restore(settings.WindowWidth, settings.WindowHeight, FullSize);
+            ClientSize = normalClientSize ?? (saved is Size s ? DpiScale.Scale(s, DeviceDpi) : minimum);
+            normalClientSize = null;
+        }
+
+        // The size the full window had when it went compact (null otherwise).
+        private Size? normalClientSize;
+
+        // Where the window can grow: the extra width goes to the right column (host list, profile box, buttons), the extra height to the
+        // host list and the graph; what sits at the bottom stays at the bottom. Without this a bigger window is just empty space.
+        private void ApplyAnchors()
+        {
+            const AnchorStyles T = AnchorStyles.Top, B = AnchorStyles.Bottom, L = AnchorStyles.Left, R = AnchorStyles.Right;
+            (Control Control, AnchorStyles Anchor)[] rules =
+            {
+                (graphLatency, T | B | L),
+                (lblInterval, B | L), (numInterval, B | L), (lblTimeout, B | L), (numTimeout, B | L), (lblSize, B | L), (numSize, B | L),
+                (lblSlow, B | L), (numSlow, B | L), (lblLoss, B | L), (numLoss, B | L), (lblDownAfter, B | L), (numDownAfter, B | L),
+                (chkAlert, B | L), (chkSaveLog, B | L),
+                (cboProfile, T | L | R), (btnSaveProfile, T | R), (btnDeleteProfile, T | R),
+                (lstHosts, T | B | L | R), (lblDiagnosis, B | L | R),
+                (btnAddHost, B | L), (btnRemoveHost, B | R),
+                (btnExport, B | L), (btnIncidents, B | R), (chkCompare, B | L),
+                (btnReport, B | L | R), (btnTimeline, B | L), (btnOpenLog, B | R),
+                (btnImportProfiles, B | L), (btnExportProfiles, B | R),
+            };
+            foreach (var (control, anchor) in rules) control.Anchor = anchor;
         }
 
         private void FitHostColumns() =>
             colHost.Width = ColumnFit.HostWidth(lstHosts.ClientSize.Width, SystemInformation.VerticalScrollBarWidth,
-                colLast.Width + colAvg.Width + colLoss.Width);
+                colLast.Width + colAvg.Width + colLoss.Width, DeviceDpi);
 
         protected override void OnResize(EventArgs e)
         {
@@ -163,6 +251,26 @@ namespace PingTool
                 Hide();
                 notifyIcon.Visible = true;
             }
+        }
+
+        // True until the first time the window is asked to show itself, when it was started with --minimized.
+        private bool startHidden;
+
+        // Application.Run shows the main window once: with --minimized that one request is turned down, so the window never
+        // appears (not even for a frame) and the notification icon is the only trace; double-clicking it shows the window for real.
+        // The handle is created anyway, so that the message loop can run what the window would have started from Shown.
+        protected override void SetVisibleCore(bool value)
+        {
+            if (startHidden)
+            {
+                startHidden = false;
+                value = false;
+                if (!IsHandleCreated) CreateHandle();
+                notifyIcon.Visible = true;
+                if (startup.Start) BeginInvoke(() => { if (!isRunning) btnStartStop_Click(this, EventArgs.Empty); });
+            }
+
+            base.SetVisibleCore(value);
         }
 
         private void RestoreFromTray()
@@ -205,14 +313,17 @@ namespace PingTool
             // Targets and interval from the command line win for this launch (and are not saved: see SaveSettings).
             if (startup.IntervalMs is int ms)
                 numInterval.Value = Math.Clamp(ms, (int)numInterval.Minimum, (int)numInterval.Maximum);
-            foreach (var host in startup.Hosts.Count > 0 ? startup.Hosts : settings.Hosts) AddHost(host);
+            IEnumerable<string> hostsOfThisLaunch = settings.Hosts;
+            if (startup.OverridesHosts)
+                hostsOfThisLaunch = (startup.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(startup.Hosts);
+            foreach (var host in hostsOfThisLaunch.Distinct(StringComparer.OrdinalIgnoreCase)) AddHost(host);
         }
 
         private void SaveSettings()
         {
             settings.Address = cmbAddress.Text.Trim();
             // What the command line imposed for this launch is not what the user chose: keep the saved values.
-            if (startup.Hosts.Count == 0) settings.Hosts = sessions.Select(s => s.Address).ToList();
+            if (!startup.OverridesHosts) settings.Hosts = sessions.Select(s => s.Address).ToList();
             if (startup.IntervalMs is null) settings.IntervalMs = (int)numInterval.Value;
             settings.TimeoutMs = (int)numTimeout.Value;
             settings.PacketSize = (int)numSize.Value;
@@ -222,6 +333,14 @@ namespace PingTool
             settings.Alert = chkAlert.Checked;
             settings.SaveLog = chkSaveLog.Checked;
             settings.Compact = chkCompact.Checked;
+            // The size of the full window (what it was before compact mode, when compact now); a maximized window is not a size to keep.
+            var full = normalClientSize ?? (WindowState == FormWindowState.Normal ? ClientSize : (Size?)null);
+            if (full is Size f)
+            {
+                var b = WindowSizing.ToBase(f, DeviceDpi);
+                settings.WindowWidth = b.Width;
+                settings.WindowHeight = b.Height;
+            }
 
             try
             {
@@ -240,10 +359,13 @@ namespace PingTool
             var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
             if (existing != null) return existing;
 
-            var session = new HostSession(address, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            settings.TargetOptions.TryGetValue(address, out var options);
+            var (slow, loss, down) = TargetOptions.Effective(options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            var session = new HostSession(address, slow, loss, down) { Options = options, RunLimits = options is null ? null : TargetOptions.DescribeLimits(options) };
             sessions.Add(session);
-            var item = new ListViewItem(new[] { address, "-", "-", "-" }) { Tag = session };
+            var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
+            RenderRow(item);   // the hover text is there from the start, not after the first ping
             item.Selected = true;
             return session;
         }
@@ -252,6 +374,8 @@ namespace PingTool
         {
             string typed = cboProfile.Text;
             cboProfile.Items.Clear();
+            // The built-in diagnosis comes first: it is not saved, its targets are read from the network cards when it is picked.
+            cboProfile.Items.Add(DiagnosticTargets.ProfileName);
             cboProfile.Items.AddRange(settings.Profiles.Select(p => p.Name).ToArray<object>());
             cboProfile.Text = typed;
         }
@@ -288,6 +412,9 @@ namespace PingTool
                 DegradedLatencyMs = (int)numSlow.Value,
                 DegradedLossPercent = (int)numLoss.Value,
                 DownAfter = (int)numDownAfter.Value,
+                // The names and own limits of this profile's hosts go with it.
+                TargetOptions = hosts.Where(settings.TargetOptions.ContainsKey)
+                    .ToDictionary(h => h, h => settings.TargetOptions[h], StringComparer.OrdinalIgnoreCase),
             };
 
             if (!ProfileBook.Upsert(settings.Profiles, profile))
@@ -406,8 +533,37 @@ namespace PingTool
                 MessageBox.Show($"{notFitting} profile(s) did not fit: at most {ProfileBook.MaxProfiles} profiles, delete some first.", "PingTool");
         }
 
+        // Targets = default gateway, DNS servers and Internet references (see DiagnosticTargets); every other setting stays as it is.
+        private void ApplyDiagnosis()
+        {
+            if (isRunning) return;
+
+            var targets = DiagnosticTargets.Discover(out bool gatewayFound);
+            ApplyProfile(new Profile
+            {
+                Name = DiagnosticTargets.ProfileName,
+                Hosts = targets,
+                IntervalMs = (int)numInterval.Value,
+                TimeoutMs = (int)numTimeout.Value,
+                PacketSize = (int)numSize.Value,
+                Alert = chkAlert.Checked,
+                DegradedLatencyMs = (int)numSlow.Value,
+                DegradedLossPercent = (int)numLoss.Value,
+                DownAfter = (int)numDownAfter.Value,
+            });
+
+            if (!gatewayFound)
+                MessageBox.Show("No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.", "PingTool");
+        }
+
         private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)
         {
+            if (string.Equals(cboProfile.SelectedItem?.ToString(), DiagnosticTargets.ProfileName, StringComparison.Ordinal))
+            {
+                ApplyDiagnosis();
+                return;
+            }
+
             var profile = ProfileBook.Find(settings.Profiles, cboProfile.SelectedItem?.ToString());
             if (profile is not null) ApplyProfile(profile);
         }
@@ -425,6 +581,9 @@ namespace PingTool
             numTimeout.Value = Math.Clamp(profile.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
             numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             chkAlert.Checked = profile.Alert;
+
+            // The profile's names and limits for its hosts replace the ones of the same addresses (AddHost reads them).
+            foreach (var (address, options) in profile.TargetOptions) settings.TargetOptions[address] = options;
 
             sessions.Clear();
             lstHosts.Items.Clear();
@@ -532,6 +691,7 @@ namespace PingTool
 
                     AddHost(address);
                 }
+                else if (chkCompact.Checked && !ConfirmCompactTarget()) return;
 
                 foreach (var s in sessions) settings.AddRecent(s.Address);
                 RefreshAddressList();
@@ -547,13 +707,19 @@ namespace PingTool
                 // ones in the boxes (it builds a fresh monitor with them).
                 foreach (var s in sessions)
                 {
-                    s.ApplyThresholds((int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+                    var (slow, loss, down) = TargetOptions.Effective(s.Options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+                    s.ApplyThresholds(slow, loss, down);
+                    s.RunLimits = s.Options is null ? null : TargetOptions.DescribeLimits(s.Options);
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
+                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
+                noticed.Clear();
+                networkEvents.Clear();
+                lastNetwork = NetworkWatch.Snapshot();
                 incidents.Clear();
                 UpdateIncidentButton();
                 foreach (ListViewItem item in lstHosts.Items) RenderRow(item);
@@ -599,29 +765,80 @@ namespace PingTool
             }
         }
 
-        // A new run starts a new log. Whatever the previous run could not write yet gets one last try.
+        // Compact mode hides the list, so the address box looks like THE target. With a list already there only the list is pinged:
+        // a new address typed in the box would be ignored without a word. Same rule as Enter in the box (AddressBoxEnter), but asked.
+        // False = do not start.
+        private bool ConfirmCompactTarget()
+        {
+            string typed = cmbAddress.Text.Trim();
+            bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+            switch (AddressBoxEnter.Decide(typed, listIsEmpty: false, inList))
+            {
+                case EnterOutcome.Refuse:
+                    IsValidTarget(typed);   // says why; nothing starts on a list that leaves out what was typed
+                    return false;
+                case EnterOutcome.AddAndStart:
+                    string watched = string.Join(", ", sessions.Take(3).Select(s => s.DisplayName)) + (sessions.Count > 3 ? $" and {sessions.Count - 3} more" : "");
+                    var answer = MessageBox.Show(this,
+                        $"The address box says \"{typed}\", which is not in the list that will be monitored ({watched}).\r\n\r\n"
+                        + "Yes: add it to the list and start\r\nNo: start the list as it is\r\nCancel: do not start",
+                        "PingTool", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    if (answer == DialogResult.Cancel) return false;
+                    if (answer == DialogResult.Yes) AddHost(typed);
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        // A new run: whatever the previous run could not write yet gets a try now, and what still fails is NOT dropped (the balloon said
+        // it would be retried): the same log goes on when the folder is the same, otherwise the old one is retired and still retried.
         private void StartAutoLog()
         {
             FlushAutoLog();
             string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
-            autoLog = chkSaveLog.Checked ? new AutoLog(folder) : null;
-            autoLogWarned = false;
+            var previous = autoLog;
+            autoLog = AutoLog.Next(previous, chkSaveLog.Checked ? folder : null, retiredLogs);
+            if (!ReferenceEquals(autoLog, previous))
+            {
+                autoLogWarned = false;
+                droppedReported = 0;
+                dropWarned = false;
+            }
+
             // The timer keeps running after Stop: pings still in flight are written by the next tick.
-            autoLogTimer.Enabled = autoLog is not null;
+            autoLogTimer.Enabled = autoLog is not null || retiredLogs.Count > 0;
         }
 
         // A file that cannot be written (open in a spreadsheet, disk full) never stops the monitoring:
         // one balloon says so, the entries wait and go out at the next tick that works.
         private void FlushAutoLog()
         {
-            if (autoLog is null) return;
+            AutoLog.FlushRetired(retiredLogs);
+            if (autoLog is null)
+            {
+                if (retiredLogs.Count == 0) autoLogTimer.Stop();
+                return;
+            }
 
-            if (autoLog.Flush()) autoLogWarned = false;
+            bool written = autoLog.Flush();
+            if (written) autoLogWarned = false;
             else if (!autoLogWarned && !closing)
             {
                 autoLogWarned = true;
-                ShowBalloon("Log file not written, will retry: " + autoLog.LastError, ToolTipIcon.Warning);
+                ShowBalloon("Log file not written, will retry: " + autoLog.LastError + (autoLog.DropNote is { } lost ? " " + lost : ""), ToolTipIcon.Warning);
             }
+
+            // Pings that were thrown away because the folder stayed unwritable too long, never silently: said when it first happens,
+            // and again with the final figures when the folder works again (not at every tick of a long failure).
+            if (autoLog.Dropped > droppedReported && !closing && (written || !dropWarned))
+            {
+                droppedReported = autoLog.Dropped;
+                dropWarned = !written;
+                ShowBalloon(autoLog.DropNote!, ToolTipIcon.Warning);
+            }
+
+            if (written) dropWarned = false;
         }
 
         // Back to the idle screen: button, locked settings, state word, stale-value cue.
@@ -693,9 +910,7 @@ namespace PingTool
             int timeout = (int)numTimeout.Value;
             byte[] buffer = new byte[(int)numSize.Value];
 
-            using Ping ping = new Ping();
-            // Stop must not wait out a ping already in flight (up to the timeout).
-            using var cancelPing = token.Register(ping.SendAsyncCancel);
+            using Ping ping = new Ping();   // Stop reaches a ping in flight through the token given to ProbeRunner
 
             // Resolve first so the IP shows even for a host that never answers.
             // Not for dns://, whose probe IS the lookup and sets the address itself.
@@ -735,6 +950,7 @@ namespace PingTool
                     // What actually answered beats what DNS listed first.
                     if (outcome.Ip is not null) session.SetIp(outcome.Ip);
                     UpdatePingUI(session, outcome.Rtt, outcome.Failure);
+                    RaiseNotice(session, outcome.Warning);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
@@ -756,7 +972,7 @@ namespace PingTool
         private void UpdatePingUI(HostSession session, long ping, PingFailure? failure = null)
         {
             if (closing) return;
-            session.Add(ping, failure);
+            session.Add(ping, failure, DateTimeOffset.Now);
             var why = session.LastFailure;
             var entry = log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
             autoLog?.Add(entry);
@@ -789,9 +1005,12 @@ namespace PingTool
         private static void RenderRow(ListViewItem item)
         {
             var s = (HostSession)item.Tag!;
+            item.SubItems[0].Text = s.DisplayName;
+            // A long name is cut by the narrow column: the whole of it (and the address behind a name) shows on hover.
+            item.ToolTipText = s.Options?.Label is null ? s.Address : s.Options.Label + " (" + s.Address + ")";
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
-            item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
+            item.SubItems[3].Text = s.Stats.LossPercent is double loss ? loss.ToString("0.#", CultureInfo.CurrentCulture) + "%" : "-";
         }
 
         // A report for someone who does not have PingTool: one self-contained HTML file.
@@ -804,14 +1023,17 @@ namespace PingTool
             }
 
             var now = DateTimeOffset.Now;
+            // What the measures were taken with, not what the boxes say now (they are editable again after Stop).
+            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
             var data = new ReportData(now, runStart, Environment.MachineName,
                 AppVersion.Display,
-                (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
-                (int)numSlow.Value, (int)numLoss.Value,
+                run.IntervalMs, run.TimeoutMs, run.PacketSize,
+                run.DegradedLatencyMs, run.DegradedLossPercent,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
-                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
+                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
+                    s.Options?.Label, s.RunLimits, s.Notice)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
-                incidents.Summary(now), incidents.Incidents.ToList());
+                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
             using var dialog = new SaveFileDialog
             {
@@ -823,6 +1045,7 @@ namespace PingTool
             try
             {
                 File.WriteAllText(dialog.FileName, ReportBuilder.Build(data), new System.Text.UTF8Encoding(false));
+                FileOpener.OfferToOpen(this, "The report", dialog.FileName);   // where it is, and the offer to open it
             }
             catch (IOException ex)
             {
@@ -867,6 +1090,25 @@ namespace PingTool
             }
         }
 
+        // A readable name and limits of its own for the selected host. Kept in settings.json by address (and in the profiles
+        // saved afterwards); the name shows at once, the limits from the next Start.
+        private void EditSelectedTarget()
+        {
+            if (selected is not { } session) return;
+
+            using var dialog = new TargetOptionsForm(session.Address, session.Options,
+                (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            session.Options = dialog.Result;
+            if (dialog.Result is null) settings.TargetOptions.Remove(session.Address);
+            else settings.TargetOptions[session.Address] = dialog.Result;
+
+            foreach (ListViewItem item in lstHosts.Items) if (ReferenceEquals(item.Tag, session)) RenderRow(item);
+            RenderSelected();
+            SaveSettings();
+        }
+
         private void TraceSelected()
         {
             if (selected is null) return;
@@ -883,15 +1125,79 @@ namespace PingTool
         // The whole session of a host, not just the last 180 pings of the live graph.
         private void btnTimeline_Click(object? sender, EventArgs e)
         {
-            var hosts = sessions.Select(s => s.Address).Where(a => log.Entries.Any(x => x.Host == a)).ToList();
+            var snapshot = log.Entries;   // one copy of the log for this window
+            var hosts = sessions.Select(s => s.Address).Where(a => snapshot.Any(x => x.Host == a)).ToList();
             if (hosts.Count == 0)
             {
                 MessageBox.Show("Nothing to show yet: start pinging first.", "PingTool");
                 return;
             }
 
-            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote);
+            using var dialog = new TimelineForm(snapshot, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote, networkEvents.ToList());
             dialog.ShowDialog(this);
+        }
+
+        private const long MaxLogFileBytes = 200L * 1024 * 1024;
+
+        // Looks again at a recorded night: one or several log files (the CSV of the export, or the daily files of
+        // "Save the log to disk"). Reading and replaying happen off the window's thread; the result is read-only.
+        private async void btnOpenLog_Click(object? sender, EventArgs e)
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "PingTool log (*.csv)|*.csv|All files (*.*)|*.*",
+                Multiselect = true,
+                InitialDirectory = Directory.Exists(settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder)
+                    ? (settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder) : "",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            string[] paths = dialog.FileNames;
+            btnOpenLog.Enabled = false;
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                var (replay, entries, error) = await Task.Run(() => LoadLogs(paths));
+                if (replay is null || entries is null)
+                {
+                    MessageBox.Show(error, "PingTool");
+                    return;
+                }
+
+                using var viewer = new LogViewerForm(replay, entries,
+                    paths.Length == 1 ? Path.GetFileName(paths[0]) : paths.Length.ToString(CultureInfo.CurrentCulture) + " log files");
+                viewer.ShowDialog(this);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+                btnOpenLog.Enabled = true;
+            }
+        }
+
+        private static (ReplayResult? Replay, List<LogEntry>? Entries, string? Error) LoadLogs(string[] paths)
+        {
+            var all = new List<LogEntry>();
+            foreach (string path in paths)
+            {
+                string name = Path.GetFileName(path);
+                string text;
+                try
+                {
+                    if (new FileInfo(path).Length > MaxLogFileBytes) return (null, null, name + " is too large to be a PingTool log.");
+                    text = File.ReadAllText(path);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    return (null, null, "Could not read " + name + ": " + ex.Message);
+                }
+
+                if (!PingLogReader.TryParse(text, out var part, out string error)) return (null, null, name + ": " + error);
+                all.AddRange(part);
+                if (all.Count > PingLogReader.MaxEntries) return (null, null, "These files hold too many pings to open together.");
+            }
+
+            return (LogReplay.Run(all), all, null);
         }
 
         private void UpdateIncidentButton() =>
@@ -910,16 +1216,16 @@ namespace PingTool
         private void RenderDiagnosis()
         {
             lblDiagnosis.Text = Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()) ?? "";
-            lblDiagnosis.ForeColor = sessions.Any(s => s.Monitor.State != HostState.Up) ? Color.Tomato : Color.Silver;
+            lblDiagnosis.ForeColor = sessions.Any(s => s.Monitor.State != HostState.Up) ? UiColors.SmallTextRed : Color.Silver;
         }
 
         // Big value, stats and graph all follow the host selected in the list.
         private void RenderSelected()
         {
             if (closing) return;
-            Text = AppVersion.Title(selected?.Address);
+            Text = AppVersion.Title(selected?.DisplayName);
             if (chkCompare.Checked)
-                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.Address, HostPalette.ColorFor(i), s.History)).ToList());
+                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.DisplayName, HostPalette.ColorFor(i), s.History)).ToList());
             else
                 graphLatency.Show(selected?.History);
             RenderDiagnosis();
@@ -969,7 +1275,7 @@ namespace PingTool
             if (closing || change == HostChange.None || !chkAlert.Checked) return;
 
             var monitor = session.Monitor;
-            string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
+            string text = AlertMessage.For(session.DisplayName, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
             webhooks?.Send(new WebhookEvent(session.Address, change, text, outage, DateTimeOffset.Now));
             var (sound, icon) = change switch
             {
@@ -980,6 +1286,49 @@ namespace PingTool
 
             sound.Play();
             ShowBalloon(text, icon);
+        }
+
+        // These two events come from a system thread: the window is only touched through BeginInvoke.
+        private void OnNetworkAddressChanged(object? sender, EventArgs e) => NetworkSignal();
+        private void OnNetworkAvailabilityChanged(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e) => NetworkSignal();
+
+        private void NetworkSignal()
+        {
+            if (closing || !IsHandleCreated) return;
+            try
+            {
+                BeginInvoke(() =>
+                {
+                    networkTimer.Stop();
+                    networkTimer.Start();
+                });
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+            {
+                // The window is closing.
+            }
+        }
+
+        private void ReadNetworkChange()
+        {
+            networkTimer.Stop();
+            var now = NetworkWatch.Snapshot();
+            string? text = NetworkWatch.Describe(lastNetwork, now);
+            lastNetwork = now;
+            if (text is not null && isRunning && !closing) networkEvents.Add(new NetworkEvent(DateTimeOffset.Now, text));
+        }
+
+        // What a successful probe still has to say (a certificate about to expire): kept on the host for the report, and told ONCE
+        // per host and per text, which changes with the day count - so a reminder a day, not a balloon at every probe.
+        private readonly HashSet<string> noticed = new();
+
+        private void RaiseNotice(HostSession session, string? text)
+        {
+            session.Notice = text;
+            if (text is null || closing || !chkAlert.Checked || !noticed.Add(session.Address + "|" + text)) return;
+
+            webhooks?.Send(new WebhookEvent(session.DisplayName, HostChange.Notice, text, null, DateTimeOffset.Now));
+            ShowBalloon(text, ToolTipIcon.Warning);
         }
 
         // One balloon per webhook and per run, not one per lost alert: a receiver that is down would otherwise
@@ -1014,7 +1363,7 @@ namespace PingTool
             var stats = selected?.Stats ?? new SessionStats();
             lblStats.Text =
                 $"Min {ms(stats.Min)} / Avg {ms(stats.Avg)} / Max {ms(stats.Max)} ms\n" +
-                $"Jitter {ms(stats.Jitter)} ms | Loss {stats.LossPercent:0.#}% ({stats.Lost}/{stats.Sent})\n" +
+                $"Jitter {ms(stats.Jitter)} ms | Loss {(stats.LossPercent is null ? "-" : ms(stats.LossPercent) + $"% ({stats.Lost}/{stats.Sent})")}\n" +
                 (selected?.IpText ?? "-") + "\n" +
                 RecentStats.From(selected?.History ?? new Queue<long>()).Describe();
         }
@@ -1027,14 +1376,44 @@ namespace PingTool
     {
         private const int MaxSamples = HostSession.HistorySize;
         private const int MaxLegend = 5;
+        private int legendOffset, legendFirst, legendRows;   // the page of the legend shown, as drawn last (for the click and the tooltip)
+        private float legendLeft;
+        private string legendTipText = "";
+        private readonly ToolTip legendTip = new();
         private IReadOnlyList<GraphSeries> series = Array.Empty<GraphSeries>();
         private bool compare;
+        private GraphPalette palette = GraphPalette.For(SystemInformation.HighContrast);
+        private static readonly System.Drawing.Drawing2D.DashStyle[] LinePatterns =
+        {
+            System.Drawing.Drawing2D.DashStyle.Solid, System.Drawing.Drawing2D.DashStyle.Dash,
+            System.Drawing.Drawing2D.DashStyle.Dot, System.Drawing.Drawing2D.DashStyle.DashDot,
+        };
+
+        // The user switched to (or away from) a high-contrast theme while the program runs.
+        protected override void OnSystemColorsChanged(EventArgs e)
+        {
+            base.OnSystemColorsChanged(e);
+            palette = GraphPalette.For(SystemInformation.HighContrast);
+            BackColor = palette.Back;
+            Invalidate();
+        }
 
         public LatencyGraph()
         {
             DoubleBuffered = true;
-            BackColor = Color.FromArgb(40, 40, 40);
+            BackColor = palette.Back;
+            AccessibleName = "Latency graph";
+            AccessibleRole = AccessibleRole.Chart;
         }
+
+        // What a screen reader gets: the picture says nothing, so the figures are read out from the data - computed when a
+        // reader asks, not at every ping.
+        private sealed class GraphAccessibleObject(LatencyGraph owner) : ControlAccessibleObject(owner)
+        {
+            public override string? Description => GraphSummary.Describe(owner.series);
+        }
+
+        protected override AccessibleObject CreateAccessibilityInstance() => new GraphAccessibleObject(this);
 
         // One host. Draws the host's own queue: it is repainted, never copied.
         public void Show(IReadOnlyCollection<long>? history)
@@ -1057,32 +1436,36 @@ namespace PingTool
             base.OnPaint(e);
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            // The labels are text like the rest of the window: ClearType, as the labels of the controls, not the grey smoothing GDI+ picks.
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             long top = Math.Max(50, series.Count == 0 ? 0 : series.Max(s => s.Samples.Count == 0 ? 0 : s.Samples.Max()));
-            using var grey = new SolidBrush(Color.Silver);
+            using var grey = new SolidBrush(palette.Text);
             g.DrawString(top + " ms", Font, grey, 2, 0);
             g.DrawString("0", Font, grey, 2, Height - Font.Height);
 
-            foreach (var s in series) DrawSeries(g, s, top);
+            for (int i = 0; i < series.Count; i++) DrawSeries(g, series[i], top, i);
             if (compare) DrawLegend(g);
             else if (series.Count == 1) DrawP95(g, series[0].Samples, top);
         }
 
-        private void DrawSeries(Graphics g, GraphSeries s, long top)
+        private void DrawSeries(Graphics g, GraphSeries s, long top, int index)
         {
             // Where everything goes is computed by GraphLayout (and tested there); this only paints.
             var shapes = GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples);
 
-            using var line = new Pen(s.Color, 1.5f);
+            var color = palette.Series(index, s.Color);
+            using var line = new Pen(color, 1.5f) { DashStyle = LinePatterns[palette.Dash(index)] };
             // Alone, a loss is red; compared, it keeps its host's colour so you can tell whose it is.
-            using var lost = new Pen(compare ? s.Color : Color.Red, 2f);
-            using var dot = new SolidBrush(s.Color);
+            using var lost = new Pen(palette.Loss(compare, color), 2f);
+            using var dot = new SolidBrush(color);
 
             foreach (var (from, to) in shapes.Lines) g.DrawLine(line, from.X, from.Y, to.X, to.Y);
             // A reply with no neighbour to be joined to (the first one, or one between two losses)
             // is a dot: as a line it would have no length and the reply would not show at all.
             foreach (var d in shapes.Dots) g.FillEllipse(dot, d.X - 2f, d.Y - 2f, 4f, 4f);
-            foreach (float x in shapes.LossXs) g.DrawLine(lost, x, Height - 1, x, Height - 8);
+            var (tickBottom, tickTop) = GraphLayout.LossTick(index, series.Count, Height, compare);
+            foreach (float x in shapes.LossXs) g.DrawLine(lost, x, tickBottom, x, tickTop);
         }
 
         // A dotted line at the recent p95: "95 % of the last pings were at or below this".
@@ -1091,33 +1474,86 @@ namespace PingTool
             if (RecentStats.From(samples).P95 is not double p95) return;
 
             float y = Height - 1 - (Height - 1f) * (float)p95 / top;
-            using var pen = new Pen(Color.Silver) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            using var pen = new Pen(palette.Text) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
             g.DrawLine(pen, 0, y, Width, y);
 
             string label = "p95 " + p95.ToString("0", CultureInfo.CurrentCulture);
-            using var brush = new SolidBrush(Color.Silver);
+            using var brush = new SolidBrush(palette.Text);
             g.DrawString(label, Font, brush, Width - g.MeasureString(label, Font).Width - 2, Math.Max(0, y - Font.Height));
         }
 
+        // MaxLegend lines at a time; with more hosts a click on the legend shows the next ones. Each line carries a sample of its curve
+        // (colour and pattern), and the full name of a host is in the tooltip of its line (names are cut to fit the graph).
         private void DrawLegend(Graphics g)
         {
+            var (first, rows) = GraphLayout.LegendWindow(series.Count, legendOffset, MaxLegend);
+            legendOffset = legendFirst = first;
+            legendRows = rows;
+            legendLeft = Width;
             float y = 0;
-            foreach (var s in series.Take(MaxLegend))
+            for (int i = first; i < first + rows; i++)
             {
-                string name = s.Name.Length > 14 ? s.Name[..13] + "…" : s.Name;
-                using var brush = new SolidBrush(s.Color);
-                g.DrawString(name, Font, brush, Width - g.MeasureString(name, Font).Width - 2, y);
+                var s = series[i];
+                string name = FitName(g, s.Name, Width * 0.4f);
+                var color = palette.Series(i, s.Color);
+                using var brush = new SolidBrush(color);
+                float x = Width - g.MeasureString(name, Font).Width - 2;
+                g.DrawString(name, Font, brush, x, y);
+                using var sample = new Pen(color, 1.5f) { DashStyle = LinePatterns[palette.Dash(i)] };
+                g.DrawLine(sample, x - 22, y + Font.Height / 2f, x - 4, y + Font.Height / 2f);
+                legendLeft = Math.Min(legendLeft, x - 22);
                 y += Font.Height;
             }
 
-            if (series.Count > MaxLegend)
+            if (series.Count > rows)
             {
-                using var grey = new SolidBrush(Color.Silver);
-                string more = "+" + (series.Count - MaxLegend) + " more";
-                g.DrawString(more, Font, grey, Width - g.MeasureString(more, Font).Width - 2, y);
+                using var grey = new SolidBrush(palette.Text);
+                string more = $"{first + 1}-{first + rows} of {series.Count}: click for more";
+                float x = Width - g.MeasureString(more, Font).Width - 2;
+                g.DrawString(more, Font, grey, x, y);
+                legendLeft = Math.Min(legendLeft, x);
             }
+        }
+
+        // The name cut (with an ellipsis) until it fits `room` pixels.
+        private string FitName(Graphics g, string name, float room)
+        {
+            if (g.MeasureString(name, Font).Width <= room) return name;
+            for (int n = name.Length - 1; n > 1; n--)
+            {
+                string cut = name[..n] + "…";
+                if (g.MeasureString(cut, Font).Width <= room) return cut;
+            }
+
+            return "…";
+        }
+
+        private bool InLegend(Point p) =>
+            compare && series.Count > 0 && p.X >= legendLeft && p.Y < (legendRows + (series.Count > legendRows ? 1 : 0)) * Font.Height;
+
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            if (!InLegend(e.Location) || series.Count <= legendRows) return;
+            legendOffset = legendFirst + legendRows >= series.Count ? 0 : legendFirst + legendRows;   // the next page, round to the first
+            Invalidate();
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            int row = e.Y / Math.Max(1, Font.Height);
+            string text = InLegend(e.Location) && row < legendRows ? series[legendFirst + row].Name : "";
+            if (text == legendTipText) return;
+            legendTipText = text;
+            legendTip.SetToolTip(this, text);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) legendTip.Dispose();
+            base.Dispose(disposing);
         }
     }
 
-    internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples);
 }

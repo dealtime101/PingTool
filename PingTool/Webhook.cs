@@ -51,6 +51,7 @@ namespace PingTool
             HostChange.Up => "up",
             HostChange.Degraded => "degraded",
             HostChange.Recovered => "recovered",
+            HostChange.Notice => "notice",
             _ => "test",   // HostChange.None: the "--test-webhooks" message
         };
 
@@ -69,11 +70,11 @@ namespace PingTool
                     // ntfy takes the message as the body; its headers must be plain ASCII, so the host stays in the body.
                     request.Content = new StringContent(e.Text, new UTF8Encoding(false), "text/plain");
                     request.Headers.TryAddWithoutValidation("Title", "PingTool alert");
-                    request.Headers.TryAddWithoutValidation("Priority", e.Change == HostChange.Down ? "4" : e.Change == HostChange.Degraded ? "3" : "2");
+                    request.Headers.TryAddWithoutValidation("Priority", e.Change == HostChange.Down ? "4" : e.Change is HostChange.Degraded or HostChange.Notice ? "3" : "2");
                     request.Headers.TryAddWithoutValidation("Tags", e.Change switch
                     {
                         HostChange.Down => "red_circle",
-                        HostChange.Degraded => "warning",
+                        HostChange.Degraded or HostChange.Notice => "warning",
                         _ => "green_circle",
                     });
                     break;

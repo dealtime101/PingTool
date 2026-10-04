@@ -53,6 +53,7 @@
             btnIncidents = new Button();
             btnReport = new Button();
             btnTimeline = new Button();
+            btnOpenLog = new Button();
             btnImportProfiles = new Button();
             btnExportProfiles = new Button();
             chkCompact = new CheckBox();
@@ -113,7 +114,7 @@
             lblPingResult.Location = new Point(30, 80);
             lblPingResult.Name = "lblPingResult";
             lblPingResult.Size = new Size(224, 59);
-            lblPingResult.TabIndex = 4;
+            lblPingResult.TabIndex = 5;
             lblPingResult.Text = "---";
             lblPingResult.TextAlign = ContentAlignment.MiddleCenter;
             // 
@@ -124,7 +125,7 @@
             lblStats.Location = new Point(30, 190);
             lblStats.Name = "lblStats";
             lblStats.Size = new Size(10, 15);
-            lblStats.TabIndex = 5;
+            lblStats.TabIndex = 6;
             lblStats.Text = "Min - / Avg - / Max - ms\nJitter - ms | Loss 0% (0/0)\n-";
             //
             // graphLatency
@@ -132,7 +133,7 @@
             graphLatency.Location = new Point(30, 277);
             graphLatency.Name = "graphLatency";
             graphLatency.Size = new Size(224, 90);
-            graphLatency.TabIndex = 6;
+            graphLatency.TabIndex = 7;
             //
             // lblInterval
             //
@@ -140,7 +141,7 @@
             lblInterval.ForeColor = Color.White;
             lblInterval.Location = new Point(30, 367);
             lblInterval.Name = "lblInterval";
-            lblInterval.TabIndex = 7;
+            lblInterval.TabIndex = 8;
             lblInterval.Text = "Interval (ms)";
             //
             // lblTimeout
@@ -149,7 +150,7 @@
             lblTimeout.ForeColor = Color.White;
             lblTimeout.Location = new Point(106, 367);
             lblTimeout.Name = "lblTimeout";
-            lblTimeout.TabIndex = 9;
+            lblTimeout.TabIndex = 10;
             lblTimeout.Text = "Timeout (ms)";
             //
             // lblSize
@@ -158,7 +159,7 @@
             lblSize.ForeColor = Color.White;
             lblSize.Location = new Point(182, 367);
             lblSize.Name = "lblSize";
-            lblSize.TabIndex = 11;
+            lblSize.TabIndex = 12;
             lblSize.Text = "Size (bytes)";
             //
             // numInterval
@@ -172,7 +173,7 @@
             // Each box comes right after its label in tab order: that is how a screen reader names it,
             // and AccessibleName says it outright so a later reordering cannot break it.
             numInterval.AccessibleName = "Interval (ms)";
-            numInterval.TabIndex = 8;
+            numInterval.TabIndex = 9;
             numInterval.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numTimeout
@@ -184,7 +185,7 @@
             numTimeout.Name = "numTimeout";
             numTimeout.Size = new Size(68, 23);
             numTimeout.AccessibleName = "Timeout (ms)";
-            numTimeout.TabIndex = 10;
+            numTimeout.TabIndex = 11;
             numTimeout.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             //
             // numSize
@@ -195,7 +196,7 @@
             numSize.Name = "numSize";
             numSize.Size = new Size(72, 23);
             numSize.AccessibleName = "Size (bytes)";
-            numSize.TabIndex = 12;
+            numSize.TabIndex = 13;
             numSize.Value = new decimal(new int[] { 32, 0, 0, 0 });
             //
             // lblSlow
@@ -204,7 +205,7 @@
             lblSlow.ForeColor = Color.White;
             lblSlow.Location = new Point(30, 417);
             lblSlow.Name = "lblSlow";
-            lblSlow.TabIndex = 26;
+            lblSlow.TabIndex = 14;
             lblSlow.Text = "Slow above (ms)";
             //
             // numSlow
@@ -215,7 +216,7 @@
             numSlow.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numSlow.Name = "numSlow";
             numSlow.Size = new Size(80, 23);
-            numSlow.TabIndex = 27;
+            numSlow.TabIndex = 15;
             numSlow.Value = new decimal(new int[] { 150, 0, 0, 0 });
             //
             // lblLoss
@@ -224,7 +225,7 @@
             lblLoss.ForeColor = Color.White;
             lblLoss.Location = new Point(125, 417);
             lblLoss.Name = "lblLoss";
-            lblLoss.TabIndex = 28;
+            lblLoss.TabIndex = 16;
             lblLoss.Text = "Loss at least (%)";
             //
             // numLoss
@@ -235,7 +236,7 @@
             numLoss.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numLoss.Name = "numLoss";
             numLoss.Size = new Size(80, 23);
-            numLoss.TabIndex = 29;
+            numLoss.TabIndex = 17;
             numLoss.Value = new decimal(new int[] { 30, 0, 0, 0 });
             //
             // chkSaveLog
@@ -244,7 +245,7 @@
             chkSaveLog.ForeColor = Color.White;
             chkSaveLog.Location = new Point(30, 491);
             chkSaveLog.Name = "chkSaveLog";
-            chkSaveLog.TabIndex = 33;
+            chkSaveLog.TabIndex = 21;
             chkSaveLog.Text = "Save the log to disk (daily CSV per host)";
             //
             // lblDownAfter
@@ -253,18 +254,18 @@
             lblDownAfter.ForeColor = Color.White;
             lblDownAfter.Location = new Point(225, 417);
             lblDownAfter.Name = "lblDownAfter";
-            lblDownAfter.TabIndex = 31;
-            lblDownAfter.Text = "Down after";
+            lblDownAfter.TabIndex = 18;
+            lblDownAfter.Text = "Fails to down";
             //
             // numDownAfter
             //
-            numDownAfter.AccessibleName = "Down after (consecutive failures)";
+            numDownAfter.AccessibleName = "Fails to down (consecutive failures)";
             numDownAfter.Location = new Point(225, 435);
             numDownAfter.Maximum = new decimal(new int[] { 20, 0, 0, 0 });
             numDownAfter.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numDownAfter.Name = "numDownAfter";
             numDownAfter.Size = new Size(60, 23);
-            numDownAfter.TabIndex = 32;
+            numDownAfter.TabIndex = 19;
             numDownAfter.Value = new decimal(new int[] { 3, 0, 0, 0 });
             //
             // chkAlert
@@ -275,7 +276,7 @@
             chkAlert.ForeColor = Color.White;
             chkAlert.Location = new Point(30, 467);
             chkAlert.Name = "chkAlert";
-            chkAlert.TabIndex = 13;
+            chkAlert.TabIndex = 20;
             chkAlert.Text = "Alert on outage / slowdown / recovery";
             chkAlert.UseVisualStyleBackColor = true;
             //
@@ -286,10 +287,11 @@
             lstHosts.HideSelection = false;
             lstHosts.Location = new Point(300, 52);
             lstHosts.MultiSelect = false;
+            lstHosts.ShowItemToolTips = true;
             lstHosts.Name = "lstHosts";
             lstHosts.Size = new Size(260, 218);
             lstHosts.AccessibleName = "Monitored targets";
-            lstHosts.TabIndex = 14;
+            lstHosts.TabIndex = 25;
             lstHosts.UseCompatibleStateImageBehavior = false;
             lstHosts.View = View.Details;
             lstHosts.SelectedIndexChanged += lstHosts_SelectedIndexChanged;
@@ -319,7 +321,7 @@
             btnAddHost.Location = new Point(300, 328);
             btnAddHost.Name = "btnAddHost";
             btnAddHost.Size = new Size(120, 28);
-            btnAddHost.TabIndex = 15;
+            btnAddHost.TabIndex = 27;
             btnAddHost.Text = "Add address";
             btnAddHost.UseVisualStyleBackColor = true;
             btnAddHost.Click += btnAddHost_Click;
@@ -329,7 +331,7 @@
             btnRemoveHost.Location = new Point(440, 328);
             btnRemoveHost.Name = "btnRemoveHost";
             btnRemoveHost.Size = new Size(120, 28);
-            btnRemoveHost.TabIndex = 16;
+            btnRemoveHost.TabIndex = 28;
             btnRemoveHost.Text = "Remove selected";
             btnRemoveHost.UseVisualStyleBackColor = true;
             btnRemoveHost.Click += btnRemoveHost_Click;
@@ -339,7 +341,7 @@
             btnExport.Location = new Point(300, 362);
             btnExport.Name = "btnExport";
             btnExport.Size = new Size(126, 28);
-            btnExport.TabIndex = 17;
+            btnExport.TabIndex = 29;
             btnExport.Text = "Export CSV...";
             btnExport.UseVisualStyleBackColor = true;
             btnExport.Click += btnExport_Click;
@@ -349,7 +351,7 @@
             btnIncidents.Location = new Point(434, 362);
             btnIncidents.Name = "btnIncidents";
             btnIncidents.Size = new Size(126, 28);
-            btnIncidents.TabIndex = 21;
+            btnIncidents.TabIndex = 30;
             btnIncidents.Text = "Incidents (0)";
             btnIncidents.UseVisualStyleBackColor = true;
             btnIncidents.Click += btnIncidents_Click;
@@ -359,7 +361,7 @@
             btnReport.Location = new Point(300, 424);
             btnReport.Name = "btnReport";
             btnReport.Size = new Size(260, 28);
-            btnReport.TabIndex = 22;
+            btnReport.TabIndex = 32;
             btnReport.Text = "Save diagnostic report (HTML)...";
             btnReport.UseVisualStyleBackColor = true;
             btnReport.Click += btnReport_Click;
@@ -368,18 +370,28 @@
             //
             btnTimeline.Location = new Point(300, 456);
             btnTimeline.Name = "btnTimeline";
-            btnTimeline.Size = new Size(260, 28);
-            btnTimeline.TabIndex = 30;
+            btnTimeline.Size = new Size(126, 28);
+            btnTimeline.TabIndex = 33;
             btnTimeline.Text = "Session timeline...";
             btnTimeline.UseVisualStyleBackColor = true;
             btnTimeline.Click += btnTimeline_Click;
+            //
+            // btnOpenLog
+            //
+            btnOpenLog.Location = new Point(434, 456);
+            btnOpenLog.Name = "btnOpenLog";
+            btnOpenLog.Size = new Size(126, 28);
+            btnOpenLog.TabIndex = 34;
+            btnOpenLog.Text = "Open a log...";
+            btnOpenLog.UseVisualStyleBackColor = true;
+            btnOpenLog.Click += btnOpenLog_Click;
             //
             // btnImportProfiles
             //
             btnImportProfiles.Location = new Point(300, 488);
             btnImportProfiles.Name = "btnImportProfiles";
             btnImportProfiles.Size = new Size(126, 28);
-            btnImportProfiles.TabIndex = 34;
+            btnImportProfiles.TabIndex = 35;
             btnImportProfiles.Text = "Import profiles...";
             btnImportProfiles.UseVisualStyleBackColor = true;
             btnImportProfiles.Click += btnImportProfiles_Click;
@@ -389,7 +401,7 @@
             btnExportProfiles.Location = new Point(434, 488);
             btnExportProfiles.Name = "btnExportProfiles";
             btnExportProfiles.Size = new Size(126, 28);
-            btnExportProfiles.TabIndex = 35;
+            btnExportProfiles.TabIndex = 36;
             btnExportProfiles.Text = "Export profiles...";
             btnExportProfiles.UseVisualStyleBackColor = true;
             btnExportProfiles.Click += btnExportProfiles_Click;
@@ -411,7 +423,7 @@
             lblState.ForeColor = Color.Silver;
             lblState.Location = new Point(195, 154);
             lblState.Name = "lblState";
-            lblState.TabIndex = 18;
+            lblState.TabIndex = 4;
             lblState.Text = "";
             //
             // lblDiagnosis
@@ -421,7 +433,7 @@
             lblDiagnosis.Location = new Point(300, 276);
             lblDiagnosis.Name = "lblDiagnosis";
             lblDiagnosis.Size = new Size(260, 46);
-            lblDiagnosis.TabIndex = 19;
+            lblDiagnosis.TabIndex = 26;
             lblDiagnosis.Text = "";
             //
             // chkCompare
@@ -430,7 +442,7 @@
             chkCompare.ForeColor = Color.White;
             chkCompare.Location = new Point(300, 394);
             chkCompare.Name = "chkCompare";
-            chkCompare.TabIndex = 20;
+            chkCompare.TabIndex = 31;
             chkCompare.Text = "Compare all hosts on one graph";
             chkCompare.UseVisualStyleBackColor = true;
             chkCompare.CheckedChanged += chkCompare_CheckedChanged;
@@ -441,7 +453,7 @@
             cboProfile.Name = "cboProfile";
             cboProfile.Size = new Size(150, 23);
             cboProfile.AccessibleName = "Monitoring profile";
-            cboProfile.TabIndex = 23;
+            cboProfile.TabIndex = 22;
             cboProfile.SelectionChangeCommitted += cboProfile_SelectionChangeCommitted;
             //
             // btnSaveProfile
@@ -449,7 +461,7 @@
             btnSaveProfile.Location = new Point(455, 19);
             btnSaveProfile.Name = "btnSaveProfile";
             btnSaveProfile.Size = new Size(50, 25);
-            btnSaveProfile.TabIndex = 24;
+            btnSaveProfile.TabIndex = 23;
             btnSaveProfile.Text = "Save";
             btnSaveProfile.UseVisualStyleBackColor = true;
             btnSaveProfile.Click += btnSaveProfile_Click;
@@ -459,7 +471,7 @@
             btnDeleteProfile.Location = new Point(510, 19);
             btnDeleteProfile.Name = "btnDeleteProfile";
             btnDeleteProfile.Size = new Size(50, 25);
-            btnDeleteProfile.TabIndex = 25;
+            btnDeleteProfile.TabIndex = 24;
             btnDeleteProfile.Text = "Delete";
             btnDeleteProfile.UseVisualStyleBackColor = true;
             btnDeleteProfile.Click += btnDeleteProfile_Click;
@@ -479,6 +491,7 @@
             Controls.Add(cboProfile);
             Controls.Add(btnExportProfiles);
             Controls.Add(btnImportProfiles);
+            Controls.Add(btnOpenLog);
             Controls.Add(btnTimeline);
             Controls.Add(btnReport);
             Controls.Add(btnIncidents);
@@ -506,8 +519,8 @@
             Controls.Add(btnStartStop);
             Controls.Add(cmbAddress);
             Controls.Add(lblAddress);
-            FormBorderStyle = FormBorderStyle.FixedSingle;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             Name = "MainForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "PingTool";
@@ -545,6 +558,7 @@
         private Button btnIncidents;
         private Button btnReport;
         private Button btnTimeline;
+        private Button btnOpenLog;
         private Button btnImportProfiles;
         private Button btnExportProfiles;
         private ComboBox cboProfile;

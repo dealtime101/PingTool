@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -26,6 +27,15 @@ namespace PingTool
         public const int MaxRecent = 10;
         private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
+        // The file is meant to be edited by hand (the log folder, the limits, the webhooks live only there): a trailing comma, a
+        // comment or "intervalMs" for "IntervalMs" is not a reason to throw away the host list and the profiles.
+        private static readonly JsonSerializerOptions ReadOptions = new()
+        {
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+        };
+
         public string Address { get; set; } = "google.ca";
         public List<string> Recent { get; set; } = new();
         public List<string> Hosts { get; set; } = new();
@@ -34,6 +44,10 @@ namespace PingTool
         public int PacketSize { get; set; } = 32;
         public bool Alert { get; set; } = true;
         public bool Compact { get; set; }
+
+        // The size of the window the user chose (client area, pixels at 100 %); 0 = never resized, use the default.
+        public int WindowWidth { get; set; }
+        public int WindowHeight { get; set; }
 
         // "Save log to disk": every ping appended to a daily CSV per host (see AutoLog), in this
         // folder; blank = %APPDATA%\PingTool\logs. The folder is edited in settings.json.
@@ -53,6 +67,9 @@ namespace PingTool
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
         // Named monitoring profiles (see Profile) and the one last used.
+        // A readable name and limits of their own for some targets, by address (see TargetOptions).
+        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<Profile> Profiles { get; set; } = new();
         public string ActiveProfile { get; set; } = "";
 
@@ -64,9 +81,18 @@ namespace PingTool
         {
             try
             {
-                var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path)) ?? new Settings();
-                s.Normalize();
-                return s;
+                string text = File.ReadAllText(path);   // IOException, UnauthorizedAccess and a path NotSupported all come from here: a file problem
+                try
+                {
+                    var s = JsonSerializer.Deserialize<Settings>(text, ReadOptions) ?? new Settings();
+                    s.Normalize();
+                    return s;
+                }
+                catch (NotSupportedException ex)
+                {
+                    // From the deserializer it is about the CONTENT (a value it cannot turn into the setting): a damaged file, not a locked one.
+                    throw new JsonException(ex.Message, ex);
+                }
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
@@ -80,9 +106,10 @@ namespace PingTool
                 return new Settings
                 {
                     LoadProblem = $"The settings file could not be read ({Short(ex.Message)}). "
-                        + (kept is null ? "It could not be kept aside either: fix or remove it before closing PingTool, which would overwrite it. "
+                        + (kept is null ? "It could not be kept aside either: PingTool will not replace it without first keeping a copy (settings.json.unread-...). "
                                         : $"It was kept as {kept} so that you can fix it. ")
                         + "PingTool starts with its default settings.",
+                    mustKeepCopy = kept is null,
                 };
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -92,7 +119,9 @@ namespace PingTool
                 return new Settings
                 {
                     LoadProblem = $"The settings file could not be opened ({Short(ex.Message)}). The file was left as it is; "
-                        + "PingTool starts with its default settings and will overwrite it when it closes unless you fix the problem first.",
+                        + "PingTool starts with its default settings. It will not replace the file without first keeping a copy of it "
+                        + "(settings.json.unread-...), and not at all while it cannot make that copy.",
+                    mustKeepCopy = true,
                 };
             }
         }
@@ -100,6 +129,10 @@ namespace PingTool
         // What went wrong while loading, for the window to show; null when nothing did. Never saved.
         [JsonIgnore]
         public string? LoadProblem { get; private set; }
+
+        // The file exists but was not read (locked, or damaged and not moved aside): what is in memory is the defaults, not the user's
+        // settings, so the first save must not be the end of the file. See Save.
+        private bool mustKeepCopy;
 
         // settings.json -> settings.json.bad-20261003-142501-123 (a counter if that name is taken), so that two
         // damaged files in a row do not overwrite each other. Null when the move itself failed.
@@ -140,6 +173,8 @@ namespace PingTool
 
             Address = (Address ?? "").Trim();
             LogFolder = (LogFolder ?? "").Trim();
+            WindowWidth = WindowWidth <= 0 ? 0 : Math.Min(WindowWidth, WindowSizing.MaxClientWidth);
+            WindowHeight = WindowHeight <= 0 ? 0 : Math.Min(WindowHeight, WindowSizing.MaxClientHeight);
 
             // Only http(s) addresses, no duplicates, at most MaxWebhooks. What is left out is said in the start-up message
             // (without echoing the address): a webhook that silently vanished would mean alerts nobody receives.
@@ -153,7 +188,9 @@ namespace PingTool
                 .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent).ToList();
             Hosts = (Hosts ?? new List<string>())
-                .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
+                .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();   // the same rule as MainForm.AddHost
+            TargetOptions = PingTool.TargetOptions.Clean(TargetOptions!);
             Profiles = ProfileBook.Sanitize(Profiles);
         }
 
@@ -165,9 +202,50 @@ namespace PingTool
             // CreateDirectory refuses: resolve against the current folder first.
             string full = Path.GetFullPath(path);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);   // null only for a root, which is no file path
-            string temp = full + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(this, WriteOptions));
-            File.Move(temp, full, overwrite: true);
+
+            // The load failed on a file that is there: what we would write is the defaults. A copy first, and without it no save at all
+            // (the user's hosts and profiles stay in the original, whatever happens to this run).
+            if (mustKeepCopy && File.Exists(full))
+            {
+                string copy = full + ".unread-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+                try { File.Copy(full, copy, overwrite: true); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    throw new IOException("The settings file could not be read when PingTool started and a copy of it could not be made: it was not replaced.", ex);
+                }
+            }
+
+            mustKeepCopy = false;   // the original is safe now (or there was none): later saves are ordinary ones
+
+            // A name of its own for each save: two PingTool windows closing together, or two saves in a row, must not share the file
+            // they write (one would delete or move the other's, and its settings would be lost with an exception nobody reads).
+            // A crash leaves its temp file behind, and a unique name is never overwritten by the next save: old ones are swept here.
+            string temp = full + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            foreach (string old in Directory.EnumerateFiles(Path.GetDirectoryName(full)!, Path.GetFileName(full) + ".*.tmp"))
+            {
+                try { if (File.GetLastWriteTimeUtc(old) < DateTime.UtcNow.AddHours(-1)) File.Delete(old); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            }
+
+            try
+            {
+                // Flush(true) asks the disk itself to commit the bytes: without it a power cut right after the move can leave
+                // the new name pointing at an empty file.
+                using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    var bytes = new UTF8Encoding(false).GetBytes(JsonSerializer.Serialize(this, WriteOptions));
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Flush(true);
+                }
+
+                File.Move(temp, full, overwrite: true);
+            }
+            catch
+            {
+                // A failed save must not leave a half-written settings.json.tmp beside the real file.
+                try { File.Delete(temp); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                throw;
+            }
         }
 
         // Most recent first, no duplicates (case-insensitive), capped.

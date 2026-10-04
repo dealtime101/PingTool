@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace PingTool
 {
     // A named, reusable way of monitoring: the targets and every setting that shapes the probing.
@@ -13,6 +15,9 @@ namespace PingTool
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
+
+        // The name and own limits of some of the hosts above, by address (see TargetOptions).
+        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     // The rules for the list of profiles kept in settings.json. Names are compared without
@@ -28,11 +33,17 @@ namespace PingTool
             error = "";
 
             if (name.Length == 0) error = "Give the profile a name.";
+            else if (string.Equals(name, DiagnosticTargets.ProfileName, StringComparison.OrdinalIgnoreCase))
+                error = "That name is reserved for the built-in diagnosis: choose another.";
             else if (name.Length > MaxNameLength) error = $"The name is limited to {MaxNameLength} characters.";
-            else if (name.Any(char.IsControl)) error = "The name cannot contain control characters.";
+            else if (name.Any(IsInvisible)) error = "The name cannot contain control or invisible formatting characters.";
 
             return error.Length == 0;
         }
+
+        // Control characters and the invisible "format" ones (zero width space, bidi marks): "Home" and "Home" + U+200B look
+        // the same on screen but would be two profiles.
+        private static bool IsInvisible(char c) => char.IsControl(c) || char.GetUnicodeCategory(c) == UnicodeCategory.Format;
 
         public static Profile? Find(IEnumerable<Profile> book, string? name) =>
             book.FirstOrDefault(p => string.Equals(p.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -41,6 +52,7 @@ namespace PingTool
         // (and the name is new): the caller says so, nothing is lost silently.
         public static bool Upsert(List<Profile> book, Profile profile)
         {
+            profile.Name = profile.Name.Trim();   // Find and Remove compare trimmed: the same profile must not be added twice
             int at = book.FindIndex(p => string.Equals(p.Name, profile.Name, StringComparison.OrdinalIgnoreCase));
             if (at >= 0)
             {
@@ -63,7 +75,10 @@ namespace PingTool
             var clean = new List<Profile>();
             foreach (var p in loaded ?? Enumerable.Empty<Profile?>())
             {
-                if (p is null || !TryName(p.Name, out string name, out _)) continue;
+                if (p is null) continue;
+                // A profile saved before the format characters were refused keeps its place, under the name as it looked.
+                p.Name = string.Concat((p.Name ?? "").Where(c => char.GetUnicodeCategory(c) != UnicodeCategory.Format));
+                if (!TryName(p.Name, out string name, out _)) continue;
                 if (Find(clean, name) is not null) continue;
 
                 p.Name = name;
@@ -73,7 +88,10 @@ namespace PingTool
                 p.DegradedLatencyMs = Limits.Clamp(p.DegradedLatencyMs, Limits.DegradedLatencyMs);
                 p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
                 p.DownAfter = Limits.Clamp(p.DownAfter, Limits.DownAfter);
-                p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
+                p.TargetOptions = PingTool.TargetOptions.Clean(p.TargetOptions!);
+                // Same rules as an imported profile: one entry per address (case ignored), at most MaxHostsPerProfile.
+                p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Take(ProfileExchange.MaxHostsPerProfile).ToList();
                 clean.Add(p);
                 if (clean.Count == MaxProfiles) break;
             }

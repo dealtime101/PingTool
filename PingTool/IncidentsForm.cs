@@ -7,11 +7,17 @@ namespace PingTool
     {
         public IncidentsForm(IReadOnlyList<Incident> incidents, string summary, DateTimeOffset now)
         {
+            // Positions and sizes are written for 96 DPI: the form scales them to the screen, so that the text, which does grow
+            // with the scaling, keeps its room at 125 %, 150 % or 200 % (as TimelineForm and MainForm do).
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Incidents";
-            ClientSize = new Size(720, 480);
+            ClientSize = new Size(900, 480);
+            MinimumSize = SizeFromClientSize(new Size(640, 360));
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
@@ -24,27 +30,54 @@ namespace PingTool
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
-                Location = new Point(10, 40),
-                Size = new Size(700, 190),
+                Dock = DockStyle.Fill,
+                AccessibleName = "Incidents",
+                AccessibleDescription = "The outages and slowdowns of this run, newest first. Select one to read the route captured when it began; click a column title to sort.",
             };
-            list.Columns.Add("Host", 120);
-            list.Columns.Add("Type", 70);
-            list.Columns.Add("Start", 130);
-            list.Columns.Add("End", 130);
-            list.Columns.Add("Duration", 80);
-            list.Columns.Add("Failed", 50);
-            list.Columns.Add("Cause / detail", 100);
-            list.Columns.Add("#", 25);
+            // Column widths are not scaled by the form: written for 96 DPI too, and scaled here.
+            int W(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
+            list.Columns.Add("Host", W(120));
+            list.Columns.Add("Type", W(70));
+            list.Columns.Add("Start", W(130));
+            list.Columns.Add("End", W(130));
+            list.Columns.Add("Duration", W(80));
+            list.Columns.Add("Failed", W(58));
+            var causeColumn = list.Columns.Add("Cause / detail", W(100));
+            list.Columns.Add("#", W(36));
 
+            // "Cause / detail" is the most informative column: it takes everything the others leave, now and whenever the list
+            // is resized, instead of a width written for one window (a fixed 100 px cut every cause after a few letters).
+            void FitCause()
+            {
+                int others = list.Columns.Cast<ColumnHeader>().Where(c => c != causeColumn).Sum(c => c.Width);
+                causeColumn.Width = ColumnFit.Fill(list.ClientSize.Width, SystemInformation.VerticalScrollBarWidth, others, W(120));
+            }
+
+            list.HandleCreated += (_, _) => FitCause();
+            list.SizeChanged += (_, _) => FitCause();
+            FitCause();
+
+            // A click on a header sorts by that column (again: the other way round), on the values and not on the text shown.
+            // Until then the order is the newest first. The arrow in the title says which column and which way.
+            string[] titles = list.Columns.Cast<ColumnHeader>().Select(c => c.Text).ToArray();
+            int sortColumn = -1;
+            bool ascending = true;
+            list.ColumnClick += (_, e) =>
+            {
+                (sortColumn, ascending) = IncidentOrder.Click(sortColumn, ascending, e.Column);
+                list.ListViewItemSorter = new ItemSorter(sortColumn, ascending, now);
+                list.Sort();
+                for (int c = 0; c < titles.Length; c++) list.Columns[c].Text = titles[c] + (c == sortColumn ? (ascending ? " ▲" : " ▼") : "");
+            };
+
+            // All the rows are made first and handed over at once (inside BeginUpdate/EndUpdate): one repaint, not one per incident.
+            var rows = new List<ListViewItem>(incidents.Count);
             foreach (var i in incidents.Reverse())
             {
                 bool outage = i.Kind == IncidentKind.Outage;
-                string detail = outage
-                    ? i.Cause
-                    : string.Format(culture, "{0:0.#}% loss, avg {1} ms", i.LossPercent,
-                        i.AvgMs?.ToString("0.#", culture) ?? "-");
+                string detail = IncidentLog.CauseText(i, culture);
 
-                list.Items.Add(new ListViewItem(new[]
+                rows.Add(new ListViewItem(new[]
                 {
                     i.Host,
                     outage ? "Outage" : "Slowdown",
@@ -57,6 +90,10 @@ namespace PingTool
                 }) { Tag = i });
             }
 
+            list.BeginUpdate();
+            try { list.Items.AddRange(rows.ToArray()); }
+            finally { list.EndUpdate(); }
+
             // The route to the host at the moment of the selected outage.
             var details = new TextBox
             {
@@ -66,8 +103,9 @@ namespace PingTool
                 Font = new Font(FontFamily.GenericMonospace, 9F),
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.White,
-                Location = new Point(10, 238),
-                Size = new Size(700, 168),
+                Dock = DockStyle.Fill,
+                AccessibleName = "Route when the selected outage began",
+                AccessibleDescription = "The path to the host, hop by hop, captured when the selected outage began, and what changed from the healthy path.",
             };
             list.SelectedIndexChanged += (_, _) =>
                 details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
@@ -77,38 +115,69 @@ namespace PingTool
             {
                 Text = summary,
                 ForeColor = Color.White,
-                AutoSize = true,
-                Location = new Point(10, 12),
+                // As wide as the window and two lines high: the sentence wraps instead of running past the edge (a typical one is
+                // about 100 characters, as wide as the window at its minimum size; the longest the format makes is 119).
+                AutoSize = false,
+                Location = new Point(10, 6),
+                Size = new Size(880, 32),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             };
 
             var lblNote = new Label
             {
-                Text = "An outage starts at its first failed ping. A slowdown is dated when detected (after 10 pings). # = how many times this host had that kind of incident.",
+                Text = IncidentLog.DatingNote + " # = how many times this host had that kind of incident.",
                 ForeColor = Color.Silver,
                 AutoSize = false,
                 Location = new Point(10, 414),
-                Size = new Size(600, 34),
+                Size = new Size(780, 34),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             };
 
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(620, 418), Size = new Size(90, 28) };
+            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(800, 418), Size = new Size(90, 28), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
 
+            // The list and the route text share the height: more incidents or a longer route, drag the bar (or enlarge the window).
+            var split = new SplitContainer
+            {
+                Orientation = Orientation.Horizontal,
+                Location = new Point(10, 40),
+                Size = new Size(880, 366),
+                SplitterDistance = 190,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Color.FromArgb(64, 64, 64),
+                Panel1MinSize = 80,
+                Panel2MinSize = 60,
+            };
+            split.Panel1.Controls.Add(list);
+            split.Panel2.Controls.Add(details);
+
             Controls.Add(lblSummary);
-            Controls.Add(list);
-            Controls.Add(details);
+            Controls.Add(split);
             Controls.Add(lblNote);
             Controls.Add(close);
         }
 
+        private sealed class ItemSorter(int column, bool ascending, DateTimeOffset now) : System.Collections.IComparer
+        {
+            public int Compare(object? x, object? y)
+            {
+                int c = IncidentOrder.Compare((Incident)((ListViewItem)x!).Tag!, (Incident)((ListViewItem)y!).Tag!, column, now);
+                return ascending ? c : -c;
+            }
+        }
+
         private static string DetailsOf(Incident i)
         {
-            if (i.Kind == IncidentKind.Slowdown)
-                return "A slowdown has no route capture: the host still answers, only slowly.";
+            // The cause whole, first: the column of the list can be too narrow for it.
+            string head = IncidentLog.DetailLine(i, CultureInfo.CurrentCulture) + "\r\n\r\n";
 
-            return i.Path is null
+            if (i.Kind == IncidentKind.Slowdown)
+                return head + "A slowdown has no route capture: the host still answers, only slowly.";
+
+            return head + (i.Path is null
                 ? "No route was captured for this outage: the host's address was not known yet, the run was stopped first, or the trace is still running."
                 // A multi-line TextBox only breaks lines on CR LF: the route text uses a bare LF.
-                : i.PathText().Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
+                : i.PathText().Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal));
         }
     }
 }

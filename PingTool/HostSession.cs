@@ -6,13 +6,22 @@ namespace PingTool
     {
         public const int HistorySize = 180;
 
-        public HostSession(string address, int degradedLatencyMs = 150, int degradedLossPercent = 30, int downAfter = HostMonitor.DefaultDownAfter)
+        public HostSession(string address, int degradedLatencyMs = HostMonitor.DefaultLatencyMs, int degradedLossPercent = HostMonitor.DefaultLossPercent, int downAfter = HostMonitor.DefaultDownAfter)
         {
             Address = address;
             Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
         }
 
         public string Address { get; }
+
+        // A readable name and limits of its own, when the user gave them (see TargetOptions).
+        public TargetOptions? Options { get; set; }
+
+        // The limits of its own it was monitored with (Options may be edited later; the monitor keeps the old ones until the next Start).
+        public string? RunLimits { get; set; }
+
+        // What the list, the alerts and the report call it: its name, or its address.
+        public string DisplayName => TargetOptions.DisplayName(Address, Options);
         public SessionStats Stats { get; } = new();
         public HostMonitor Monitor { get; private set; }
 
@@ -28,6 +37,9 @@ namespace PingTool
         // Why the last ping failed; null when it succeeded or none was sent.
         public PingFailure? LastFailure { get; private set; }
 
+        // Something worth knowing although the last probe succeeded (a certificate about to expire); null when nothing.
+        public string? Notice { get; set; }
+
         // "IPv4 142.250.80.35", "IPv6 2607:f8b0::2004", "-" before resolution.
         public string IpText { get; private set; } = "-";
 
@@ -41,6 +53,7 @@ namespace PingTool
             History.Clear();
             Last = null;
             LastFailure = null;
+            Notice = null;
             IpText = "-";
             Ip = null;
             BaselinePath = null;
@@ -76,11 +89,11 @@ namespace PingTool
         }
 
         // ping < 0 means failure; without a stated cause it is a plain timeout.
-        public void Add(long ping, PingFailure? failure = null)
+        public void Add(long ping, PingFailure? failure = null, DateTimeOffset? at = null)
         {
             Last = ping;
             LastFailure = ping < 0 ? failure ?? PingFailure.Timeout : null;
-            Stats.Add(ping);
+            Stats.Add(ping, at);
             History.Enqueue(ping);
             while (History.Count > HistorySize) History.Dequeue();
         }

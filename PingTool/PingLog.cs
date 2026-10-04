@@ -14,8 +14,10 @@ namespace PingTool
 
         public int Count => entries.Count;
 
-        // Oldest first. Read-only: the timeline draws from it.
-        public IReadOnlyCollection<LogEntry> Entries => entries;
+        // Oldest first, as it is NOW: a copy, so that nothing handed out can be cast back to the queue and changed behind Add and Clear
+        // (the cap and Dropped would no longer say what the log holds), and a window that keeps it while pings go on sees a fixed
+        // log, as its comment says. Each call copies: take it once, not once per item.
+        public IReadOnlyCollection<LogEntry> Entries => entries.ToArray();
 
         // How many of the oldest entries were let go since the last Clear, to say so instead of letting
         // an export or a timeline pass for the whole session.
@@ -65,7 +67,7 @@ namespace PingTool
         // Looking at the very first character is not enough: spaces, a no-break space, a line feed, a
         // zero-width space or a byte-order mark in front hide the formula character from a check on
         // value[0] while a spreadsheet may still skip them. So: the first VISIBLE character decides.
-        private static bool StartsLikeFormula(string value)
+        internal static bool StartsLikeFormula(string value)
         {
             if (value.Length > 0 && (value[0] == '\t' || value[0] == '\r')) return true;
 

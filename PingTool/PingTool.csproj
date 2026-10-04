@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The icon of the program (see tools/make-icon.py): on the exe, in the window and in the notification area. -->
+    <ApplicationIcon>PingTool.ico</ApplicationIcon>
     <!-- THE version of PingTool: bump it by hand at each delivery (see pingtool-deploy.sh).
          1.0.0 = the repository as first received; 1.1.0 = after audits 451-453 (+ version system);
          1.2.0 = recent-window percentiles and jitter (PIN453.5);
@@ -43,8 +45,136 @@
          1.12.12 = an unreachable host has one label whether it came as an exception or as an ICMP reply (PIN456.25);
          1.12.13 = the CSV export no longer changes the line ending of the writer it is given (PIN456.28);
          1.12.14 = jitter is measured only between replies that follow each other, a loss breaks the chain (PIN456.29);
-         1.13.0 = alerts can also be posted to webhooks (Slack, Discord, ntfy, JSON), and a webhook test command (PIN461.1). -->
-    <Version>1.13.0</Version>
+         1.13.0 = alerts can also be posted to webhooks (Slack, Discord, ntfy, JSON), and a webhook test command (PIN461.1);
+         1.14.0 = a recorded log can be opened again: timeline, incidents and report (PIN461.2);
+         1.15.0 = "Diagnose my connection": gateway, DNS and Internet references in one click (PIN461.3);
+         1.16.0 = changes of the PC's own network are noted on the timeline and in the report (PIN461.4);
+         1.17.0 = the report opens with an availability summary and a loss-by-hour grid (PIN461.5);
+         1.18.0 = a name and limits of their own for each target (PIN461.6);
+         1.19.0 = web targets can check the page content and warn before the certificate expires (PIN461.7);
+         1.20.0 = a headless mode for scheduled runs: a duration, a report, an exit code (PIN461.8);
+         1.20.1 = Enter in the address box adds the typed address before starting (PIN461.9);
+         1.20.2 = the red of the diagnosis sentence reaches 4.5:1 on the dark window (PIN461.10);
+         1.20.3 = PingTool has its own icon: window, notification area and exe (PIN461.11);
+         1.20.4 = started minimized, the window never appears, not even for a frame (PIN461.13);
+         1.20.5 = after the report is saved, say where and offer to open it (PIN461.14);
+         1.20.6 = the latency graph tells a screen reader its figures (PIN461.15);
+         1.20.7 = the latency graph follows a high-contrast theme (PIN461.16);
+         1.20.8 = in the comparison graph each target has its own band for its lost pings (PIN461.17);
+         1.20.9 = the text of the graphs is drawn with ClearType (PIN461.18);
+         1.20.10 = the tab order follows the screen, left column then right column (PIN461.19, PIN461.20);
+         1.20.11 = a host name cut by the narrow column shows whole on hover (PIN461.22);
+         1.20.12 = the window can be resized and maximized, and remembers its size (PIN461.23);
+         1.20.13 = the failures-before-down box says its unit on screen and on hover (PIN461.24);
+         1.20.14 = the SVG graphs of the report have a role, a name and the figures as text (PIN461.25);
+         1.20.15 = the report fits a phone: viewport, fluid graphs, wide tables scroll in their box (PIN461.26);
+         1.20.16 = the report tables have header rows, column and row headings for assistive technology (PIN461.27);
+         1.20.17 = settings.json tolerates trailing commas, comments and property names in any case (PIN461.28);
+         1.20.18 = a target written twice in settings.json is read once (PIN461.29);
+         1.20.19 = the settings file is flushed to disk before it replaces the old one, and a failed save leaves no temporary file (PIN461.30);
+         1.20.20 = a value the settings reader cannot convert counts as a damaged file, kept aside, not as a locked one (PIN461.31);
+         1.20.21 = the time axis labels stay right after a daylight-saving change (PIN461.32);
+         1.20.22 = the dates on the time axis use the month name of the user's culture, never MM-dd (PIN461.33);
+         1.21.0 = the texts of the timeline summary exist in English and French, with a table that a test keeps complete (PIN461.34);
+         1.21.1 = the timeline scale follows the 98th percentile: one spike no longer flattens the chart, it is cut and marked (PIN461.35);
+         1.21.2 = the timeline names the column with the most lost pings, with their count, not an isolated 1 of 1 (PIN461.36);
+         1.21.3 = an outage starting at the right edge of the timeline keeps a visible band (PIN461.37);
+         1.21.4 = a slowdown noticed during the first failures of an outage is no longer left ending before it starts (PIN461.38);
+         1.21.5 = a second "degraded" report closes the first slowdown instead of leaving it open for ever (PIN461.39);
+         1.21.6 = outages of several targets at the same time are counted once in the incident summary (PIN461.40);
+         1.21.7 = the incident number of a target is a counter, not a count of the whole list (PIN461.41);
+         1.21.8 = the comment of the incident number says it is counted per target and per kind (PIN461.42);
+         1.21.9 = a trace whose probe cannot be sent says so, instead of blaming this PC or its link (PIN461.43);
+         1.21.10 = a hop is tried up to 3 times before it is called silent: rate-limited routers no longer cut or falsify the route (PIN461.44);
+         1.21.11 = a trace where nothing answers no longer concludes that the fault is on this PC (PIN461.45);
+         1.21.12 = the routers seen at each hop are kept as a set: a load-balanced path is no longer reported as a route change (PIN461.46);
+         1.21.13 = Stop cancels a trace probe even before it is on the wire (PIN461.47);
+         1.21.14 = the timeline window opens without error when there is no target (PIN461.48);
+         1.21.15 = outages are striped on the timeline, so they differ from slowdowns by more than a colour (PIN461.50);
+         1.21.16 = the timeline chart takes the focus and tells a screen reader its summary and incidents (PIN461.51);
+         1.21.17 = the timeline window follows the screen scaling and can be resized and maximized (PIN461.52);
+         1.21.18 = a timeline chart with no room asks for a bigger window instead of saying there is no data (PIN461.54);
+         1.21.19 = the left margin of the timeline chart is as wide as its top value, and the margins follow the screen scaling (PIN461.55);
+         1.21.20 = a profile file with a bad value names the place in the file, not in a copy of it (PIN461.56);
+         1.21.21 = one unreadable profile or number in a profile file no longer rejects the whole file (PIN461.57);
+         1.21.22 = the size limit of a profile file counts bytes, not characters (PIN461.58);
+         1.21.23 = a profile file whose Format or Version is not what PingTool writes is refused with a clear message (PIN461.59);
+         1.21.24 = a TLS failure raised directly by the secure stream is labelled TLS too, not Error (PIN461.60);
+         1.21.25 = a deadline reported by the HTTP layer is labelled Timeout like a socket timeout (PIN461.61);
+         1.21.26 = a name that exists but has no address of the requested type is no longer reported as an unknown name (PIN461.62);
+         1.21.27 = the TCP probe times the connection only: the name lookup is done first and not counted (PIN461.63);
+         1.21.28 = Stop reaches an ICMP ping in flight through the token, in the window and in headless mode (PIN461.64);
+         1.21.29 = in the incident list the Cause column takes the remaining width, in a wider window (PIN461.65);
+         1.21.30 = the incident window can be resized, with a splitter between the list and the route text (PIN461.66);
+         1.21.31 = the incident window follows the screen scaling, its columns too (PIN461.68);
+         1.21.32 = the help text of the incident window and the report is built from the detector's own window size (PIN461.69);
+         1.21.33 = a click on a column of the incident list sorts it, on the values (PIN461.70);
+         1.21.34 = the incident rows are added to the list in one go (PIN461.71);
+         1.21.35 = the incident list and the route box have an accessible name and description (PIN461.72);
+         1.21.36 = the diagnosis says "their paths" when several targets are concerned (PIN461.73);
+         1.21.37 = a target without a resolved address is no longer counted as an Internet target by the diagnosis (PIN461.74);
+         1.21.38 = the diagnosis no longer says the others answer when they are slow: it points at the shared link (PIN461.75);
+         1.21.39 = the comment on the capacity of the automatic log queue gives the right figures (PIN461.76);
+         1.21.40 = pings thrown away by a log folder that stays unwritable are counted and reported (PIN461.77);
+         1.21.41 = a log batch half-written by a full disk or a dropped share is cut back before the retry, no duplicated rows (PIN461.78);
+         1.21.42 = a flush that fails no longer rebuilds a file name for every queued ping, a full queue costs 4-11 ms and 0.5 MB per try instead of 17-32 ms and 10 MB (PIN461.79);
+         1.21.43 = tcp://host:port/ with a trailing slash is accepted, as dns:// already was (PIN461.81);
+         1.21.44 = an address without prefix that holds a space, a slash or a port is refused with a message naming tcp:// and https:// (PIN461.82);
+         1.21.45 = the host of a tcp:// address is checked: a space, a slash or another character a host cannot hold is refused at once (PIN461.83);
+         1.21.46 = the hosts of a profile read from settings.json are de-duplicated (case ignored) and capped at 100, like an imported profile (PIN461.84);
+         1.21.47 = a profile name cannot hold invisible formatting characters (zero width, bidi); profiles already saved with one keep their place under the visible name (PIN461.85);
+         1.21.48 = the profile book trims a name before adding it, as it does to find or remove one: no duplicate under "Home " (PIN461.86);
+         1.21.49 = the command line help takes the limits of the interval option from the settings limits instead of repeating them (PIN461.87);
+         1.21.50 = a command line switch written with a value (start=false and the like) is refused instead of switching the option on (PIN461.88);
+         1.21.51 = with a loss limit of 10 % or less a host no longer flips between degraded and recovered on every ping: the way back is strictly under the way in (PIN461.90);
+         1.21.52 = a host session made without thresholds takes the default limits of the monitor instead of its own copy (PIN461.91);
+         1.21.53 = the recent figures show the loss even with fewer than 10 replies, so a host that answers nothing reads "loss 100%" (PIN461.93);
+         1.21.54 = a route trace that fails after its window was closed is dropped quietly instead of escaping to the application (PIN461.94);
+         1.21.55 = the route window releases its cancellation source when it is disposed (PIN461.95);
+         1.21.56 = the route window scales with the screen DPI and can be resized, its trace box and Close button anchored (PIN461.97);
+         1.21.57 = the route window lists the hops as the trace finds them instead of one frozen line (PIN461.98);
+         1.21.58 = the graph layout no longer divides by a scale of zero (PIN461.99);
+         1.21.59 = before the first ping the loss reads "-" instead of "0%", in the window and in the reports (PIN461.101);
+         1.21.60 = the alert texts are in Loc: French under a French display language, English otherwise (PIN461.102);
+         1.21.61 = a degraded alert with no reply at all says so instead of "average - ms" (PIN461.103);
+         1.21.62 = a refused command line is shown in a box with the error icon and a title that says so; the usage text keeps an information icon (PIN461.104);
+         1.21.63 = an error nobody caught is written to crash.log next to settings.json and said in a box, once per run; PingTool carries on after an error of the window's thread (PIN461.105);
+         1.21.64 = the narrowest the Host column can get follows the screen scaling (PIN461.106);
+         1.21.65 = the limit case of the column fit is written down: the floor is never reached at the window's minimum size (PIN461.107);
+         1.21.66 = a new run no longer drops the pings an unwritable log folder still holds: the same log goes on, or the old one is retried on its own (PIN461.108);
+         1.21.67 = the report states the settings and limits the run was started with, not the ones in the boxes after Stop (PIN461.109);
+         1.21.68 = in compact mode Start asks what to do with a new address typed in the box, instead of ignoring it while the hidden list is monitored (PIN461.110);
+         1.21.69 = compared curves all look different (the pattern changes each time the colours come round), and the legend reaches every host: pages on click, a sample of each curve, the full name in a tooltip (PIN461.111);
+         1.21.70 = what a screen reader is told about the graph names every compared host, not the first five (PIN461.112);
+         1.21.71 = under each report graph, the pings as text in time order (losses in words), for whoever cannot read the curve (PIN461.116);
+         1.21.72 = the report says its graphs never have a scale under 50 ms (PIN461.118);
+         1.21.73 = a settings file that could not be read is no longer overwritten by the defaults: a copy is made first, and without it nothing is replaced (PIN461.119);
+         1.21.74 = two PingTool windows saving the settings at the same moment no longer lose saves: each writes its own temporary file (PIN461.121);
+         1.21.75 = the time axis of the timeline never carries more marks than its limit, whatever the range and where it starts (PIN461.123);
+         1.21.76 = the timeline summary ends at the last ping really made: a single ping no longer reads as a one second session (PIN461.125);
+         1.21.77 = a trace that gave up after three silent hops says it did not try the rest, and the trace asked for from the window never gives up early (PIN461.129);
+         1.21.78 = only the unreachable family of ICMP statuses ends a trace as "unreachable": another router error is shown and the trace goes on, a missing answer is a failed probe (PIN461.131);
+         1.21.79 = the route comparison reports a hop whose address is the same but whose answer changed: destination reached then unreachable, or the reverse (PIN461.132);
+         1.21.80 = the time labels of the timeline axis stay inside the control: the first and the last are no longer cut by its edge (PIN461.134);
+         1.21.81 = what a screen reader is told about the timeline now includes the session period by period (average reply, share lost), not only the summary (PIN461.135);
+         1.21.82 = a connection aborted by this computer is no longer reported as closed by the other side (PIN461.138);
+         1.21.83 = the "not enough resources" ping status no longer says the shortage is on the path (PIN461.139);
+         1.21.84 = the incident summary wraps over two lines inside the window instead of running past its edge (PIN461.142);
+         1.21.85 = a loopback target (127.0.0.1, ::1) no longer counts as proof that the local network answers in the diagnosis (PIN461.145);
+         1.21.86 = when every target is down the diagnosis lists the possible causes instead of ruling the targets out (PIN461.146);
+         1.21.87 = a log file left ending in half a row by a crash or a power cut is cut back to its last complete row before the next rows are appended (PIN461.147);
+         1.21.88 = a dns:// address must be just a name: a query, a fragment, a user part, a space or an empty label is refused (PIN461.150);
+         1.21.89 = the in-memory ping log hands out a copy of its entries, not its own queue: it can no longer be changed behind its cap and counter (PIN461.154);
+         1.21.90 = the recent figures give a percentile only once it differs from the maximum: p95 from 20 replies, p99 from 100 (never within the 60 pings of the window) (PIN461.158);
+         1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165);
+         1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170);
+         1.21.93 = the details of the selected incident start with its whole cause, for when the column of the list is too narrow for it (PIN461.177);
+         1.21.94 = the window built without start-up options no longer dereferences the null parameter (PIN461.189). -->
+    <Version>1.21.94</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="PingTool.ico" LogicalName="PingTool.ico" />
+  </ItemGroup>
 
 </Project>

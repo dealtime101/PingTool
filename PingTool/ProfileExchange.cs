@@ -15,7 +15,30 @@ namespace PingTool
 
         private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
         // A file edited by hand may say "name" or "hosts": the case of a key is not worth a refusal.
-        private static readonly JsonSerializerOptions ReadOptions = new() { PropertyNameCaseInsensitive = true };
+        private static readonly JsonSerializerOptions ReadOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new LenientInt() },
+        };
+
+        // A number in a file written by hand: "5" between quotes is 5, and 1e12 does not fit an int: it is pulled to the nearest
+        // int and ProfileBook.Sanitize brings it into the range of its setting (the promise of the comment above), instead of the
+        // JSON reader refusing the whole file. Anything that is not a number at all still fails, for that profile only.
+        private sealed class LenientInt : System.Text.Json.Serialization.JsonConverter<int>
+        {
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                double value;
+                if (reader.TokenType == JsonTokenType.Number) value = reader.GetDouble();
+                else if (reader.TokenType == JsonTokenType.String
+                         && double.TryParse(reader.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value)) { }
+                else throw new JsonException($"The JSON value could not be converted to a number.");
+                if (double.IsNaN(value)) throw new JsonException("The JSON value is not a number.");
+                return (int)Math.Clamp(Math.Truncate(value), int.MinValue, int.MaxValue);
+            }
+
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options) => writer.WriteNumberValue(value);
+        }
 
         private sealed class Document
         {
@@ -36,13 +59,18 @@ namespace PingTool
             imported = new Imported(new List<Profile>(), 0, 0);
             error = "";
 
-            if (json.Length > MaxFileBytes)
+            // Bytes, as the name says: a character takes up to 4. (MainForm already refuses a bigger FILE before reading it; this
+            // protects every other way to hand a string in.) Length first: it is free, and a string longer than the limit in
+            // characters is longer in bytes.
+            if (json.Length > MaxFileBytes || System.Text.Encoding.UTF8.GetByteCount(json) > MaxFileBytes)
             {
                 error = "That file is too large to be a list of profiles.";
                 return false;
             }
 
             List<Profile?>? raw;
+            string where = "$";   // where the list sits in the file, for an error found inside it
+            string? firstProblem = null;
             try
             {
                 using var doc = JsonDocument.Parse(json);
@@ -55,16 +83,27 @@ namespace PingTool
                 }
                 else if (root.ValueKind == JsonValueKind.Object)
                 {
-                    if (Find(root, "Format") is { ValueKind: JsonValueKind.String } f && f.GetString() != FormatName)
+                    // Absent is fine (a list written by hand); PRESENT, it must be what we write: a number, null or another name there
+                    // means a file from somewhere else.
+                    if (Find(root, "Format") is { } f && !(f.ValueKind == JsonValueKind.String && f.GetString() == FormatName))
                     {
                         error = "This file is not a PingTool profiles file.";
                         return false;
                     }
 
-                    if (Find(root, "Version") is { ValueKind: JsonValueKind.Number } v && v.TryGetInt32(out int version) && version > FormatVersion)
+                    if (Find(root, "Version") is { } v)
                     {
-                        error = "This file was made by a newer PingTool: update PingTool to read it.";
-                        return false;
+                        if (!(v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int version) && version >= 1))
+                        {
+                            error = "This file has a version number that PingTool cannot read.";
+                            return false;
+                        }
+
+                        if (version > FormatVersion)
+                        {
+                            error = "This file was made by a newer PingTool: update PingTool to read it.";
+                            return false;
+                        }
                     }
 
                     if (Find(root, "Profiles") is not { ValueKind: JsonValueKind.Array } p)
@@ -74,6 +113,7 @@ namespace PingTool
                     }
 
                     list = p;
+                    where = "$.Profiles";
                 }
                 else
                 {
@@ -81,10 +121,30 @@ namespace PingTool
                     return false;
                 }
 
-                raw = JsonSerializer.Deserialize<List<Profile?>>(list.GetRawText(), ReadOptions);
+                // One profile at a time: a profile that cannot be read is dropped (and counted), the others are kept. Each element is
+                // read as itself, not as a copy of its text, so an error names a place in the FILE (its path), not in a copy.
+                raw = new List<Profile?>();
+                int index = 0;
+                foreach (var element in list.EnumerateArray())
+                {
+                    try
+                    {
+                        raw.Add(element.Deserialize<Profile?>(ReadOptions));
+                    }
+                    catch (JsonException ex)
+                    {
+                        raw.Add(null);
+                        string at = where + "[" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]" + (ex.Path is { Length: > 1 } path ? path[1..] : "");
+                        int cut = ex.Message.IndexOf(" Path:", StringComparison.Ordinal);
+                        firstProblem ??= $"A profile in this file is not valid: {(cut > 0 ? ex.Message[..cut] : ex.Message)} (at {at}).";
+                    }
+
+                    index++;
+                }
             }
             catch (JsonException ex)
             {
+                // The file itself is not JSON: here the line and position are those of the file.
                 error = "This file is not valid JSON: " + ex.Message;
                 return false;
             }
@@ -114,7 +174,7 @@ namespace PingTool
             imported = new Imported(clean, (raw?.Count ?? 0) - clean.Count, targetsDropped);
             if (clean.Count == 0)
             {
-                error = "No usable profile in this file.";
+                error = firstProblem ?? "No usable profile in this file.";
                 return false;
             }
 

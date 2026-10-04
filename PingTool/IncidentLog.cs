@@ -23,7 +23,8 @@ namespace PingTool
         public double LossPercent { get; init; }
         public double? AvgMs { get; init; }
 
-        // 1 for the first outage of this host, 2 for the second...: how often it came back.
+        // 1 for the first incident of this host AND of this kind, 2 for the second...: outages and slowdowns are counted
+        // separately, per host (an outage is "how often it went down", a slowdown "how often it got slow").
         public int Occurrence { get; init; }
 
         // Outage only: the route to the host captured when the outage was declared, and what
@@ -50,9 +51,20 @@ namespace PingTool
         {
             public DateTimeOffset? StreakStart;
             public int StreakCount;
-            public readonly Dictionary<string, int> StreakCauses = new();
+            // The causes of the streak with how often each was seen, in the order they were FIRST seen (a Dictionary does not promise an
+            // order of enumeration, and the tie-break below depends on it).
+            public readonly List<(string Cause, int Count)> StreakCauses = new();
+
+            public void CountCause(string cause)
+            {
+                int at = StreakCauses.FindIndex(c => c.Cause == cause);
+                if (at >= 0) StreakCauses[at] = (cause, StreakCauses[at].Count + 1);
+                else StreakCauses.Add((cause, 1));
+            }
             public Incident? Outage;
             public Incident? Slow;
+            // How many of each kind this host has had: the next incident's "#", without counting the whole list each time.
+            public int Outages, Slowdowns;
         }
 
         private readonly List<Incident> incidents = new();
@@ -78,7 +90,7 @@ namespace PingTool
                 t.StreakStart ??= time;
                 t.StreakCount++;
                 string cause = (failure ?? PingFailure.Timeout).Short;
-                t.StreakCauses[cause] = t.StreakCauses.GetValueOrDefault(cause) + 1;
+                t.CountCause(cause);
 
                 if (t.Outage is not null)
                 {
@@ -91,8 +103,16 @@ namespace PingTool
             {
                 case HostChange.Down:
                     var begin = t.StreakStart ?? time;
-                    if (t.Slow is not null) { t.Slow.End = begin; t.Slow = null; }
-                    t.Outage = Open(host, IncidentKind.Outage, begin, 0, null);
+                    if (t.Slow is not null)
+                    {
+                        // The outage is dated at the first failed ping, which can come BEFORE the moment the slowdown was noticed
+                        // (the first failures push the loss of the window over the limit): that "slowdown" is the beginning of
+                        // the outage, not a separate event, and keeping it would give it an end before its start.
+                        if (t.Slow.Start >= begin) { incidents.Remove(t.Slow); t.Slowdowns--; }   // it never counted
+                        else t.Slow.End = begin;
+                        t.Slow = null;
+                    }
+                    t.Outage = Open(t, host, IncidentKind.Outage, begin, 0, null);
                     t.Outage.FailedPings = t.StreakCount;
                     t.Outage.Cause = Top(t.StreakCauses);
                     break;
@@ -102,7 +122,10 @@ namespace PingTool
                     break;
 
                 case HostChange.Degraded:
-                    t.Slow = Open(host, IncidentKind.Slowdown, time, windowLossPercent, windowAvgMs);
+                    // One slowdown at a time: a second "Degraded" without a "Recovered" in between closes the first instead of
+                    // leaving it "ongoing" for ever with nothing left that could end it.
+                    if (t.Slow is not null) t.Slow.End = time;
+                    t.Slow = Open(t, host, IncidentKind.Slowdown, time, windowLossPercent, windowAvgMs);
                     break;
 
                 case HostChange.Recovered:
@@ -118,7 +141,7 @@ namespace PingTool
             }
         }
 
-        private Incident Open(string host, IncidentKind kind, DateTimeOffset start, double loss, double? avg)
+        private Incident Open(Track t, string host, IncidentKind kind, DateTimeOffset start, double loss, double? avg)
         {
             var incident = new Incident
             {
@@ -127,15 +150,32 @@ namespace PingTool
                 Start = start,
                 LossPercent = loss,
                 AvgMs = avg,
-                Occurrence = incidents.Count(i => i.Host == host && i.Kind == kind) + 1,
+                Occurrence = kind == IncidentKind.Outage ? ++t.Outages : ++t.Slowdowns,
             };
             incidents.Add(incident);
             return incident;
         }
 
         // Most frequent cause; ties go to the one seen first.
-        private static string Top(Dictionary<string, int> causes) =>
-            causes.Count == 0 ? "" : causes.MaxBy(kv => kv.Value).Key;
+        private static string Top(List<(string Cause, int Count)> causes)
+        {
+            string best = "";
+            int most = 0;
+            foreach (var (cause, count) in causes)
+                if (count > most) { best = cause; most = count; }   // strictly more: on a tie the first seen keeps it
+
+            return best;
+        }
+
+        // The "Cause / detail" of an incident, as the list shows it: an outage's cause, or what a slowdown measured.
+        public static string CauseText(Incident i, CultureInfo c) => i.Kind == IncidentKind.Outage
+            ? i.Cause
+            : string.Format(c, "{0:0.#}% loss, avg {1} ms", i.LossPercent, i.AvgMs?.ToString("0.#", c) ?? "-");
+
+        // The same, whole, as the first line of the details of the selected incident: the column can be too narrow for it.
+        public static string DetailLine(Incident i, CultureInfo c) => i.Kind == IncidentKind.Outage
+            ? $"Cause: {CauseText(i, c)} ({i.FailedPings.ToString(c)} failed ping(s))"
+            : $"Detail: {CauseText(i, c)}";
 
         public string Summary(DateTimeOffset now)
         {
@@ -148,10 +188,12 @@ namespace PingTool
 
             if (outages.Count > 0)
             {
-                var down = outages.Aggregate(TimeSpan.Zero, (sum, i) => sum + i.Duration(now));
+                var down = TimeWithAnOutage(outages, now);
                 // With one outage the longest is the total: saying it twice adds nothing.
                 string longest = outages.Count > 1 ? $", longest {FormatDuration(outages.Max(i => i.Duration(now)))}" : "";
-                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} down{longest})");
+                // Several hosts down at once (the box went off) count once: the time during which at least one was down.
+                string what = outages.Select(i => i.Host).Distinct().Count() > 1 ? "with a target down" : "down";
+                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} {what}{longest})");
             }
 
             if (slow > 0) parts.Add($"{slow} slowdown{(slow == 1 ? "" : "s")}");
@@ -159,6 +201,28 @@ namespace PingTool
             return string.Create(CultureInfo.InvariantCulture,
                 $"{incidents.Count} incident{(incidents.Count == 1 ? "" : "s")} on {hosts} host{(hosts == 1 ? "" : "s")}: {string.Join(", ", parts)}.");
         }
+
+        // The length of the union of the outages' intervals: two hosts down for the same ten minutes are ten minutes, not twenty.
+        internal static TimeSpan TimeWithAnOutage(IEnumerable<Incident> outages, DateTimeOffset now)
+        {
+            var total = TimeSpan.Zero;
+            DateTimeOffset? from = null, to = null;
+            foreach (var i in outages.OrderBy(o => o.Start))
+            {
+                var end = i.End ?? now;
+                if (end < i.Start) end = i.Start;
+                if (to is null || i.Start > to) { if (from is not null) total += to!.Value - from.Value; from = i.Start; to = end; }
+                else if (end > to) to = end;
+            }
+
+            if (from is not null) total += to!.Value - from.Value;
+            return total;
+        }
+
+        // How incidents are dated, written once for the window and the report. The size of the window is the detector's own constant, so
+        // this text cannot go out of date with the rule it describes.
+        public static string DatingNote => string.Create(CultureInfo.InvariantCulture,
+            $"An outage starts at its first failed ping. A slowdown is dated when detected (after {HostMonitor.WindowSize} pings).");
 
         public static string FormatDuration(TimeSpan d)
         {

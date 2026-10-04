@@ -1,6 +1,8 @@
 namespace PingTool
 {
-    internal enum HostChange { None, Down, Up, Degraded, Recovered }
+    // Notice = something worth knowing that is not a change of state (a certificate about to expire): only ever raised by the
+    // probe, never by HostMonitor.
+    internal enum HostChange { None, Down, Up, Degraded, Recovered, Notice }
 
     internal enum HostState { Up, Degraded, Down }
 
@@ -11,8 +13,8 @@ namespace PingTool
     //   Degraded  : the last WindowSize pings, window FULL, show loss >= lossPercent
     //               or an average latency >= latencyMs. A single spike cannot do it:
     //               one 500 ms ping among nine 20 ms ones averages 68 ms.
-    //   Recovered : the window is back under 10 % loss and 80 % of the latency limit
-    //               (the margin keeps a host hovering at the limit from flapping).
+    //   Recovered : the window is back under 10 % loss (and under the loss limit, when that is lower than 10 %) and
+    //               80 % of the latency limit (the margin keeps a host hovering at the limit from flapping).
     //
     // Coming back Up restarts the window, so the failures that caused the outage
     // cannot read as "degraded" the moment the host answers again.
@@ -32,7 +34,10 @@ namespace PingTool
 
         public HostState State => state;
 
-        public HostMonitor(int latencyMs = 150, int lossPercent = 30, int downAfter = DefaultDownAfter)
+        public const int DefaultLatencyMs = 150;
+        public const int DefaultLossPercent = 30;
+
+        public HostMonitor(int latencyMs = DefaultLatencyMs, int lossPercent = DefaultLossPercent, int downAfter = DefaultDownAfter)
         {
             this.latencyMs = Math.Max(1, latencyMs);
             this.lossPercent = Math.Clamp(lossPercent, 1, 100);
@@ -96,7 +101,9 @@ namespace PingTool
                 return HostChange.Degraded;
             }
 
-            if (state == HostState.Degraded && loss <= RecoverLossPercent
+            // The way back must be STRICTLY under the way in: with a limit of 10 % or less, "back under 10 %" was already
+            // true at the limit itself and the state flipped on every ping.
+            if (state == HostState.Degraded && loss <= RecoverLossPercent && loss < lossPercent
                 && avg is double a && a <= latencyMs * RecoverLatencyFactor)
             {
                 state = HostState.Up;
