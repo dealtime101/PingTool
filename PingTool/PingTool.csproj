@@ -106,8 +106,9 @@
          1.21.28 = Stop reaches an ICMP ping in flight through the token, in the window and in headless mode (PIN461.64);
          1.21.29 = in the incident list the Cause column takes the remaining width, in a wider window (PIN461.65);
          1.21.30 = the incident window can be resized, with a splitter between the list and the route text (PIN461.66);
-         1.21.31 = the incident window follows the screen scaling, its columns too (PIN461.68). -->
-    <Version>1.21.31</Version>
+         1.21.31 = the incident window follows the screen scaling, its columns too (PIN461.68);
+         1.21.32 = the help text of the incident window and the report is built from the detector's own window size (PIN461.69). -->
+    <Version>1.21.32</Version>
   </PropertyGroup>
 
   <ItemGroup>

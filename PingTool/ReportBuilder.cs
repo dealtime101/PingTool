@@ -70,7 +70,7 @@ namespace PingTool
             else Row(h, "Computer", d.Machine, E);
             Row(h, "PingTool version", d.Version, E);
             if (!d.FromLogFile) Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
-            Row(h, d.FromLogFile ? "Degraded when (last 10 pings; default limits, the log does not record them)" : "Degraded when (last 10 pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
+            Row(h, d.FromLogFile ? $"Degraded when (last {HostMonitor.WindowSize} pings; default limits, the log does not record them)" : $"Degraded when (last {HostMonitor.WindowSize} pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
             h.AppendLine("</table>");
 
             // The figures a provider's support asks for first, before any graph.
@@ -163,7 +163,7 @@ namespace PingTool
                 }
 
                 h.AppendLine("</table>");
-                h.AppendLine("<p><small>An outage starts at its first failed ping. A slowdown is dated when detected (after 10 pings). "
+                h.AppendLine("<p><small>" + E(IncidentLog.DatingNote) + " "
                     + "# = how many times this target had that kind of incident.</small></p>");
 
                 // The route to the target when each outage began, hop by hop, with what changed.

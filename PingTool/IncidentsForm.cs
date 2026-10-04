@@ -101,7 +101,7 @@ namespace PingTool
 
             var lblNote = new Label
             {
-                Text = "An outage starts at its first failed ping. A slowdown is dated when detected (after 10 pings). # = how many times this host had that kind of incident.",
+                Text = IncidentLog.DatingNote + " # = how many times this host had that kind of incident.",
                 ForeColor = Color.Silver,
                 AutoSize = false,
                 Location = new Point(10, 414),

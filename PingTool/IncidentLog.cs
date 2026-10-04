@@ -193,6 +193,11 @@ namespace PingTool
             return total;
         }
 
+        // How incidents are dated, written once for the window and the report. The size of the window is the detector's own constant, so
+        // this text cannot go out of date with the rule it describes.
+        public static string DatingNote => string.Create(CultureInfo.InvariantCulture,
+            $"An outage starts at its first failed ping. A slowdown is dated when detected (after {HostMonitor.WindowSize} pings).");
+
         public static string FormatDuration(TimeSpan d)
         {
             if (d < TimeSpan.Zero) d = TimeSpan.Zero;
