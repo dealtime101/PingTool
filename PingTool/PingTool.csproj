@@ -67,8 +67,9 @@
          1.20.12 = the window can be resized and maximized, and remembers its size (PIN461.23);
          1.20.13 = the failures-before-down box says its unit on screen and on hover (PIN461.24);
          1.20.14 = the SVG graphs of the report have a role, a name and the figures as text (PIN461.25);
-         1.20.15 = the report fits a phone: viewport, fluid graphs, wide tables scroll in their box (PIN461.26). -->
-    <Version>1.20.15</Version>
+         1.20.15 = the report fits a phone: viewport, fluid graphs, wide tables scroll in their box (PIN461.26);
+         1.20.16 = the report tables have header rows, column and row headings for assistive technology (PIN461.27). -->
+    <Version>1.20.16</Version>
   </PropertyGroup>
 
   <ItemGroup>

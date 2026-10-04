@@ -52,7 +52,7 @@ namespace PingTool
                 + "h1{font-size:22px}h2{font-size:16px;margin-top:28px;border-bottom:1px solid #ccc;padding-bottom:4px}"
                 + "table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid #ccc;padding:4px 8px;text-align:left}"
                 + "th{background:#f0f0f0}td.n{text-align:right}.box{background:#fff4e5;border:1px solid #e0b060;padding:8px 12px}"
-                + ".ok{background:#eef8ee;border-color:#8c8}.meta td:first-child{width:200px;font-weight:600}"
+                + ".ok{background:#eef8ee;border-color:#8c8}.meta th{width:200px;font-weight:600;background:none}"
                 + ".down{color:#b00020;font-weight:600}.deg{color:#9a6700;font-weight:600}svg{border:1px solid #ccc;background:#fafafa;max-width:100%;height:auto}.w{overflow-x:auto}"
                 + "small{color:#555}h3{font-size:14px;margin-top:18px}"
                 + "table.grid{width:auto;font-size:10px}table.grid th,table.grid td{padding:0;text-align:center}table.grid th{background:none;border:none;padding:0 2px;font-weight:400}"
@@ -188,11 +188,20 @@ namespace PingTool
             h.AppendLine("</body></html>");
             // A wide table scrolls inside its own box on a phone instead of widening the page (every cell text is HTML-encoded,
             // so a literal "<table" can only be ours).
-            return h.ToString().Replace("<table", "<div class=\"w\"><table").Replace("</table>", "</table></div>");
+            return Accessible(h.ToString().Replace("<table", "<div class=\"w\"><table").Replace("</table>", "</table></div>"));
+        }
+
+        // Lets assistive technology link a cell to its headings: a row made only of <th> is the header (<thead>, scope="col"),
+        // and a <th> that opens a row of cells names that row (scope="row"). Headings are our literals, cell text is encoded.
+        internal static string Accessible(string html)
+        {
+            html = System.Text.RegularExpressions.Regex.Replace(html, "<tr>((?:<th>[^<]*</th>)+)</tr>",
+                m => "<thead><tr>" + m.Groups[1].Value.Replace("<th>", "<th scope=\"col\">") + "</tr></thead>");
+            return System.Text.RegularExpressions.Regex.Replace(html, "<tr><th>([^<]*)</th><td", "<tr><th scope=\"row\">$1</th><td");
         }
 
         private static void Row(StringBuilder h, string label, string value, Func<string, string> e) =>
-            h.AppendLine(CultureInfo.InvariantCulture, $"<tr><td>{e(label)}</td><td>{e(value)}</td></tr>");
+            h.AppendLine(CultureInfo.InvariantCulture, $"<tr><th scope=\"row\">{e(label)}</th><td>{e(value)}</td></tr>");
 
         // What the picture says, for a screen reader or a text-only mail client: the figures the eye reads off the curve.
         internal static string GraphAlt(string name, IReadOnlyList<long> history, long top, CultureInfo c)
