@@ -70,22 +70,22 @@ namespace PingTool
         // Two lines under the chart: how long and how much, and WHEN it was worst.
         public static string Describe(TimelineData d)
         {
-            if (d.IsEmpty) return "No data yet: start pinging this host.";
+            if (d.IsEmpty) return Loc.T("timeline.empty");
 
             var c = CultureInfo.CurrentCulture;
             string when(DateTimeOffset t) => t.ToLocalTime().ToString("G", c);
             string num(double v) => v.ToString("0.#", c);
 
-            string lines = string.Format(c, "{0} to {1} ({2}) | {3} pings, {4} lost ({5}%)",
+            string lines = Loc.T("timeline.summary",
                 when(d.From), when(d.To), IncidentLog.FormatDuration(d.Span), d.Sent, d.Lost, num(100.0 * d.Lost / d.Sent));
 
             var slowest = d.Buckets.Where(b => b.AvgMs is not null).OrderByDescending(b => b.AvgMs).FirstOrDefault();
             if (slowest is not null)
-                lines += "\n" + string.Format(c, "Highest average: {0} ms around {1}", num(slowest.AvgMs!.Value), when(slowest.Start));
+                lines += "\n" + Loc.T("timeline.slowest", num(slowest.AvgMs!.Value), when(slowest.Start));
 
             var lossiest = d.Buckets.Where(b => b.Lost > 0).OrderByDescending(b => (double)b.Lost / b.Sent).FirstOrDefault();
             if (lossiest is not null)
-                lines += "\n" + string.Format(c, "Most losses: {0}% of the pings around {1}", num(100.0 * lossiest.Lost / lossiest.Sent), when(lossiest.Start));
+                lines += "\n" + Loc.T("timeline.lossiest", num(100.0 * lossiest.Lost / lossiest.Sent), when(lossiest.Start));
 
             return lines;
         }
@@ -100,7 +100,7 @@ namespace PingTool
 
             var c = CultureInfo.CurrentCulture;
             string text = string.Join("; ", inRange.Take(shown).Select(n => n.Time.ToLocalTime().ToString("t", c) + " " + n.Text));
-            return "Network changes of this PC (cyan lines): " + text + (inRange.Count > shown ? " (+" + (inRange.Count - shown).ToString(c) + " more)" : "");
+            return Loc.T("timeline.network") + text + (inRange.Count > shown ? Loc.T("timeline.more", inRange.Count - shown) : "");
         }
 
         // The date of a mark as the user writes it ("Oct 3", "3 oct.", "10月3日"): the month is a name, so that 03-10 is never read
