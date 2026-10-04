@@ -134,8 +134,9 @@
          1.21.56 = the route window scales with the screen DPI and can be resized, its trace box and Close button anchored (PIN461.97);
          1.21.57 = the route window lists the hops as the trace finds them instead of one frozen line (PIN461.98);
          1.21.58 = the graph layout no longer divides by a scale of zero (PIN461.99);
-         1.21.59 = before the first ping the loss reads "-" instead of "0%", in the window and in the reports (PIN461.101). -->
-    <Version>1.21.59</Version>
+         1.21.59 = before the first ping the loss reads "-" instead of "0%", in the window and in the reports (PIN461.101);
+         1.21.60 = the alert texts are in Loc: French under a French display language, English otherwise (PIN461.102). -->
+    <Version>1.21.60</Version>
   </PropertyGroup>
 
   <ItemGroup>

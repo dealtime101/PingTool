@@ -30,6 +30,11 @@ namespace PingTool
             ["timeline.small"] = ("The window is too small to draw the chart: make it taller.", "La fenêtre est trop petite pour dessiner le graphique : agrandissez-la."),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
             ["timeline.more"] = (" (+{0} more)", " (+{0} de plus)"),
+            ["alert.down"] = ("{0} is down", "{0} ne répond plus"),
+            ["alert.up"] = ("{0} is back up", "{0} répond de nouveau"),
+            ["alert.up.after"] = ("{0} is back up after {1}", "{0} répond de nouveau après {1}"),
+            ["alert.degraded"] = ("{0} is degraded: {1:0.#}% loss, average {2} ms over the last {3} pings", "{0} est dégradé : {1:0.#} % de perte, moyenne {2} ms sur les {3} derniers pings"),
+            ["alert.recovered"] = ("{0} is back to normal", "{0} est revenu à la normale"),
         };
 
         // The text for a key in the current language, with its arguments formatted in the current regional format.

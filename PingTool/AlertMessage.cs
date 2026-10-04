@@ -7,14 +7,14 @@ namespace PingTool
     internal static class AlertMessage
     {
         // outage = how long the host was silent, when known: "back up after 2 min 14 s".
+        // The words are in Loc (English and French, by the display language of Windows); the numbers follow the regional format.
         public static string For(string host, HostChange change, double lossPercent, double? avgMs, TimeSpan? outage = null) => change switch
         {
-            HostChange.Down => host + " is down",
-            HostChange.Up => host + " is back up" + (outage is TimeSpan d ? " after " + IncidentLog.FormatDuration(d) : ""),
-            HostChange.Degraded => string.Format(CultureInfo.CurrentCulture,
-                "{0} is degraded: {1:0.#}% loss, average {2} ms over the last {3} pings",
-                host, lossPercent, avgMs?.ToString("0.#", CultureInfo.CurrentCulture) ?? "-", HostMonitor.WindowSize),
-            HostChange.Recovered => host + " is back to normal",
+            HostChange.Down => Loc.T("alert.down", host),
+            HostChange.Up => outage is TimeSpan d ? Loc.T("alert.up.after", host, IncidentLog.FormatDuration(d)) : Loc.T("alert.up", host),
+            HostChange.Degraded => Loc.T("alert.degraded", host, lossPercent,
+                avgMs?.ToString("0.#", CultureInfo.CurrentCulture) ?? "-", HostMonitor.WindowSize),
+            HostChange.Recovered => Loc.T("alert.recovered", host),
             _ => "",
         };
     }
