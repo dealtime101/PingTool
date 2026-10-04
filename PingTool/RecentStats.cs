@@ -58,11 +58,12 @@ namespace PingTool
             string N(double? v) => v is null ? "-" : v.Value.ToString("0.#", c);
 
             if (Samples == 0) return "Last pings: waiting for data";
-            if (P50 is null)
-                return string.Format(c, "Last {0}: need {1} replies for percentiles", Samples, MinForPercentiles);
 
-            return string.Format(c, "Last {0}: p50 {1} / p95 {2} / p99 {3} ms\nRecent jitter {4} ms | loss {5}% ({6}/{0})",
-                Samples, N(P50), N(P95), N(P99), N(Jitter), N(100.0 * Lost / Samples), Lost);
+            // The loss line is there even without percentiles: a host that answers nothing is exactly when it matters.
+            string first = P50 is null
+                ? string.Format(c, "Last {0}: need {1} replies for percentiles", Samples, MinForPercentiles)
+                : string.Format(c, "Last {0}: p50 {1} / p95 {2} / p99 {3} ms", Samples, N(P50), N(P95), N(P99));
+            return first + string.Format(c, "\nRecent jitter {0} ms | loss {1}% ({2}/{3})", N(Jitter), N(100.0 * Lost / Samples), Lost, Samples);
         }
     }
 }
