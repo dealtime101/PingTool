@@ -151,10 +151,11 @@ namespace PingTool
             // --start then begins the monitoring: no click needed.
             // Started minimized, the window is never shown at all (see SetVisibleCore): hiding it from Shown made it flash on
             // screen first. Started normally, --start begins when the window is up.
-            startHidden = startup.Minimized;
+            // this.startup, not the parameter: the parameter is null for the parameterless constructor (the field is StartupOptions.None then).
+            startHidden = this.startup.Minimized;
             Shown += (_, _) =>
             {
-                if (startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
+                if (this.startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
             };
 
             // Right-click (or the menu key) on a host: where does the path to it stop?
