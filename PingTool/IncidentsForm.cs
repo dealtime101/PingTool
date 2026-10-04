@@ -75,10 +75,7 @@ namespace PingTool
             foreach (var i in incidents.Reverse())
             {
                 bool outage = i.Kind == IncidentKind.Outage;
-                string detail = outage
-                    ? i.Cause
-                    : string.Format(culture, "{0:0.#}% loss, avg {1} ms", i.LossPercent,
-                        i.AvgMs?.ToString("0.#", culture) ?? "-");
+                string detail = IncidentLog.CauseText(i, culture);
 
                 rows.Add(new ListViewItem(new[]
                 {
@@ -171,13 +168,16 @@ namespace PingTool
 
         private static string DetailsOf(Incident i)
         {
-            if (i.Kind == IncidentKind.Slowdown)
-                return "A slowdown has no route capture: the host still answers, only slowly.";
+            // The cause whole, first: the column of the list can be too narrow for it.
+            string head = IncidentLog.DetailLine(i, CultureInfo.CurrentCulture) + "\r\n\r\n";
 
-            return i.Path is null
+            if (i.Kind == IncidentKind.Slowdown)
+                return head + "A slowdown has no route capture: the host still answers, only slowly.";
+
+            return head + (i.Path is null
                 ? "No route was captured for this outage: the host's address was not known yet, the run was stopped first, or the trace is still running."
                 // A multi-line TextBox only breaks lines on CR LF: the route text uses a bare LF.
-                : i.PathText().Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal);
+                : i.PathText().Replace("\r\n", "\n", StringComparison.Ordinal).Replace("\n", "\r\n", StringComparison.Ordinal));
         }
     }
 }

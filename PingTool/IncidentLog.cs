@@ -167,6 +167,16 @@ namespace PingTool
             return best;
         }
 
+        // The "Cause / detail" of an incident, as the list shows it: an outage's cause, or what a slowdown measured.
+        public static string CauseText(Incident i, CultureInfo c) => i.Kind == IncidentKind.Outage
+            ? i.Cause
+            : string.Format(c, "{0:0.#}% loss, avg {1} ms", i.LossPercent, i.AvgMs?.ToString("0.#", c) ?? "-");
+
+        // The same, whole, as the first line of the details of the selected incident: the column can be too narrow for it.
+        public static string DetailLine(Incident i, CultureInfo c) => i.Kind == IncidentKind.Outage
+            ? $"Cause: {CauseText(i, c)} ({i.FailedPings.ToString(c)} failed ping(s))"
+            : $"Detail: {CauseText(i, c)}";
+
         public string Summary(DateTimeOffset now)
         {
             if (incidents.Count == 0) return "No incident.";

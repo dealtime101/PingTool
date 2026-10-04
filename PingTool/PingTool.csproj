@@ -167,8 +167,9 @@
          1.21.89 = the in-memory ping log hands out a copy of its entries, not its own queue: it can no longer be changed behind its cap and counter (PIN461.154);
          1.21.90 = the recent figures give a percentile only once it differs from the maximum: p95 from 20 replies, p99 from 100 (never within the 60 pings of the window) (PIN461.158);
          1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165);
-         1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170). -->
-    <Version>1.21.92</Version>
+         1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170);
+         1.21.93 = the details of the selected incident start with its whole cause, for when the column of the list is too narrow for it (PIN461.177). -->
+    <Version>1.21.93</Version>
   </PropertyGroup>
 
   <ItemGroup>
