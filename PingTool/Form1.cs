@@ -1374,6 +1374,10 @@ namespace PingTool
     {
         private const int MaxSamples = HostSession.HistorySize;
         private const int MaxLegend = 5;
+        private int legendOffset, legendFirst, legendRows;   // the page of the legend shown, as drawn last (for the click and the tooltip)
+        private float legendLeft;
+        private string legendTipText = "";
+        private readonly ToolTip legendTip = new();
         private IReadOnlyList<GraphSeries> series = Array.Empty<GraphSeries>();
         private bool compare;
         private GraphPalette palette = GraphPalette.For(SystemInformation.HighContrast);
@@ -1476,24 +1480,77 @@ namespace PingTool
             g.DrawString(label, Font, brush, Width - g.MeasureString(label, Font).Width - 2, Math.Max(0, y - Font.Height));
         }
 
+        // MaxLegend lines at a time; with more hosts a click on the legend shows the next ones. Each line carries a sample of its curve
+        // (colour and pattern), and the full name of a host is in the tooltip of its line (names are cut to fit the graph).
         private void DrawLegend(Graphics g)
         {
+            var (first, rows) = GraphLayout.LegendWindow(series.Count, legendOffset, MaxLegend);
+            legendOffset = legendFirst = first;
+            legendRows = rows;
+            legendLeft = Width;
             float y = 0;
-            for (int i = 0; i < Math.Min(series.Count, MaxLegend); i++)
+            for (int i = first; i < first + rows; i++)
             {
                 var s = series[i];
-                string name = s.Name.Length > 14 ? s.Name[..13] + "…" : s.Name;
-                using var brush = new SolidBrush(palette.Series(i, s.Color));
-                g.DrawString(name, Font, brush, Width - g.MeasureString(name, Font).Width - 2, y);
+                string name = FitName(g, s.Name, Width * 0.4f);
+                var color = palette.Series(i, s.Color);
+                using var brush = new SolidBrush(color);
+                float x = Width - g.MeasureString(name, Font).Width - 2;
+                g.DrawString(name, Font, brush, x, y);
+                using var sample = new Pen(color, 1.5f) { DashStyle = LinePatterns[palette.Dash(i)] };
+                g.DrawLine(sample, x - 22, y + Font.Height / 2f, x - 4, y + Font.Height / 2f);
+                legendLeft = Math.Min(legendLeft, x - 22);
                 y += Font.Height;
             }
 
-            if (series.Count > MaxLegend)
+            if (series.Count > rows)
             {
                 using var grey = new SolidBrush(palette.Text);
-                string more = "+" + (series.Count - MaxLegend) + " more";
-                g.DrawString(more, Font, grey, Width - g.MeasureString(more, Font).Width - 2, y);
+                string more = $"{first + 1}-{first + rows} of {series.Count}: click for more";
+                float x = Width - g.MeasureString(more, Font).Width - 2;
+                g.DrawString(more, Font, grey, x, y);
+                legendLeft = Math.Min(legendLeft, x);
             }
+        }
+
+        // The name cut (with an ellipsis) until it fits `room` pixels.
+        private string FitName(Graphics g, string name, float room)
+        {
+            if (g.MeasureString(name, Font).Width <= room) return name;
+            for (int n = name.Length - 1; n > 1; n--)
+            {
+                string cut = name[..n] + "…";
+                if (g.MeasureString(cut, Font).Width <= room) return cut;
+            }
+
+            return "…";
+        }
+
+        private bool InLegend(Point p) =>
+            compare && series.Count > 0 && p.X >= legendLeft && p.Y < (legendRows + (series.Count > legendRows ? 1 : 0)) * Font.Height;
+
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            if (!InLegend(e.Location) || series.Count <= legendRows) return;
+            legendOffset = legendFirst + legendRows >= series.Count ? 0 : legendFirst + legendRows;   // the next page, round to the first
+            Invalidate();
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            int row = e.Y / Math.Max(1, Font.Height);
+            string text = InLegend(e.Location) && row < legendRows ? series[legendFirst + row].Name : "";
+            if (text == legendTipText) return;
+            legendTipText = text;
+            legendTip.SetToolTip(this, text);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) legendTip.Dispose();
+            base.Dispose(disposing);
         }
     }
 

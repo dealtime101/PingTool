@@ -17,7 +17,7 @@ namespace PingTool
         public Color Text => highContrast ? SystemColors.WindowText : Color.Silver;
 
         // The colour of the n-th line: its own in the dark palette; one of four system colours in high contrast.
-        public Color Series(int index, Color own) => !highContrast ? own : (index % 4) switch
+        public Color Series(int index, Color own) => !highContrast ? own : (index % HighContrastColours) switch
         {
             0 => SystemColors.WindowText,
             1 => SystemColors.HotTrack,
@@ -28,8 +28,12 @@ namespace PingTool
         // A lost ping: red when one host is shown, its host's colour when several are compared (so you can tell whose it is).
         public Color Loss(bool compare, Color seriesColor) => compare ? seriesColor : highContrast ? SystemColors.HotTrack : Color.Red;
 
-        // The line pattern of the n-th line, as an index into Patterns (0 solid, 1 dash, 2 dot, 3 dash-dot); always solid in the dark palette.
-        public int Dash(int index) => highContrast ? index % Patterns : 0;
+        // The line pattern of the n-th line, as an index into Patterns (0 solid, 1 dash, 2 dot, 3 dash-dot). The colours come round every
+        // `colours` lines; the pattern changes each time they do, so that no two lines look alike before colours x patterns lines
+        // (24 in the dark palette, 16 in high contrast). The first round is solid in the dark palette.
+        public int Dash(int index) => (Math.Max(0, index) / Colours) % Patterns;
         public const int Patterns = 4;
+        public const int HighContrastColours = 4;
+        private int Colours => highContrast ? HighContrastColours : HostPalette.Count;
     }
 }

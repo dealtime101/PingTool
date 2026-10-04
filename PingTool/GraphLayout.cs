@@ -17,6 +17,14 @@ namespace PingTool
         public const int AlonePixels = 7;      // length of a lost-ping tick when one host is shown
         public const int SharedPixels = 12;    // height of the band shared by all hosts when several are compared
 
+        // The legend has room for `max` lines: which ones are shown when `total` hosts are compared and the user has scrolled by `offset`
+        // (the offset is held to what exists, so a wheel that keeps turning, or hosts removed meanwhile, never leaves an empty legend).
+        public static (int First, int Rows) LegendWindow(int total, int offset, int max)
+        {
+            int rows = Math.Clamp(Math.Min(total, max), 0, Math.Max(0, total));
+            return (Math.Clamp(offset, 0, Math.Max(0, total - rows)), rows);
+        }
+
         // Where the tick of a lost ping is drawn (from the baseline upwards), as (y of the bottom end, y of the top end).
         // One host: as it always was. Several compared hosts end at the same "now": drawn in the same place, the last would hide
         // the others, so each host gets its OWN band of the shared strip above the baseline (host 0 lowest), the bands side by
