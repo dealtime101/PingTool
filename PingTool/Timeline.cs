@@ -103,6 +103,10 @@ namespace PingTool
             return "Network changes of this PC (cyan lines): " + text + (inRange.Count > shown ? " (+" + (inRange.Count - shown).ToString(c) + " more)" : "");
         }
 
+        // The date of a mark as the user writes it ("Oct 3", "3 oct.", "10月3日"): the month is a name, so that 03-10 is never read
+        // as the 3rd of October by one person and the 10th of March by another.
+        internal static string MonthDay(CultureInfo c) => c.DateTimeFormat.MonthDayPattern.Replace("MMMM", "MMM");
+
         public static IReadOnlyList<(DateTimeOffset Time, string Label)> Ticks(DateTimeOffset from, DateTimeOffset to, int maxTicks)
         {
             // seconds: 1 s .. 1 min .. 1 h .. 1 day .. 1 week .. 1 month .. 1 year
@@ -119,7 +123,7 @@ namespace PingTool
 
             bool withDate = to.ToLocalTime().Date != local.Date || span >= 86400;
             string format = step < 60 ? "HH:mm:ss" : "HH:mm";
-            if (withDate) format = "MM-dd " + format;
+            if (withDate) format = MonthDay(CultureInfo.CurrentCulture) + " " + format;
 
             // Whole days are counted on the local calendar: a day across a daylight-saving change lasts 23 or 25 hours,
             // and "midnight + 86400 s" would land at 23:00 or 01:00.
