@@ -246,6 +246,12 @@ namespace PingTool
 
     internal static class TimelineLayout
     {
+        // Where a time label starts: centred under its mark, but held inside [leftEdge, rightEdge] so that the first and the last are
+        // not cut by the edge of the control (the right margin is a few pixels, a label is tens). A label wider than the room starts at
+        // the left edge.
+        internal static float LabelStart(float tickX, float labelWidth, float leftEdge, float rightEdge) =>
+            Math.Clamp(tickX - labelWidth / 2, leftEdge, Math.Max(leftEdge, rightEdge - labelWidth));
+
         public static TimelineShapes Build(TimelineData d, IReadOnlyList<Incident> incidents, int width, int plotHeight,
                                            IReadOnlyList<NetworkEvent>? networkEvents = null)
         {

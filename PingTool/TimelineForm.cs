@@ -117,11 +117,17 @@ namespace PingTool
 
             using var axis = new Pen(Color.FromArgb(120, 192, 192, 192));
             g.DrawLine(axis, 0, plotH, plotW, plotH);
+            float labelsEnd = float.NegativeInfinity;   // where the last label drawn ends: the next one must start after it
             foreach (var (time, label) in Timeline.Ticks(data.From, data.To, Math.Max(2, plotW / 90)))
             {
                 float x = (float)((time - data.From).Ticks / (double)data.Span.Ticks * plotW);
                 g.DrawLine(axis, x, plotH, x, plotH + 4);
-                g.DrawString(label, Font, grey, x - g.MeasureString(label, Font).Width / 2, plotH + 5);
+                float w = g.MeasureString(label, Font).Width;
+                // Inside the control (the plot is drawn shifted by the left margin): a mark at the very end must not lose its label.
+                float start = TimelineLayout.LabelStart(x, w, 2 - LeftMargin, plotW + RightMargin - 1);
+                if (start < labelsEnd + 4) continue;   // held in by an edge it would print over its neighbour: the mark alone says it
+                g.DrawString(label, Font, grey, start, plotH + 5);
+                labelsEnd = start + w;
             }
 
             // A column whose highest reply is above the scale is cut at the top: a small mark says so.
