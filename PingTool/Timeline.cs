@@ -221,6 +221,7 @@ namespace PingTool
 
                 float x0 = X(start);
                 float x1 = Math.Min(width, Math.Max(X(end), x0 + 2));   // a short incident must still be visible
+                if (x1 - x0 < 2) x0 = Math.Max(0, x1 - 2);   // at the right edge there is no room to the right: widen to the left
                 bands.Add((x0, x1, i.Kind));
             }
 
