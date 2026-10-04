@@ -14,7 +14,12 @@ namespace PingTool
     // Sends ONE probe with a limited TTL. Injected so the algorithm can be tested on a simulated network.
     internal delegate Task<HopReply> HopProbe(IPAddress target, int ttl, CancellationToken token);
 
-    internal sealed record Hop(int Ttl, IPAddress? Address, long? RttMs, HopStatus Status, string? Detail = null);
+    // Address = the first router that answered at this distance; Also = every distinct address seen there (load-balanced paths answer from
+    // several routers for the same TTL), the first included. RttMs = the best of the replies.
+    internal sealed record Hop(int Ttl, IPAddress? Address, long? RttMs, HopStatus Status, string? Detail = null, IReadOnlyList<IPAddress>? Also = null)
+    {
+        public IReadOnlyList<IPAddress> Seen => Also ?? (Address is null ? Array.Empty<IPAddress>() : new[] { Address });
+    }
 
     // The route to a target at a given moment: who answered at each distance.
     internal sealed class PathCapture
@@ -40,6 +45,7 @@ namespace PingTool
             foreach (var h in Hops)
             {
                 string who = h.Address?.ToString() ?? "*";
+                if (h.Seen.Count > 1) who += " (also " + string.Join(", ", h.Seen.Skip(1)) + ")";
                 string ms = h.RttMs is null ? "" : "  " + h.RttMs.Value.ToString(c) + " ms";
                 string flag = h.Status switch { HopStatus.Reached => "  (destination)", HopStatus.Unreachable => "  (reports: unreachable)", HopStatus.Failed => "  (probe failed)", _ => "" };
                 lines.Add($"{h.Ttl,3}  {who}{ms}{flag}");
@@ -78,14 +84,15 @@ namespace PingTool
             int max = Math.Max(healthy.Hops.Count, during.Hops.Count);
             for (int i = 0; i < max; i++)
             {
-                var before = i < healthy.Hops.Count ? healthy.Hops[i].Address : null;
-                var now = i < during.Hops.Count ? during.Hops[i].Address : null;
+                var before = i < healthy.Hops.Count ? healthy.Hops[i].Seen : Array.Empty<IPAddress>();
+                var now = i < during.Hops.Count ? during.Hops[i].Seen : Array.Empty<IPAddress>();
                 int ttl = i + 1;
 
-                if (before is not null && now is not null && !before.Equals(now))
-                    notes.Add($"Hop {ttl} changed: {before} when healthy, {now} now (the route changed).");
-                else if (before is not null && now is null && i < during.Hops.Count && during.Hops[i].Status != HopStatus.Failed)
-                    notes.Add($"Hop {ttl} ({before}) answered when healthy and is silent now.");
+                // Load balancing answers from several routers for one distance: it is a change only when no router is common to both.
+                if (before.Count > 0 && now.Count > 0 && !before.Intersect(now).Any())
+                    notes.Add($"Hop {ttl} changed: {string.Join(" / ", before)} when healthy, {string.Join(" / ", now)} now (the route changed).");
+                else if (before.Count > 0 && now.Count == 0 && i < during.Hops.Count && during.Hops[i].Status != HopStatus.Failed)
+                    notes.Add($"Hop {ttl} ({string.Join(" / ", before)}) answered when healthy and is silent now.");
             }
 
             return notes;
@@ -100,8 +107,9 @@ namespace PingTool
         public const int MaxHops = 20;
         public const int GiveUpAfter = 3;
 
-        // Routers often rate-limit their "time exceeded" replies, so one lost probe proves nothing: each hop is tried up to this many
-        // times (like traceroute) and is called silent only when every try went unanswered. An answer stops the tries at once.
+        // Routers often rate-limit their "time exceeded" replies, so one lost probe proves nothing: each hop gets this many probes
+        // (like traceroute) and is called silent only when every one went unanswered. All of them are sent even when the first
+        // answers, because a load-balanced path may answer from a different router each time and the set of routers is what is compared.
         public const int ProbesPerHop = 3;
 
         // "PingException: An exception occurred during a Ping request. (SocketException: ...)" on one line.
@@ -122,26 +130,29 @@ namespace PingTool
             {
                 token.ThrowIfCancellationRequested();
 
-                HopReply reply = new(HopStatus.Timeout, null, 0);
+                var replies = new List<HopReply>();
                 for (int attempt = 0; attempt < Math.Max(1, probesPerHop); attempt++)
                 {
                     token.ThrowIfCancellationRequested();
                     try
                     {
-                        reply = await probe(target, ttl, token);
+                        replies.Add(await probe(target, ttl, token));
                     }
                     catch (Exception ex) when (!token.IsCancellationRequested)
                     {
                         // A probe that cannot even be sent is not a silent router: it is said so, and the trace stops (the next
                         // hops would fail the same way and each look like "nothing answers"). Trying again would not help.
-                        reply = new HopReply(HopStatus.Failed, null, 0, Why(ex));
+                        replies.Clear();
+                        replies.Add(new HopReply(HopStatus.Failed, null, 0, Why(ex)));
                         break;
                     }
-
-                    if (reply.Status != HopStatus.Timeout) break;   // any answer ends the tries for this hop
                 }
 
-                hops.Add(new Hop(ttl, reply.Address, reply.Status is HopStatus.Timeout or HopStatus.Failed ? null : reply.RttMs, reply.Status, reply.Detail));
+                var answered = replies.Where(x => x.Status != HopStatus.Timeout).ToList();
+                var reply = answered.Count == 0 ? replies[0] : answered[0];   // the first answer gives the status
+                var also = answered.Where(x => x.Address is not null).Select(x => x.Address!).Distinct().ToList();
+                long? best = answered.Count == 0 || reply.Status == HopStatus.Failed ? null : answered.Min(x => x.RttMs);
+                hops.Add(new Hop(ttl, reply.Address, best, reply.Status, reply.Detail, also));
                 if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
 
                 silent = reply.Status == HopStatus.Timeout ? silent + 1 : 0;
