@@ -46,7 +46,7 @@ namespace PingTool
             {
                 if (slow.Count == 0) return $"All {n} targets answer normally.";
                 if (slow.Count == n) return $"All {n} targets are slow or losing packets: likely this PC's link or the path they share.";
-                return $"{Names(slow)} slow or losing packets while {Others(n - slow.Count, "is fine", "are fine")}: likely specific to {(slow.Count == 1 ? "that target" : "those targets")} or its path.";
+                return $"{Names(slow)} slow or losing packets while {Others(n - slow.Count, "is fine", "are fine")}: likely specific to {Specific(slow.Count)}.";
             }
 
             if (down.Count == n)
@@ -63,8 +63,11 @@ namespace PingTool
                     return "Internet targets answer but the local ones are down: likely those local devices.";
             }
 
-            return $"Only {Names(down)} down while {Others(n - down.Count, "answers", "answer")}: likely specific to {(down.Count == 1 ? "that target" : "those targets")} or its path.";
+            return $"Only {Names(down)} down while {Others(n - down.Count, "answers", "answer")}: likely specific to {Specific(down.Count)}.";
         }
+
+        // "that target or its path" / "those targets or their paths": the possessive follows the number too.
+        private static string Specific(int count) => count == 1 ? "that target or its path" : "those targets or their paths";
 
         private static string Others(int count, string one, string many) =>
             count == 1 ? $"the other target {one}" : $"the other {count} targets {many}";
