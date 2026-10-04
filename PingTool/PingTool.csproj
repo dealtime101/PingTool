@@ -122,8 +122,9 @@
          1.21.44 = an address without prefix that holds a space, a slash or a port is refused with a message naming tcp:// and https:// (PIN461.82);
          1.21.45 = the host of a tcp:// address is checked: a space, a slash or another character a host cannot hold is refused at once (PIN461.83);
          1.21.46 = the hosts of a profile read from settings.json are de-duplicated (case ignored) and capped at 100, like an imported profile (PIN461.84);
-         1.21.47 = a profile name cannot hold invisible formatting characters (zero width, bidi); profiles already saved with one keep their place under the visible name (PIN461.85). -->
-    <Version>1.21.47</Version>
+         1.21.47 = a profile name cannot hold invisible formatting characters (zero width, bidi); profiles already saved with one keep their place under the visible name (PIN461.85);
+         1.21.48 = the profile book trims a name before adding it, as it does to find or remove one: no duplicate under "Home " (PIN461.86). -->
+    <Version>1.21.48</Version>
   </PropertyGroup>
 
   <ItemGroup>

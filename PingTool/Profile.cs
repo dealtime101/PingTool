@@ -52,6 +52,7 @@ namespace PingTool
         // (and the name is new): the caller says so, nothing is lost silently.
         public static bool Upsert(List<Profile> book, Profile profile)
         {
+            profile.Name = profile.Name.Trim();   // Find and Remove compare trimmed: the same profile must not be added twice
             int at = book.FindIndex(p => string.Equals(p.Name, profile.Name, StringComparison.OrdinalIgnoreCase));
             if (at >= 0)
             {
