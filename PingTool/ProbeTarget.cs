@@ -170,6 +170,9 @@ namespace PingTool
                 if (host.Contains(':', StringComparison.Ordinal)) return false;   // a bare IPv6 address needs brackets
             }
 
+            // "host/x" or "my host" would only fail at the connection, with an error that does not say why.
+            if (Uri.CheckHostName(host) == UriHostNameType.Unknown) return false;
+
             return int.TryParse(portText, NumberStyles.None, CultureInfo.InvariantCulture, out port) && port is >= 1 and <= 65535;
         }
     }
