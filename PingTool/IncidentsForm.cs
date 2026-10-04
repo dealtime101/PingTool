@@ -118,8 +118,12 @@ namespace PingTool
             {
                 Text = summary,
                 ForeColor = Color.White,
-                AutoSize = true,
-                Location = new Point(10, 12),
+                // As wide as the window and two lines high: the sentence wraps instead of running past the edge (a typical one is
+                // about 100 characters, as wide as the window at its minimum size; the longest the format makes is 119).
+                AutoSize = false,
+                Location = new Point(10, 6),
+                Size = new Size(880, 32),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             };
 
             var lblNote = new Label
