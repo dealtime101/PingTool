@@ -171,7 +171,8 @@ namespace PingTool
                 .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent).ToList();
             Hosts = (Hosts ?? new List<string>())
-                .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim()).ToList();
+                .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();   // the same rule as MainForm.AddHost
             TargetOptions = PingTool.TargetOptions.Clean(TargetOptions!);
             Profiles = ProfileBook.Sanitize(Profiles);
         }
