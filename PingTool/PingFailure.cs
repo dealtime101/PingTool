@@ -74,6 +74,10 @@ namespace PingTool
                 SocketError.TimedOut => Timeout,
                 SocketError.ConnectionReset or SocketError.ConnectionAborted
                     => new("Reset", "The connection was closed by the other side"),
+                // A deadline that ran out is a Timeout whether the socket reported it or the HTTP layer did (a request that exceeds
+                // HttpClient.Timeout is a TaskCanceledException WITH a TimeoutException inside). A bare cancellation is not one:
+                // that is somebody pressing Stop.
+                _ when ex is TimeoutException || ex.InnerException is TimeoutException => Timeout,
                 _ when ex is ArgumentException => new("Bad addr", "Invalid address: " + ex.Message),
                 // Raised by SslStream itself, or wrapped by the HTTP layer: both levels, as for the socket error above.
                 _ when (ex as System.Security.Authentication.AuthenticationException ?? ex.InnerException as System.Security.Authentication.AuthenticationException) is { } tls
