@@ -75,7 +75,8 @@ namespace PingTool
                 SocketError.ConnectionReset or SocketError.ConnectionAborted
                     => new("Reset", "The connection was closed by the other side"),
                 _ when ex is ArgumentException => new("Bad addr", "Invalid address: " + ex.Message),
-                _ when ex.InnerException is System.Security.Authentication.AuthenticationException tls
+                // Raised by SslStream itself, or wrapped by the HTTP layer: both levels, as for the socket error above.
+                _ when (ex as System.Security.Authentication.AuthenticationException ?? ex.InnerException as System.Security.Authentication.AuthenticationException) is { } tls
                     => new("TLS", "The secure connection could not be set up: " + tls.Message),
                 _ => new("Error", ex.InnerException?.Message ?? ex.Message),
             };

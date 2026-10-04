@@ -98,8 +98,9 @@
          1.21.20 = a profile file with a bad value names the place in the file, not in a copy of it (PIN461.56);
          1.21.21 = one unreadable profile or number in a profile file no longer rejects the whole file (PIN461.57);
          1.21.22 = the size limit of a profile file counts bytes, not characters (PIN461.58);
-         1.21.23 = a profile file whose Format or Version is not what PingTool writes is refused with a clear message (PIN461.59). -->
-    <Version>1.21.23</Version>
+         1.21.23 = a profile file whose Format or Version is not what PingTool writes is refused with a clear message (PIN461.59);
+         1.21.24 = a TLS failure raised directly by the secure stream is labelled TLS too, not Error (PIN461.60). -->
+    <Version>1.21.24</Version>
   </PropertyGroup>
 
   <ItemGroup>
