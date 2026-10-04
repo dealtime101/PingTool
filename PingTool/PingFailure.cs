@@ -76,8 +76,12 @@ namespace PingTool
                 SocketError.ConnectionRefused
                     => new("Refused", "Connection refused: nothing is listening on that port"),
                 SocketError.TimedOut => Timeout,
-                SocketError.ConnectionReset or SocketError.ConnectionAborted
+                SocketError.ConnectionReset
                     => new("Reset", "The connection was closed by the other side"),
+                // Aborted is the OTHER direction: the software of THIS computer (a firewall, an antivirus, a time limit of its own, a
+                // network change) cut the connection. Saying "the other side closed it" would send the user to the wrong machine.
+                SocketError.ConnectionAborted
+                    => new("Aborted", "The connection was aborted on this computer (its software or network settings), not necessarily by the other side"),
                 // A deadline that ran out is a Timeout whether the socket reported it or the HTTP layer did (a request that exceeds
                 // HttpClient.Timeout is a TaskCanceledException WITH a TimeoutException inside). A bare cancellation is not one:
                 // that is somebody pressing Stop.
