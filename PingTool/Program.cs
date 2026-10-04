@@ -35,6 +35,10 @@ namespace PingTool
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            // The windows are dark: the system controls (lists, combo boxes, buttons, scroll bars) follow (PIN461.21, .53, .67, .96).
+#pragma warning disable WFO5001 // SetColorMode is still marked experimental
+            Application.SetColorMode(SystemColorMode.Dark);
+#pragma warning restore WFO5001
 
             // An error in the window's own thread (an event handler, an await that resumed there) is logged and PingTool carries on:
             // a monitoring stopped by one stray exception would be worse than the error. Before any window exists, as required.

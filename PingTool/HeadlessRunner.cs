@@ -24,7 +24,7 @@ namespace PingTool
         {
             clock ??= () => DateTimeOffset.Now;
             var targets = new List<(string Address, ProbeTarget Target)>();
-            foreach (string address in addresses.Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (string address in addresses.Distinct(TargetKey.Comparer))
             {
                 if (!ProbeTarget.TryParse(address, out var t, out string problem))
                     throw new ArgumentException($"\"{address}\": {problem}");
@@ -122,7 +122,7 @@ namespace PingTool
             var report = Build();
             checkpoint?.Invoke(report);
 
-            int sent = sessions.Sum(s => s.Stats.Sent);
+            long sent = sessions.Sum(s => s.Stats.Sent);
             string summary = sent == 0
                 ? "No probe was made."
                 : $"{sent} probes on {sessions.Count} target(s) in {IncidentLog.FormatDuration(report.GeneratedAt - start)}. {report.IncidentSummary}";

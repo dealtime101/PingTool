@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         if: steps.v.outputs.go == 'yes'
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Build the zip from the tag
         if: steps.v.outputs.go == 'yes'
@@ -97,7 +97,7 @@ jobs:
             echo "**PingTool $ver**"
             [ -n "$change" ] && echo && echo "$change"
             echo
-            echo "Windows 10/11 (x64). Needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Unzip anywhere and run \`PingTool.exe\`."
+            echo "Windows 10/11 (x64). Needs the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Unzip anywhere and run \`PingTool.exe\`."
             echo
             echo "SHA-256 of the zip: \`$sum\`"
             echo

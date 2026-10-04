@@ -34,7 +34,7 @@ namespace PingTool
             }
 
             targets.AddRange(InternetReferences);
-            return targets.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            return targets.Distinct(TargetKey.Comparer).ToList();
         }
 
         public static List<string> Discover(out bool gatewayFound)

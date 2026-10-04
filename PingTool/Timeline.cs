@@ -3,10 +3,10 @@ using System.Globalization;
 namespace PingTool
 {
     // One column of the timeline: everything that happened to the host in that slice of time.
-    internal sealed record TimelineBucket(DateTimeOffset Start, int Sent, int Lost, double? MinMs, double? AvgMs, double? MaxMs);
+    internal sealed record TimelineBucket(DateTimeOffset Start, long Sent, long Lost, double? MinMs, double? AvgMs, double? MaxMs);
 
     internal sealed record TimelineData(string Host, DateTimeOffset From, DateTimeOffset To, TimeSpan BucketSpan,
-        IReadOnlyList<TimelineBucket> Buckets, long TopMs, int Sent, int Lost, long PeakMs = 0, DateTimeOffset? Last = null)
+        IReadOnlyList<TimelineBucket> Buckets, long TopMs, long Sent, long Lost, long PeakMs = 0, DateTimeOffset? Last = null)
     {
         // To is the right edge of the DRAWING (a single instant is given one second of width); Last is the time of the last ping
         // really observed, and what the text says about the session ends there.
@@ -101,10 +101,10 @@ namespace PingTool
             {
                 int from = p * d.Buckets.Count / n, to = (p + 1) * d.Buckets.Count / n;
                 var group = d.Buckets.Skip(from).Take(to - from).ToList();
-                int sent = group.Sum(b => b.Sent), lost = group.Sum(b => b.Lost);
+                long sent = group.Sum(b => b.Sent), lost = group.Sum(b => b.Lost);
                 if (sent == 0) continue;   // no ping in that stretch of the session
 
-                int replies = sent - lost;
+                long replies = sent - lost;
                 string avg = replies == 0 ? "-" : (group.Where(b => b.AvgMs is not null).Sum(b => b.AvgMs!.Value * (b.Sent - b.Lost)) / replies).ToString("0.#", c);
                 parts.Add(Loc.T("timeline.period", group[0].Start.ToLocalTime().ToString("g", c), avg, (100.0 * lost / sent).ToString("0.#", c)));
             }

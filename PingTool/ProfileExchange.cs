@@ -160,7 +160,7 @@ namespace PingTool
                 {
                     string text = (host ?? "").Trim();
                     bool fine = ProbeTarget.TryParse(text, out _, out _)
-                        && !hosts.Contains(text, StringComparer.OrdinalIgnoreCase)
+                        && !hosts.Contains(text, TargetKey.Comparer)
                         && hosts.Count < MaxHostsPerProfile;
                     if (fine) hosts.Add(text); else targetsDropped++;
                 }

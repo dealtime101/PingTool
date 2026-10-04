@@ -68,7 +68,7 @@ namespace PingTool
 
         // Named monitoring profiles (see Profile) and the one last used.
         // A readable name and limits of their own for some targets, by address (see TargetOptions).
-        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(TargetKey.Comparer);
 
         public List<Profile> Profiles { get; set; } = new();
         public string ActiveProfile { get; set; } = "";
@@ -186,10 +186,10 @@ namespace PingTool
             ActiveProfile ??= "";
             Recent = (Recent ?? new List<string>())
                 .Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRecent).ToList();
+                .Distinct(TargetKey.Comparer).Take(MaxRecent).ToList();
             Hosts = (Hosts ?? new List<string>())
                 .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();   // the same rule as MainForm.AddHost
+                .Distinct(TargetKey.Comparer).ToList();   // the same rule as MainForm.AddHost
             TargetOptions = PingTool.TargetOptions.Clean(TargetOptions!);
             Profiles = ProfileBook.Sanitize(Profiles);
         }
@@ -253,7 +253,7 @@ namespace PingTool
         {
             address = address.Trim();
             if (address.Length == 0) return;
-            Recent.RemoveAll(a => string.Equals(a, address, StringComparison.OrdinalIgnoreCase));
+            Recent.RemoveAll(a => TargetKey.Same(a, address));
             Recent.Insert(0, address);
             if (Recent.Count > MaxRecent) Recent.RemoveRange(MaxRecent, Recent.Count - MaxRecent);
         }

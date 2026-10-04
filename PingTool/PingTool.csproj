@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -169,8 +169,11 @@
          1.21.91 = what a screen reader is told about the live graph of one target now follows its curve over the window, in four parts (PIN461.165);
          1.21.92 = the cause shown for an outage on a tie goes to the one seen first by design, not by the enumeration order of a dictionary (PIN461.170);
          1.21.93 = the details of the selected incident start with its whole cause, for when the column of the list is too narrow for it (PIN461.177);
-         1.21.94 = the window built without start-up options no longer dereferences the null parameter (PIN461.189). -->
-    <Version>1.21.94</Version>
+         1.21.94 = the window built without start-up options no longer dereferences the null parameter (PIN461.189);
+         1.21.95 = the sent and lost counters of a session are 64-bit, so they no longer wrap after 2 147 483 647 probes (PIN461.186);
+         1.21.96 = PingTool runs on .NET 10 and asks the system for dark controls: lists, combo boxes, buttons and scroll bars follow the dark windows (PIN461.67, with .21, .53 and .96);
+         1.21.97 = one rule for "the same target" everywhere: scheme and host ignore the case, the path and query of a URL do not, so https://site/Status and https://site/status are two targets (PIN461.153, with .89 and .180). -->
+    <Version>1.21.97</Version>
   </PropertyGroup>
 
   <ItemGroup>

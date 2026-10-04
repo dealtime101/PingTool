@@ -17,7 +17,7 @@ namespace PingTool
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
         // The name and own limits of some of the hosts above, by address (see TargetOptions).
-        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+        public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(TargetKey.Comparer);
     }
 
     // The rules for the list of profiles kept in settings.json. Names are compared without
@@ -91,7 +91,7 @@ namespace PingTool
                 p.TargetOptions = PingTool.TargetOptions.Clean(p.TargetOptions!);
                 // Same rules as an imported profile: one entry per address (case ignored), at most MaxHostsPerProfile.
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase).Take(ProfileExchange.MaxHostsPerProfile).ToList();
+                    .Distinct(TargetKey.Comparer).Take(ProfileExchange.MaxHostsPerProfile).ToList();
                 clean.Add(p);
                 if (clean.Count == MaxProfiles) break;
             }
