@@ -31,6 +31,8 @@ namespace PingTool
                 FullRowSelect = true,
                 GridLines = true,
                 Dock = DockStyle.Fill,
+                AccessibleName = "Incidents",
+                AccessibleDescription = "The outages and slowdowns of this run, newest first. Select one to read the route captured when it began; click a column title to sort.",
             };
             // Column widths are not scaled by the form: written for 96 DPI too, and scaled here.
             int W(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
@@ -105,6 +107,8 @@ namespace PingTool
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
+                AccessibleName = "Route when the selected outage began",
+                AccessibleDescription = "The path to the host, hop by hop, captured when the selected outage began, and what changed from the healthy path.",
             };
             list.SelectedIndexChanged += (_, _) =>
                 details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
