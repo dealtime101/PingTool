@@ -123,6 +123,9 @@ namespace PingTool
                 h.AppendLine(c, $"<p><b>{Who(x)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
                 h.AppendLine(Svg(x.History, top, c, GraphAlt(x.Label ?? x.Address, x.History, top, c)));
                 h.AppendLine("</p>");
+                // The same pings as text, in time order, for who cannot read the curve (the red ticks are the only mark of a loss).
+                if (x.History.Count > 0)
+                    h.AppendLine(c, $"<details><summary>The {x.History.Count.ToString(c)} pings of {Who(x)} as text, oldest first</summary><p>{E(SamplesText(x.History, c))}</p></details>");
             }
 
             // When the cuts happen: one grid per target, a row per day, a column per hour, coloured by the share of lost pings.
@@ -217,6 +220,10 @@ namespace PingTool
                 : $"minimum {ok.Min().ToString(c)} ms, average {ok.Average().ToString("0.#", c)} ms, maximum {ok.Max().ToString(c)} ms";
             return $"{head}{figures}, {lost.ToString(c)} of {history.Count.ToString(c)} pings lost; scale 0 to {top.ToString(c)} ms, oldest ping on the left.";
         }
+
+        // "12, 14, lost, 13 (ms; oldest first)": every ping in time order, a loss in words.
+        internal static string SamplesText(IReadOnlyList<long> history, CultureInfo c) =>
+            string.Join(", ", history.Select(v => v < 0 ? "lost" : v.ToString(c))) + " (ms, oldest first).";
 
         // Oldest on the left. A lost ping breaks the line and leaves a red tick; a lone success is a dot.
         private static string Svg(IReadOnlyList<long> history, long top, CultureInfo c, string alt)
