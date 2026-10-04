@@ -6,14 +6,20 @@ namespace PingTool
     // hour ago stops weighing on the figures, and an improvement shows up within a minute.
     //
     // Percentiles use the nearest-rank method on the successful pings only (a lost ping has no
-    // latency; loss is reported on its own). They need MinForPercentiles successes: with fewer,
-    // p95 and p99 would just be the maximum under another name.
+    // latency; loss is reported on its own). Each needs enough successes (MinForPercentiles, MinForP95, MinForP99): with fewer,
+    // that percentile would just be the maximum under another name, so it is not given.
     // Jitter is the mean absolute difference between two pings that follow each other and both answered:
     // a loss breaks the chain (the same definition as the session figure).
     internal readonly record struct RecentStats(int Samples, int Lost, double? P50, double? P95, double? P99, double? Jitter)
     {
         public const int Window = 60;
+
+        // Replies needed before a percentile says more than the maximum (nearest rank): p50 from 10 (a median of fewer is too loose),
+        // p95 from 20 (below that the 95th is the largest reply), p99 from 100 (below that it is the largest reply: with the 60 pings
+        // of the window it never appears).
         public const int MinForPercentiles = 10;
+        public const int MinForP95 = 20;
+        public const int MinForP99 = 100;
 
         public static RecentStats From(IReadOnlyCollection<long> history, int window = Window)
         {
@@ -39,7 +45,7 @@ namespace PingTool
 
             ok.Sort();
             return new RecentStats(recent.Count, recent.Count - ok.Count,
-                Rank(ok, 50), Rank(ok, 95), Rank(ok, 99), jitter);
+                Rank(ok, 50), ok.Count >= MinForP95 ? Rank(ok, 95) : null, ok.Count >= MinForP99 ? Rank(ok, 99) : null, jitter);
         }
 
         // Nearest rank: the ceil(p/100 * n)-th smallest value.
@@ -62,7 +68,9 @@ namespace PingTool
             // The loss line is there even without percentiles: a host that answers nothing is exactly when it matters.
             string first = P50 is null
                 ? string.Format(c, "Last {0}: need {1} replies for percentiles", Samples, MinForPercentiles)
-                : string.Format(c, "Last {0}: p50 {1} / p95 {2} / p99 {3} ms", Samples, N(P50), N(P95), N(P99));
+                : string.Format(c, "Last {0}: p50 {1}", Samples, N(P50))
+                    + (P95 is null ? "" : " / p95 " + N(P95)) + (P99 is null ? "" : " / p99 " + N(P99)) + " ms"
+                    + (P95 is null ? string.Format(c, " (p95 needs {0} replies)", MinForP95) : "");
             return first + string.Format(c, "\nRecent jitter {0} ms | loss {1}% ({2}/{3})", N(Jitter), N(100.0 * Lost / Samples), Lost, Samples);
         }
     }
