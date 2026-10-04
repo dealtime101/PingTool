@@ -295,6 +295,7 @@ namespace PingTool
             sessions.Add(session);
             var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
+            RenderRow(item);   // the hover text is there from the start, not after the first ping
             item.Selected = true;
             return session;
         }
@@ -883,6 +884,8 @@ namespace PingTool
         {
             var s = (HostSession)item.Tag!;
             item.SubItems[0].Text = s.DisplayName;
+            // A long name is cut by the narrow column: the whole of it (and the address behind a name) shows on hover.
+            item.ToolTipText = s.Options?.Label is null ? s.Address : s.Options.Label + " (" + s.Address + ")";
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
             item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";

@@ -287,6 +287,7 @@
             lstHosts.HideSelection = false;
             lstHosts.Location = new Point(300, 52);
             lstHosts.MultiSelect = false;
+            lstHosts.ShowItemToolTips = true;
             lstHosts.Name = "lstHosts";
             lstHosts.Size = new Size(260, 218);
             lstHosts.AccessibleName = "Monitored targets";

@@ -62,8 +62,9 @@
          1.20.7 = the latency graph follows a high-contrast theme (PIN461.16);
          1.20.8 = in the comparison graph each target has its own band for its lost pings (PIN461.17);
          1.20.9 = the text of the graphs is drawn with ClearType (PIN461.18);
-         1.20.10 = the tab order follows the screen, left column then right column (PIN461.19, PIN461.20). -->
-    <Version>1.20.10</Version>
+         1.20.10 = the tab order follows the screen, left column then right column (PIN461.19, PIN461.20);
+         1.20.11 = a host name cut by the narrow column shows whole on hover (PIN461.22). -->
+    <Version>1.20.11</Version>
   </PropertyGroup>
 
   <ItemGroup>
