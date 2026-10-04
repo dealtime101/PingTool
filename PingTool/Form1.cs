@@ -133,14 +133,11 @@ namespace PingTool
 
             // --minimized hides the window in the notification area (alerts still show as balloons);
             // --start then begins the monitoring: no click needed.
+            // Started minimized, the window is never shown at all (see SetVisibleCore): hiding it from Shown made it flash on
+            // screen first. Started normally, --start begins when the window is up.
+            startHidden = startup.Minimized;
             Shown += (_, _) =>
             {
-                if (startup.Minimized)
-                {
-                    notifyIcon.Visible = true;
-                    Hide();
-                }
-
                 if (startup.Start && !isRunning) btnStartStop_Click(this, EventArgs.Empty);
             };
 
@@ -192,6 +189,26 @@ namespace PingTool
                 Hide();
                 notifyIcon.Visible = true;
             }
+        }
+
+        // True until the first time the window is asked to show itself, when it was started with --minimized.
+        private bool startHidden;
+
+        // Application.Run shows the main window once: with --minimized that one request is turned down, so the window never
+        // appears (not even for a frame) and the notification icon is the only trace; double-clicking it shows the window for real.
+        // The handle is created anyway, so that the message loop can run what the window would have started from Shown.
+        protected override void SetVisibleCore(bool value)
+        {
+            if (startHidden)
+            {
+                startHidden = false;
+                value = false;
+                if (!IsHandleCreated) CreateHandle();
+                notifyIcon.Visible = true;
+                if (startup.Start) BeginInvoke(() => { if (!isRunning) btnStartStop_Click(this, EventArgs.Empty); });
+            }
+
+            base.SetVisibleCore(value);
         }
 
         private void RestoreFromTray()
