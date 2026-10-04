@@ -88,6 +88,39 @@ namespace PingTool
         private static bool IsFileFailure(Exception ex) =>
             ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException;
 
+        // A power cut or a crash in the middle of an earlier write leaves the file ending in half a line (no line end after it). The
+        // next rows would continue that line and spoil two rows at once, so what follows the last complete line is cut off before
+        // appending: it was a half row that nothing can read, and the rows it belonged to were lost with that crash anyway. The check
+        // reads the end of the file only; the append itself keeps FileMode.Append (two windows can log the same host at once).
+        // ponytail: a half row cut INSIDE a quoted field that holds a line feed (rare) leaves a partial row; a line feed always ends the check.
+        internal static void CutPartialLine(string path)
+        {
+            if (!File.Exists(path)) return;
+
+            long keep;
+            using (var read = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                long length = read.Length;
+                if (length == 0) return;
+
+                keep = 0;
+                var block = new byte[4096];
+                for (long end = length; end > 0 && keep == 0; end -= block.Length)
+                {
+                    long from = Math.Max(0, end - block.Length);
+                    read.Position = from;
+                    int n = read.Read(block, 0, (int)(end - from));
+                    int at = Array.LastIndexOf(block, (byte)'\n', n - 1, n);
+                    if (at >= 0) keep = from + at + 1;
+                }
+
+                if (keep == length) return;   // ends on a line end: nothing partial
+            }
+
+            using var write = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+            write.SetLength(keep);
+        }
+
         // True when everything pending is on disk.
         public bool Flush()
         {
@@ -111,6 +144,7 @@ namespace PingTool
                 {
                     Directory.CreateDirectory(folder);
                     string path = Path.Combine(folder, group.Key);
+                    CutPartialLine(path);
                     // ReadWrite sharing lets a spreadsheet that does not lock the file read it meanwhile.
                     using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                     long start = stream.Length;
