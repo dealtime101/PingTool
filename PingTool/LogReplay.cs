@@ -109,7 +109,7 @@ namespace PingTool
                 bool ok = e.Status == "OK" && e.RttMs is not null;
                 long ping = ok ? e.RttMs!.Value : -1;
                 PingFailure? failure = ok ? null : new PingFailure(e.Status, e.Detail);
-                session.Add(ping, failure);
+                session.Add(ping, failure, e.Time);
                 var change = session.Monitor.Update(ping);
                 incidents.Observe(e.Time, e.Host, ping, session.LastFailure, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs);
             }

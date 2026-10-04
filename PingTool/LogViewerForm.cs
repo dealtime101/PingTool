@@ -65,7 +65,7 @@ namespace PingTool
             var data = new ReportData(DateTimeOffset.Now, replay.From, "", AppVersion.Display, 0, 0, 0,
                 HostMonitor.DefaultLatencyMs, HostMonitor.DefaultLossPercent,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
-                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
+                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
                 replay.Incidents.Summary(replay.To), replay.Incidents.Incidents.ToList(),
                 FromLogFile: true, PeriodEnd: replay.To);

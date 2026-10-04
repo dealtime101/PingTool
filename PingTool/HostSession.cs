@@ -76,11 +76,11 @@ namespace PingTool
         }
 
         // ping < 0 means failure; without a stated cause it is a plain timeout.
-        public void Add(long ping, PingFailure? failure = null)
+        public void Add(long ping, PingFailure? failure = null, DateTimeOffset? at = null)
         {
             Last = ping;
             LastFailure = ping < 0 ? failure ?? PingFailure.Timeout : null;
-            Stats.Add(ping);
+            Stats.Add(ping, at);
             History.Enqueue(ping);
             while (History.Count > HistorySize) History.Dequeue();
         }

@@ -5,7 +5,9 @@ using System.Text;
 namespace PingTool
 {
     internal sealed record HostReport(string Address, string IpText, HostState State, int Sent, int Lost,
-        double LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History);
+        double LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History,
+        // Pings sent and lost per clock hour, for the hour-by-day grid (null = not recorded).
+        IReadOnlyList<HourCell>? Hours = null);
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
@@ -35,6 +37,8 @@ namespace PingTool
             string E(string s) => WebUtility.HtmlEncode(s);
             string N(double? v) => v is null ? "-" : v.Value.ToString("0.#", c);
             string T(DateTimeOffset t) => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", c);
+            // Cut, never rounded up, to two decimals: 99.997 % with a real outage must not read "100 %" in a claim to a provider.
+            string Pct(double v) => (Math.Floor(v * 100 + 1e-9) / 100).ToString("0.##", c);
 
             h.AppendLine("<!DOCTYPE html>");
             h.AppendLine("<html lang=\"en\"><head><meta charset=\"utf-8\" /><title>PingTool diagnostic report</title>");
@@ -45,6 +49,9 @@ namespace PingTool
                 + ".ok{background:#eef8ee;border-color:#8c8}.meta td:first-child{width:200px;font-weight:600}"
                 + ".down{color:#b00020;font-weight:600}.deg{color:#9a6700;font-weight:600}svg{border:1px solid #ccc;background:#fafafa}"
                 + "small{color:#555}h3{font-size:14px;margin-top:18px}"
+                + "table.grid{width:auto;font-size:10px}table.grid th,table.grid td{padding:0;text-align:center}table.grid th{background:none;border:none;padding:0 2px;font-weight:400}"
+                + "table.grid td{width:18px;height:14px}.hn{background:#e6e6e6}.h0{background:#9ed89e}.h1{background:#f2e394}.h2{background:#f0a95a}.h3{background:#d9534f}"
+                + ".gl{display:inline-block;width:12px;height:12px;border:1px solid #bbb;vertical-align:middle}"
                 + "pre{background:#f6f6f6;border:1px solid #ccc;padding:8px;font-size:12px;overflow-x:auto}</style></head><body>");
 
             h.AppendLine("<h1>PingTool diagnostic report</h1>");
@@ -59,6 +66,25 @@ namespace PingTool
             if (!d.FromLogFile) Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
             Row(h, d.FromLogFile ? "Degraded when (last 10 pings; default limits, the log does not record them)" : "Degraded when (last 10 pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
             h.AppendLine("</table>");
+
+            // The figures a provider's support asks for first, before any graph.
+            if (d.Hosts.Count > 0)
+            {
+                h.AppendLine("<h2>Availability</h2>");
+                h.AppendLine("<table><tr><th>Target</th><th>Availability</th><th>Outages</th><th>Total down</th><th>Average outage</th><th>Longest outage</th><th>Ping loss</th></tr>");
+                foreach (var x in d.Hosts)
+                {
+                    var row = Availability.For(x.Address, d.Incidents, d.RunStart, end);
+                    string Dur(TimeSpan? t) => t is null ? "-" : IncidentLog.FormatDuration(t.Value);
+                    h.AppendLine(c, $"<tr><td>{E(x.Address)}</td><td class=\"n\">{(row.AvailabilityPercent is null ? "-" : Pct(row.AvailabilityPercent.Value) + " %")}</td>"
+                        + $"<td class=\"n\">{row.Outages.ToString(c)}</td><td class=\"n\">{E(Dur(row.TotalDown))}</td><td class=\"n\">{E(Dur(row.Mean))}</td><td class=\"n\">{E(Dur(row.Longest))}</td>"
+                        + $"<td class=\"n\">{N(x.LossPercent)} %</td></tr>");
+                }
+
+                h.AppendLine("</table>");
+                h.AppendLine("<p><small>Availability = the share of the monitoring period not spent in an outage. An outage runs from the first failed ping to the first "
+                    + "reply after it (one still going on counts up to the end of the period); a slowdown is not counted as down. Ping loss = lost pings over pings sent.</small></p>");
+            }
 
             h.AppendLine("<h2>Where is the fault?</h2>");
             if (d.Diagnosis is null)
@@ -85,6 +111,32 @@ namespace PingTool
                 h.AppendLine(c, $"<p><b>{E(x.Address)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
                 h.AppendLine(Svg(x.History, top, c));
                 h.AppendLine("</p>");
+            }
+
+            // When the cuts happen: one grid per target, a row per day, a column per hour, coloured by the share of lost pings.
+            var grids = d.Hosts.Where(x => x.Hours is { Count: > 0 }).ToList();
+            if (grids.Count > 0)
+            {
+                h.AppendLine("<h2>Loss by hour</h2>");
+                h.AppendLine("<p><small>Each square is one clock hour: <span class=\"hn gl\"></span> no ping, <span class=\"h0 gl\"></span> no loss, "
+                    + "<span class=\"h1 gl\"></span> up to 5 %, <span class=\"h2 gl\"></span> up to 30 %, <span class=\"h3 gl\"></span> more than 30 %. "
+                    + $"The {Availability.MaxGridDays.ToString(c)} most recent days are shown. Hover a square for its figures.</small></p>");
+                foreach (var x in grids)
+                {
+                    h.AppendLine(c, $"<p><b>{E(x.Address)}</b></p>");
+                    h.Append("<table class=\"grid\"><tr><th></th>");
+                    for (int hour = 0; hour < 24; hour++) h.Append(c, $"<th>{hour}</th>");
+                    h.AppendLine("</tr>");
+                    foreach (var (day, hours) in Availability.Grid(x.Hours!))
+                    {
+                        h.Append(c, $"<tr><th>{day:yyyy-MM-dd}</th>");
+                        for (int hour = 0; hour < 24; hour++)
+                            h.Append(c, $"<td class=\"{Availability.LossClass(hours[hour])}\" title=\"{E(Availability.Title(day, hour, hours[hour]))}\"></td>");
+                        h.AppendLine("</tr>");
+                    }
+
+                    h.AppendLine("</table>");
+                }
             }
 
             h.AppendLine("<h2>Incidents</h2>");

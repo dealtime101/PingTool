@@ -805,7 +805,7 @@ namespace PingTool
         private void UpdatePingUI(HostSession session, long ping, PingFailure? failure = null)
         {
             if (closing) return;
-            session.Add(ping, failure);
+            session.Add(ping, failure, DateTimeOffset.Now);
             var why = session.LastFailure;
             var entry = log.Add(DateTimeOffset.Now, session.Address, why?.Short ?? "OK", ping >= 0 ? ping : null, why?.Detail ?? "");
             autoLog?.Add(entry);
@@ -858,7 +858,7 @@ namespace PingTool
                 (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
                 (int)numSlow.Value, (int)numLoss.Value,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
-                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
+                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
                 incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
