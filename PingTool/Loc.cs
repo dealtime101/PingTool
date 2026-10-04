@@ -34,6 +34,7 @@ namespace PingTool
             ["alert.up"] = ("{0} is back up", "{0} répond de nouveau"),
             ["alert.up.after"] = ("{0} is back up after {1}", "{0} répond de nouveau après {1}"),
             ["alert.degraded"] = ("{0} is degraded: {1:0.#}% loss, average {2} ms over the last {3} pings", "{0} est dégradé : {1:0.#} % de perte, moyenne {2} ms sur les {3} derniers pings"),
+            ["alert.degraded.noreply"] = ("{0} is degraded: {1:0.#}% loss, no reply in the last {2} pings", "{0} est dégradé : {1:0.#} % de perte, aucune réponse sur les {2} derniers pings"),
             ["alert.recovered"] = ("{0} is back to normal", "{0} est revenu à la normale"),
         };
 

@@ -12,8 +12,10 @@ namespace PingTool
         {
             HostChange.Down => Loc.T("alert.down", host),
             HostChange.Up => outage is TimeSpan d ? Loc.T("alert.up.after", host, IncidentLog.FormatDuration(d)) : Loc.T("alert.up", host),
-            HostChange.Degraded => Loc.T("alert.degraded", host, lossPercent,
-                avgMs?.ToString("0.#", CultureInfo.CurrentCulture) ?? "-", HostMonitor.WindowSize),
+            // Without a single reply there is no average: say the loss alone rather than "average - ms".
+            HostChange.Degraded => avgMs is double avg
+                ? Loc.T("alert.degraded", host, lossPercent, avg.ToString("0.#", CultureInfo.CurrentCulture), HostMonitor.WindowSize)
+                : Loc.T("alert.degraded.noreply", host, lossPercent, HostMonitor.WindowSize),
             HostChange.Recovered => Loc.T("alert.recovered", host),
             _ => "",
         };
