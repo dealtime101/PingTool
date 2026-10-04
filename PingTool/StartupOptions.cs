@@ -30,11 +30,11 @@ namespace PingTool
 
         public static readonly StartupOptions None = new(Array.Empty<string>(), false, false, null);
 
-        public const string Usage =
+        public static readonly string Usage =
             "PingTool.exe [options] [target ...]\r\n\r\n" +
             "  --start            start monitoring as soon as the window is up\r\n" +
             "  --minimized        start hidden in the notification area (double-click its icon to open)\r\n" +
-            "  --interval <ms>    time between probes, 100 to 60000\r\n" +
+            $"  --interval <ms>    time between probes, {Limits.IntervalMs.Min} to {Limits.IntervalMs.Max}\r\n" +
             "  --headless         no window: probe for --duration, write --report, exit (exit code 0 = no incident, 1 = an outage or a slowdown, 2 = error)\r\n" +
             "  --duration <t>     with --headless: how long to probe, 5s to 30d (30s, 10m, 8h, 2d)\r\n" +
             "  --report <file>    with --headless: where to write the HTML report at the end (refreshed every 10 minutes meanwhile)\r\n" +
