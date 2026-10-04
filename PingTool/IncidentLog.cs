@@ -91,7 +91,15 @@ namespace PingTool
             {
                 case HostChange.Down:
                     var begin = t.StreakStart ?? time;
-                    if (t.Slow is not null) { t.Slow.End = begin; t.Slow = null; }
+                    if (t.Slow is not null)
+                    {
+                        // The outage is dated at the first failed ping, which can come BEFORE the moment the slowdown was noticed
+                        // (the first failures push the loss of the window over the limit): that "slowdown" is the beginning of
+                        // the outage, not a separate event, and keeping it would give it an end before its start.
+                        if (t.Slow.Start >= begin) incidents.Remove(t.Slow);
+                        else t.Slow.End = begin;
+                        t.Slow = null;
+                    }
                     t.Outage = Open(host, IncidentKind.Outage, begin, 0, null);
                     t.Outage.FailedPings = t.StreakCount;
                     t.Outage.Cause = Top(t.StreakCauses);
