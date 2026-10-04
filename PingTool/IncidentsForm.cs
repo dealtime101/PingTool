@@ -9,9 +9,10 @@ namespace PingTool
         {
             Text = "PingTool - Incidents";
             ClientSize = new Size(900, 480);
+            MinimumSize = SizeFromClientSize(new Size(640, 360));
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
@@ -24,8 +25,7 @@ namespace PingTool
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
-                Location = new Point(10, 40),
-                Size = new Size(880, 190),
+                Dock = DockStyle.Fill,
             };
             list.Columns.Add("Host", 120);
             list.Columns.Add("Type", 70);
@@ -78,8 +78,7 @@ namespace PingTool
                 Font = new Font(FontFamily.GenericMonospace, 9F),
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.White,
-                Location = new Point(10, 238),
-                Size = new Size(880, 168),
+                Dock = DockStyle.Fill,
             };
             list.SelectedIndexChanged += (_, _) =>
                 details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
@@ -100,14 +99,29 @@ namespace PingTool
                 AutoSize = false,
                 Location = new Point(10, 414),
                 Size = new Size(780, 34),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             };
 
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(800, 418), Size = new Size(90, 28) };
+            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(800, 418), Size = new Size(90, 28), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
 
+            // The list and the route text share the height: more incidents or a longer route, drag the bar (or enlarge the window).
+            var split = new SplitContainer
+            {
+                Orientation = Orientation.Horizontal,
+                Location = new Point(10, 40),
+                Size = new Size(880, 366),
+                SplitterDistance = 190,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                BackColor = Color.FromArgb(64, 64, 64),
+                Panel1MinSize = 80,
+                Panel2MinSize = 60,
+            };
+            split.Panel1.Controls.Add(list);
+            split.Panel2.Controls.Add(details);
+
             Controls.Add(lblSummary);
-            Controls.Add(list);
-            Controls.Add(details);
+            Controls.Add(split);
             Controls.Add(lblNote);
             Controls.Add(close);
         }
