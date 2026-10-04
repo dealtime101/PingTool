@@ -81,7 +81,15 @@ namespace PingTool
             // Distinct hosts differing only by what FileName replaces would share a file: that is
             // fine, rows carry their host.
             var written = new HashSet<LogEntry>(ReferenceEqualityComparer.Instance);
-            foreach (var group in pending.GroupBy(e => FileName(e.Host, e.Time)))
+            // FileName once per host and day, not once per pending entry: with a stuck folder this runs every few seconds
+            // over up to MaxPending entries, on the UI thread.
+            var names = new Dictionary<(string, DateOnly), string>();
+            foreach (var group in pending.GroupBy(e =>
+            {
+                var key = (e.Host, DateOnly.FromDateTime(e.Time.DateTime));
+                if (!names.TryGetValue(key, out var name)) names[key] = name = FileName(e.Host, e.Time);
+                return name;
+            }))
             {
                 try
                 {
