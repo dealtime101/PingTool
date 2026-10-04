@@ -57,9 +57,10 @@ namespace PingTool
             int plotW = PlotWidth, plotH = Height - TopMargin - BottomMargin;
             using var grey = new SolidBrush(Color.Silver);
 
-            if (data.IsEmpty || plotH < 20)
+            string? nothing = Timeline.NothingToDraw(data.IsEmpty, plotH);
+            if (nothing is not null)
             {
-                g.DrawString(Loc.T("timeline.empty"), Font, grey, LeftMargin, TopMargin + 4);
+                g.DrawString(nothing, Font, grey, LeftMargin, TopMargin + 4);
                 return;
             }
 

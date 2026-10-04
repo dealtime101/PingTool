@@ -108,6 +108,13 @@ namespace PingTool
             return net is null ? text : text + "\n" + net;
         }
 
+        public const int MinPlotHeight = 20;
+
+        // What to write instead of the chart, or null when it can be drawn: "no data" only when there is none, and a request to
+        // enlarge the window when there is data but no room (it used to say "No data yet" there, which is false).
+        internal static string? NothingToDraw(bool noData, int plotHeight) =>
+            noData ? Loc.T("timeline.empty") : plotHeight < MinPlotHeight ? Loc.T("timeline.small") : null;
+
         public const double ScalePercentile = 0.98;
 
         // The top of the chart: the 98th percentile of the columns' highest replies, rounded up to 1, 2 or 5 times a power of ten,

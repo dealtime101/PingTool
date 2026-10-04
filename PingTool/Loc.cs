@@ -27,6 +27,7 @@ namespace PingTool
             ["timeline.outage"] = ("outage from {0} ({1})", "panne depuis {0} ({1})"),
             ["timeline.slowdown"] = ("slowdown from {0} ({1})", "ralentissement depuis {0} ({1})"),
             ["timeline.ongoing"] = ("still going on, {0}", "toujours en cours, {0}"),
+            ["timeline.small"] = ("The window is too small to draw the chart: make it taller.", "La fenêtre est trop petite pour dessiner le graphique : agrandissez-la."),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
             ["timeline.more"] = (" (+{0} more)", " (+{0} de plus)"),
         };
