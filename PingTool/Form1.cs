@@ -1330,7 +1330,8 @@ namespace PingTool
             // A reply with no neighbour to be joined to (the first one, or one between two losses)
             // is a dot: as a line it would have no length and the reply would not show at all.
             foreach (var d in shapes.Dots) g.FillEllipse(dot, d.X - 2f, d.Y - 2f, 4f, 4f);
-            foreach (float x in shapes.LossXs) g.DrawLine(lost, x, Height - 1, x, Height - 8);
+            var (tickBottom, tickTop) = GraphLayout.LossTick(index, series.Count, Height, compare);
+            foreach (float x in shapes.LossXs) g.DrawLine(lost, x, tickBottom, x, tickTop);
         }
 
         // A dotted line at the recent p95: "95 % of the last pings were at or below this".
