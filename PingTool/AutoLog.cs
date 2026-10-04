@@ -12,8 +12,9 @@ namespace PingTool
     // go out, in order, at the next Flush that works.
     internal sealed class AutoLog
     {
-        // What a stuck folder can cost in memory: about 10 minutes of one host at one ping a second
-        // per 1 000 entries. The oldest are dropped past this, like the in-memory log does.
+        // What a stuck folder can cost in memory: 20 000 entries, i.e. about 5 h 33 min of ONE host at one ping a second (1 000 entries
+        // = 16.7 min), shared by all the hosts watched: with 4 hosts it is about 1 h 23 min. The oldest are dropped past this, like the
+        // in-memory log does.
         public const int MaxPending = 20_000;
         private const int MaxNameLength = 80;
 
