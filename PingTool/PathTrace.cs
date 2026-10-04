@@ -5,15 +5,16 @@ using System.Net.NetworkInformation;
 
 namespace PingTool
 {
-    internal enum HopStatus { Expired, Reached, Timeout, Unreachable }
+    // Failed = the probe itself could not be sent (no permission, address family not supported...): not an answer of the network.
+    internal enum HopStatus { Expired, Reached, Timeout, Unreachable, Failed }
 
     // What one probe at one TTL brought back.
-    internal sealed record HopReply(HopStatus Status, IPAddress? Address, long RttMs);
+    internal sealed record HopReply(HopStatus Status, IPAddress? Address, long RttMs, string? Detail = null);
 
     // Sends ONE probe with a limited TTL. Injected so the algorithm can be tested on a simulated network.
     internal delegate Task<HopReply> HopProbe(IPAddress target, int ttl, CancellationToken token);
 
-    internal sealed record Hop(int Ttl, IPAddress? Address, long? RttMs, HopStatus Status);
+    internal sealed record Hop(int Ttl, IPAddress? Address, long? RttMs, HopStatus Status, string? Detail = null);
 
     // The route to a target at a given moment: who answered at each distance.
     internal sealed class PathCapture
@@ -40,7 +41,7 @@ namespace PingTool
             {
                 string who = h.Address?.ToString() ?? "*";
                 string ms = h.RttMs is null ? "" : "  " + h.RttMs.Value.ToString(c) + " ms";
-                string flag = h.Status switch { HopStatus.Reached => "  (destination)", HopStatus.Unreachable => "  (reports: unreachable)", _ => "" };
+                string flag = h.Status switch { HopStatus.Reached => "  (destination)", HopStatus.Unreachable => "  (reports: unreachable)", HopStatus.Failed => "  (probe failed)", _ => "" };
                 lines.Add($"{h.Ttl,3}  {who}{ms}{flag}");
             }
 
@@ -57,6 +58,10 @@ namespace PingTool
                 return last.Address is null
                     ? $"A router reports the destination unreachable at hop {last.Ttl}."
                     : $"{last.Address} reports the destination unreachable at hop {last.Ttl}.";
+
+            // Our own probe broke: nothing was learned about the network, and saying "the fault is on this PC" would be a guess.
+            if (last is { Status: HopStatus.Failed })
+                return $"The probe itself failed at hop {last.Ttl} ({last.Detail}): the route could not be traced. This says nothing about the network.";
 
             var farthest = LastResponding;
             return farthest is null
@@ -79,7 +84,7 @@ namespace PingTool
 
                 if (before is not null && now is not null && !before.Equals(now))
                     notes.Add($"Hop {ttl} changed: {before} when healthy, {now} now (the route changed).");
-                else if (before is not null && now is null && i < during.Hops.Count)
+                else if (before is not null && now is null && i < during.Hops.Count && during.Hops[i].Status != HopStatus.Failed)
                     notes.Add($"Hop {ttl} ({before}) answered when healthy and is silent now.");
             }
 
@@ -94,6 +99,14 @@ namespace PingTool
     {
         public const int MaxHops = 20;
         public const int GiveUpAfter = 3;
+
+        // "PingException: An exception occurred during a Ping request. (SocketException: ...)" on one line.
+        internal static string Why(Exception ex)
+        {
+            string text = ex.GetType().Name + ": " + ex.Message;
+            if (ex.InnerException is { } inner) text += " (" + inner.GetType().Name + ": " + inner.Message + ")";
+            return string.Join(" ", text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+        }
 
         public static async Task<PathCapture> RunAsync(string host, IPAddress target, HopProbe probe, DateTimeOffset time,
             int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default)
@@ -110,13 +123,15 @@ namespace PingTool
                 {
                     reply = await probe(target, ttl, token);
                 }
-                catch (Exception) when (!token.IsCancellationRequested)
+                catch (Exception ex) when (!token.IsCancellationRequested)
                 {
-                    reply = new HopReply(HopStatus.Timeout, null, 0);   // a probe that blows up is a silent hop
+                    // A probe that cannot even be sent is not a silent router: it is said so, and the trace stops (the next
+                    // hops would fail the same way and each look like "nothing answers").
+                    reply = new HopReply(HopStatus.Failed, null, 0, Why(ex));
                 }
 
-                hops.Add(new Hop(ttl, reply.Address, reply.Status == HopStatus.Timeout ? null : reply.RttMs, reply.Status));
-                if (reply.Status is HopStatus.Reached or HopStatus.Unreachable) break;
+                hops.Add(new Hop(ttl, reply.Address, reply.Status is HopStatus.Timeout or HopStatus.Failed ? null : reply.RttMs, reply.Status, reply.Detail));
+                if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
 
                 silent = reply.Status == HopStatus.Timeout ? silent + 1 : 0;
                 if (silent >= giveUpAfter) break;
