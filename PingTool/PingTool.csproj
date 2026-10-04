@@ -93,8 +93,9 @@
          1.21.15 = outages are striped on the timeline, so they differ from slowdowns by more than a colour (PIN461.50);
          1.21.16 = the timeline chart takes the focus and tells a screen reader its summary and incidents (PIN461.51);
          1.21.17 = the timeline window follows the screen scaling and can be resized and maximized (PIN461.52);
-         1.21.18 = a timeline chart with no room asks for a bigger window instead of saying there is no data (PIN461.54). -->
-    <Version>1.21.18</Version>
+         1.21.18 = a timeline chart with no room asks for a bigger window instead of saying there is no data (PIN461.54);
+         1.21.19 = the left margin of the timeline chart is as wide as its top value, and the margins follow the screen scaling (PIN461.55). -->
+    <Version>1.21.19</Version>
   </PropertyGroup>
 
   <ItemGroup>

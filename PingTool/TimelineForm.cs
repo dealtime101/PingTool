@@ -4,7 +4,15 @@ namespace PingTool
     // Where things go is decided by TimelineLayout (tested); this only paints.
     internal sealed class TimelineChart : Control
     {
-        private const int LeftMargin = 46, TopMargin = 6, BottomMargin = 24, RightMargin = 8;
+        // Margins in pixels at 100 %, scaled to the screen like the text they hold.
+        private int Px(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
+        private int TopMargin => Px(6);
+        private int BottomMargin => Px(24);
+        private int RightMargin => Px(8);
+
+        // The room on the left for the top value ("50 ms", or "5000 ms (peak 12000)"): as wide as that text, never narrower than 46 px at 100 %.
+        private int measuredLeft;
+        private int LeftMargin => Math.Max(Px(46), measuredLeft);
         private TimelineData data = Timeline.Build(Array.Empty<LogEntry>(), "", 1);
         private IReadOnlyList<Incident> incidents = Array.Empty<Incident>();
         private IReadOnlyList<NetworkEvent> networkEvents = Array.Empty<NetworkEvent>();
@@ -29,6 +37,8 @@ namespace PingTool
         protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
         protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
 
+        private static string TopLabel(TimelineData d) => d.IsClipped ? Loc.T("timeline.axis.clipped", d.TopMs, d.PeakMs) : d.TopMs + " ms";
+
         public int PlotWidth => Math.Max(20, Width - LeftMargin - RightMargin);
 
         public void Show(TimelineData d, IReadOnlyList<Incident> inc, IReadOnlyList<NetworkEvent>? network = null)
@@ -36,6 +46,7 @@ namespace PingTool
             data = d;
             incidents = inc;
             networkEvents = network ?? Array.Empty<NetworkEvent>();
+            measuredLeft = TextRenderer.MeasureText(TopLabel(d), Font).Width + Px(10);
             Invalidate();
         }
 
@@ -119,7 +130,7 @@ namespace PingTool
                 g.FillPolygon(cutBrush, new[] { new PointF(x - 3, 0), new PointF(x + 3, 0), new PointF(x, 5) });
 
             g.ResetTransform();
-            g.DrawString(data.IsClipped ? Loc.T("timeline.axis.clipped", data.TopMs, data.PeakMs) : data.TopMs + " ms", Font, grey, 2, TopMargin);
+            g.DrawString(TopLabel(data), Font, grey, 2, TopMargin);
             g.DrawString("0", Font, grey, 2, TopMargin + plotH - Font.Height);
         }
     }
