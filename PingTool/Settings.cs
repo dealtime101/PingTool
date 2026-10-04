@@ -81,9 +81,18 @@ namespace PingTool
         {
             try
             {
-                var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path), ReadOptions) ?? new Settings();
-                s.Normalize();
-                return s;
+                string text = File.ReadAllText(path);   // IOException, UnauthorizedAccess and a path NotSupported all come from here: a file problem
+                try
+                {
+                    var s = JsonSerializer.Deserialize<Settings>(text, ReadOptions) ?? new Settings();
+                    s.Normalize();
+                    return s;
+                }
+                catch (NotSupportedException ex)
+                {
+                    // From the deserializer it is about the CONTENT (a value it cannot turn into the setting): a damaged file, not a locked one.
+                    throw new JsonException(ex.Message, ex);
+                }
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {
