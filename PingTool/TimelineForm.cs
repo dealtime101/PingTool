@@ -13,7 +13,21 @@ namespace PingTool
         {
             DoubleBuffered = true;
             BackColor = Color.FromArgb(40, 40, 40);
+            // Reachable with Tab, so that a screen reader can land on it and read what it shows (see TimelineAccessibleObject).
+            TabStop = true;
+            AccessibleRole = AccessibleRole.Chart;
         }
+
+        // What a screen reader gets: the picture says nothing, so the figures are written out - computed when asked, not at each redraw.
+        private sealed class TimelineAccessibleObject(TimelineChart owner) : ControlAccessibleObject(owner)
+        {
+            public override string? Description => Timeline.Accessible(owner.data, owner.incidents, owner.networkEvents);
+        }
+
+        protected override AccessibleObject CreateAccessibilityInstance() => new TimelineAccessibleObject(this);
+
+        protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+        protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
 
         public int PlotWidth => Math.Max(20, Width - LeftMargin - RightMargin);
 
@@ -34,13 +48,18 @@ namespace PingTool
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            var g = e.Graphics;
+            PaintChart(e.Graphics);
+            if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(e.Graphics, ClientRectangle);
+        }
+
+        private void PaintChart(Graphics g)
+        {
             int plotW = PlotWidth, plotH = Height - TopMargin - BottomMargin;
             using var grey = new SolidBrush(Color.Silver);
 
             if (data.IsEmpty || plotH < 20)
             {
-                g.DrawString("No data yet: start pinging this host.", Font, grey, LeftMargin, TopMargin + 4);
+                g.DrawString(Loc.T("timeline.empty"), Font, grey, LeftMargin, TopMargin + 4);
                 return;
             }
 

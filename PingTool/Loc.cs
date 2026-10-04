@@ -22,6 +22,11 @@ namespace PingTool
             ["timeline.lossiest"] = ("Most losses: {0}% of the pings ({1} of {2}) around {3}", "Plus de pertes : {0} % des pings ({1} sur {2}) vers {3}"),
             ["timeline.peak"] = ("Highest reply: {0} ms, above the scale of the chart ({1} ms): those columns are cut at the top and marked.", "Réponse la plus haute : {0} ms, au-dessus de l'échelle du graphique ({1} ms) : ces colonnes sont coupées en haut et marquées."),
             ["timeline.axis.clipped"] = ("{0} ms (peak {1})", "{0} ms (pic {1})"),
+            ["timeline.incidents.none"] = ("No incident on this host in this period.", "Aucun incident sur cet hôte pendant cette période."),
+            ["timeline.incidents"] = ("Incidents: {0}.", "Incidents : {0}."),
+            ["timeline.outage"] = ("outage from {0} ({1})", "panne depuis {0} ({1})"),
+            ["timeline.slowdown"] = ("slowdown from {0} ({1})", "ralentissement depuis {0} ({1})"),
+            ["timeline.ongoing"] = ("still going on, {0}", "toujours en cours, {0}"),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
             ["timeline.more"] = (" (+{0} more)", " (+{0} de plus)"),
         };

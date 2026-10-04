@@ -80,6 +80,34 @@ namespace PingTool
             return 0;
         }
 
+        // What a screen reader says about the chart: the summary, then the incidents of THIS host in order (the first few), then the
+        // network changes - everything the stripes and the lines say to the eye.
+        internal static string Accessible(TimelineData d, IReadOnlyList<Incident> incidents, IReadOnlyList<NetworkEvent> network, int shown = 5)
+        {
+            string text = Describe(d);
+            if (d.IsEmpty) return text;
+
+            var c = CultureInfo.CurrentCulture;
+            var mine = incidents.Where(i => i.Host == d.Host).OrderBy(i => i.Start).ToList();
+            if (mine.Count == 0) text += "\n" + Loc.T("timeline.incidents.none");
+            else
+            {
+                string One(Incident i)
+                {
+                    string start = i.Start.ToLocalTime().ToString("G", c);
+                    string length = IncidentLog.FormatDuration(i.Duration(d.To));
+                    string how = i.End is null ? Loc.T("timeline.ongoing", length) : length;
+                    return i.Kind == IncidentKind.Outage ? Loc.T("timeline.outage", start, how) : Loc.T("timeline.slowdown", start, how);
+                }
+
+                string list = string.Join("; ", mine.Take(shown).Select(One));
+                text += "\n" + Loc.T("timeline.incidents", list + (mine.Count > shown ? Loc.T("timeline.more", mine.Count - shown) : ""));
+            }
+
+            string? net = DescribeNetwork(network, d.From, d.To);
+            return net is null ? text : text + "\n" + net;
+        }
+
         public const double ScalePercentile = 0.98;
 
         // The top of the chart: the 98th percentile of the columns' highest replies, rounded up to 1, 2 or 5 times a power of ten,
