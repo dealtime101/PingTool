@@ -159,16 +159,35 @@ namespace PingTool
 
             if (outages.Count > 0)
             {
-                var down = outages.Aggregate(TimeSpan.Zero, (sum, i) => sum + i.Duration(now));
+                var down = TimeWithAnOutage(outages, now);
                 // With one outage the longest is the total: saying it twice adds nothing.
                 string longest = outages.Count > 1 ? $", longest {FormatDuration(outages.Max(i => i.Duration(now)))}" : "";
-                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} down{longest})");
+                // Several hosts down at once (the box went off) count once: the time during which at least one was down.
+                string what = outages.Select(i => i.Host).Distinct().Count() > 1 ? "with a target down" : "down";
+                parts.Add($"{outages.Count} outage{(outages.Count == 1 ? "" : "s")} ({FormatDuration(down)} {what}{longest})");
             }
 
             if (slow > 0) parts.Add($"{slow} slowdown{(slow == 1 ? "" : "s")}");
 
             return string.Create(CultureInfo.InvariantCulture,
                 $"{incidents.Count} incident{(incidents.Count == 1 ? "" : "s")} on {hosts} host{(hosts == 1 ? "" : "s")}: {string.Join(", ", parts)}.");
+        }
+
+        // The length of the union of the outages' intervals: two hosts down for the same ten minutes are ten minutes, not twenty.
+        internal static TimeSpan TimeWithAnOutage(IEnumerable<Incident> outages, DateTimeOffset now)
+        {
+            var total = TimeSpan.Zero;
+            DateTimeOffset? from = null, to = null;
+            foreach (var i in outages.OrderBy(o => o.Start))
+            {
+                var end = i.End ?? now;
+                if (end < i.Start) end = i.Start;
+                if (to is null || i.Start > to) { if (from is not null) total += to!.Value - from.Value; from = i.Start; to = end; }
+                else if (end > to) to = end;
+            }
+
+            if (from is not null) total += to!.Value - from.Value;
+            return total;
         }
 
         public static string FormatDuration(TimeSpan d)
