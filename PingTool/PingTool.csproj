@@ -72,8 +72,9 @@
          1.20.17 = settings.json tolerates trailing commas, comments and property names in any case (PIN461.28);
          1.20.18 = a target written twice in settings.json is read once (PIN461.29);
          1.20.19 = the settings file is flushed to disk before it replaces the old one, and a failed save leaves no temporary file (PIN461.30);
-         1.20.20 = a value the settings reader cannot convert counts as a damaged file, kept aside, not as a locked one (PIN461.31). -->
-    <Version>1.20.20</Version>
+         1.20.20 = a value the settings reader cannot convert counts as a damaged file, kept aside, not as a locked one (PIN461.31);
+         1.20.21 = the time axis labels stay right after a daylight-saving change (PIN461.32). -->
+    <Version>1.20.21</Version>
   </PropertyGroup>
 
   <ItemGroup>

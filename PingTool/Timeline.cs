@@ -121,10 +121,26 @@ namespace PingTool
             string format = step < 60 ? "HH:mm:ss" : "HH:mm";
             if (withDate) format = "MM-dd " + format;
 
+            // Whole days are counted on the local calendar: a day across a daylight-saving change lasts 23 or 25 hours,
+            // and "midnight + 86400 s" would land at 23:00 or 01:00.
+            bool days = step % 86400 == 0;
+            long stepDays = step / 86400;
             var ticks = new List<(DateTimeOffset, string)>();
-            for (double k = firstIndex; ; k++)
+            for (double k = days ? (local.TimeOfDay == TimeSpan.Zero ? 0 : 1) : firstIndex; ; k++)
             {
-                var t = origin + TimeSpan.FromSeconds(k * step);
+                DateTimeOffset t;
+                if (days)
+                {
+                    var day = local.Date.AddDays(k * stepDays);   // unspecified kind: a calendar date, no offset yet
+                    t = new DateTimeOffset(day, TimeZoneInfo.Local.GetUtcOffset(day));
+                }
+                else
+                {
+                    // The instant is exact; what is shown is that instant on the local clock of THAT moment, not with the
+                    // offset the session started with.
+                    t = (origin + TimeSpan.FromSeconds(k * step)).ToLocalTime();
+                }
+
                 if (t > to) break;
                 ticks.Add((t, t.ToString(format, CultureInfo.CurrentCulture)));
             }
