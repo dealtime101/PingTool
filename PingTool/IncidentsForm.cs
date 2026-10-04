@@ -68,6 +68,8 @@ namespace PingTool
                 for (int c = 0; c < titles.Length; c++) list.Columns[c].Text = titles[c] + (c == sortColumn ? (ascending ? " ▲" : " ▼") : "");
             };
 
+            // All the rows are made first and handed over at once (inside BeginUpdate/EndUpdate): one repaint, not one per incident.
+            var rows = new List<ListViewItem>(incidents.Count);
             foreach (var i in incidents.Reverse())
             {
                 bool outage = i.Kind == IncidentKind.Outage;
@@ -76,7 +78,7 @@ namespace PingTool
                     : string.Format(culture, "{0:0.#}% loss, avg {1} ms", i.LossPercent,
                         i.AvgMs?.ToString("0.#", culture) ?? "-");
 
-                list.Items.Add(new ListViewItem(new[]
+                rows.Add(new ListViewItem(new[]
                 {
                     i.Host,
                     outage ? "Outage" : "Slowdown",
@@ -88,6 +90,10 @@ namespace PingTool
                     i.Occurrence.ToString(culture),
                 }) { Tag = i });
             }
+
+            list.BeginUpdate();
+            try { list.Items.AddRange(rows.ToArray()); }
+            finally { list.EndUpdate(); }
 
             // The route to the host at the moment of the selected outage.
             var details = new TextBox
