@@ -43,6 +43,7 @@ namespace PingTool
             }
 
             List<Profile?>? raw;
+            string where = "$";   // where the list sits in the file, for an error found inside it
             try
             {
                 using var doc = JsonDocument.Parse(json);
@@ -74,6 +75,7 @@ namespace PingTool
                     }
 
                     list = p;
+                    where = "$.Profiles";
                 }
                 else
                 {
@@ -81,10 +83,23 @@ namespace PingTool
                     return false;
                 }
 
-                raw = JsonSerializer.Deserialize<List<Profile?>>(list.GetRawText(), ReadOptions);
+                try
+                {
+                    // The element itself, not a re-extracted copy of its text: an error then names a place in the FILE (its path), where a
+                    // line and a position would be those of the copy.
+                    raw = list.Deserialize<List<Profile?>>(ReadOptions);
+                }
+                catch (JsonException ex)
+                {
+                    string at = ex.Path is { Length: > 1 } path ? where + path[1..] : where;
+                    int cut = ex.Message.IndexOf(" Path:", StringComparison.Ordinal);
+                    error = $"A profile in this file is not valid: {(cut > 0 ? ex.Message[..cut] : ex.Message)} (at {at}).";
+                    return false;
+                }
             }
             catch (JsonException ex)
             {
+                // The file itself is not JSON: here the line and position are those of the file.
                 error = "This file is not valid JSON: " + ex.Message;
                 return false;
             }
