@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Net;
 
 namespace PingTool
 {
@@ -35,6 +36,16 @@ namespace PingTool
             int sep = text.IndexOf("://", StringComparison.Ordinal);
             if (sep < 0)
             {
+                // A ping takes a host name or an IP address, nothing else. "example.com:443" or "www.example.com/page" would only
+                // come back as an unresolved name, which does not tell the user that a prefix was missing. A colon is fine in an IPv6 address.
+                if (text.Any(char.IsWhiteSpace) || text.Contains('/', StringComparison.Ordinal)
+                    || (text.Contains(':', StringComparison.Ordinal) && !IPAddress.TryParse(text, out _)))
+                {
+                    error = "Without a prefix the address is pinged, so it must be just a host name or an IP address. " +
+                        "For a port use tcp://example.com:443, for a web page https://example.com/page";
+                    return false;
+                }
+
                 target = new ProbeTarget(ProbeKind.Icmp, text, 0, null);
                 return true;
             }
