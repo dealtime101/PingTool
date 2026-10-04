@@ -79,8 +79,9 @@
          1.21.1 = the timeline scale follows the 98th percentile: one spike no longer flattens the chart, it is cut and marked (PIN461.35);
          1.21.2 = the timeline names the column with the most lost pings, with their count, not an isolated 1 of 1 (PIN461.36);
          1.21.3 = an outage starting at the right edge of the timeline keeps a visible band (PIN461.37);
-         1.21.4 = a slowdown noticed during the first failures of an outage is no longer left ending before it starts (PIN461.38). -->
-    <Version>1.21.4</Version>
+         1.21.4 = a slowdown noticed during the first failures of an outage is no longer left ending before it starts (PIN461.38);
+         1.21.5 = a second "degraded" report closes the first slowdown instead of leaving it open for ever (PIN461.39). -->
+    <Version>1.21.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

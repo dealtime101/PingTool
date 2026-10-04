@@ -110,6 +110,9 @@ namespace PingTool
                     break;
 
                 case HostChange.Degraded:
+                    // One slowdown at a time: a second "Degraded" without a "Recovered" in between closes the first instead of
+                    // leaving it "ongoing" for ever with nothing left that could end it.
+                    if (t.Slow is not null) t.Slow.End = time;
                     t.Slow = Open(host, IncidentKind.Slowdown, time, windowLossPercent, windowAvgMs);
                     break;
 
