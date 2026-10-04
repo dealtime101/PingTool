@@ -38,6 +38,7 @@ namespace PingTool
             var dots = new List<GraphPoint>();
             var losses = new List<float>();
 
+            top = Math.Max(1, top);   // Y divides by it: 0 gave NaN and infinity (the form passes at least 50, but this is public)
             float step = (width - 1f) / Math.Max(1, maxSamples - 1);
             float x0 = width - 1 - (samples.Count - 1) * step;
             float Y(long v) => height - 1 - (height - 1f) * v / top;

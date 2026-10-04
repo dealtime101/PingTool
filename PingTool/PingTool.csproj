@@ -132,8 +132,9 @@
          1.21.54 = a route trace that fails after its window was closed is dropped quietly instead of escaping to the application (PIN461.94);
          1.21.55 = the route window releases its cancellation source when it is disposed (PIN461.95);
          1.21.56 = the route window scales with the screen DPI and can be resized, its trace box and Close button anchored (PIN461.97);
-         1.21.57 = the route window lists the hops as the trace finds them instead of one frozen line (PIN461.98). -->
-    <Version>1.21.57</Version>
+         1.21.57 = the route window lists the hops as the trace finds them instead of one frozen line (PIN461.98);
+         1.21.58 = the graph layout no longer divides by a scale of zero (PIN461.99). -->
+    <Version>1.21.58</Version>
   </PropertyGroup>
 
   <ItemGroup>
