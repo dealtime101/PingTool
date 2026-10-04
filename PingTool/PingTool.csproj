@@ -70,8 +70,9 @@
          1.20.15 = the report fits a phone: viewport, fluid graphs, wide tables scroll in their box (PIN461.26);
          1.20.16 = the report tables have header rows, column and row headings for assistive technology (PIN461.27);
          1.20.17 = settings.json tolerates trailing commas, comments and property names in any case (PIN461.28);
-         1.20.18 = a target written twice in settings.json is read once (PIN461.29). -->
-    <Version>1.20.18</Version>
+         1.20.18 = a target written twice in settings.json is read once (PIN461.29);
+         1.20.19 = the settings file is flushed to disk before it replaces the old one, and a failed save leaves no temporary file (PIN461.30). -->
+    <Version>1.20.19</Version>
   </PropertyGroup>
 
   <ItemGroup>

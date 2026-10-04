@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -186,8 +187,25 @@ namespace PingTool
             string full = Path.GetFullPath(path);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);   // null only for a root, which is no file path
             string temp = full + ".tmp";
-            File.WriteAllText(temp, JsonSerializer.Serialize(this, WriteOptions));
-            File.Move(temp, full, overwrite: true);
+            try
+            {
+                // Flush(true) asks the disk itself to commit the bytes: without it a power cut right after the move can leave
+                // the new name pointing at an empty file.
+                using (var stream = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    var bytes = new UTF8Encoding(false).GetBytes(JsonSerializer.Serialize(this, WriteOptions));
+                    stream.Write(bytes, 0, bytes.Length);
+                    stream.Flush(true);
+                }
+
+                File.Move(temp, full, overwrite: true);
+            }
+            catch
+            {
+                // A failed save must not leave a half-written settings.json.tmp beside the real file.
+                try { File.Delete(temp); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+                throw;
+            }
         }
 
         // Most recent first, no duplicates (case-insensitive), capped.
