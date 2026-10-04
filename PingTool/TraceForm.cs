@@ -43,6 +43,13 @@ namespace PingTool
             Shown += async (_, _) => await TraceAsync(session, ip);
         }
 
+        // FormClosing has already cancelled the source: a trace still running holds a token that stays valid after this.
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) cts.Dispose();
+            base.Dispose(disposing);
+        }
+
         private async Task TraceAsync(HostSession session, IPAddress ip)
         {
             try

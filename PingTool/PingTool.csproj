@@ -129,8 +129,9 @@
          1.21.51 = with a loss limit of 10 % or less a host no longer flips between degraded and recovered on every ping: the way back is strictly under the way in (PIN461.90);
          1.21.52 = a host session made without thresholds takes the default limits of the monitor instead of its own copy (PIN461.91);
          1.21.53 = the recent figures show the loss even with fewer than 10 replies, so a host that answers nothing reads "loss 100%" (PIN461.93);
-         1.21.54 = a route trace that fails after its window was closed is dropped quietly instead of escaping to the application (PIN461.94). -->
-    <Version>1.21.54</Version>
+         1.21.54 = a route trace that fails after its window was closed is dropped quietly instead of escaping to the application (PIN461.94);
+         1.21.55 = the route window releases its cancellation source when it is disposed (PIN461.95). -->
+    <Version>1.21.55</Version>
   </PropertyGroup>
 
   <ItemGroup>
