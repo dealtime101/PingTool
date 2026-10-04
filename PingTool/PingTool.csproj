@@ -142,8 +142,9 @@
          1.21.64 = the narrowest the Host column can get follows the screen scaling (PIN461.106);
          1.21.65 = the limit case of the column fit is written down: the floor is never reached at the window's minimum size (PIN461.107);
          1.21.66 = a new run no longer drops the pings an unwritable log folder still holds: the same log goes on, or the old one is retried on its own (PIN461.108);
-         1.21.67 = the report states the settings and limits the run was started with, not the ones in the boxes after Stop (PIN461.109). -->
-    <Version>1.21.67</Version>
+         1.21.67 = the report states the settings and limits the run was started with, not the ones in the boxes after Stop (PIN461.109);
+         1.21.68 = in compact mode Start asks what to do with a new address typed in the box, instead of ignoring it while the hidden list is monitored (PIN461.110). -->
+    <Version>1.21.68</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -690,6 +690,7 @@ namespace PingTool
 
                     AddHost(address);
                 }
+                else if (chkCompact.Checked && !ConfirmCompactTarget()) return;
 
                 foreach (var s in sessions) settings.AddRecent(s.Address);
                 RefreshAddressList();
@@ -760,6 +761,32 @@ namespace PingTool
             {
                 FinishRun();
                 cts?.Cancel();
+            }
+        }
+
+        // Compact mode hides the list, so the address box looks like THE target. With a list already there only the list is pinged:
+        // a new address typed in the box would be ignored without a word. Same rule as Enter in the box (AddressBoxEnter), but asked.
+        // False = do not start.
+        private bool ConfirmCompactTarget()
+        {
+            string typed = cmbAddress.Text.Trim();
+            bool inList = sessions.Any(s => string.Equals(s.Address, typed, StringComparison.OrdinalIgnoreCase));
+            switch (AddressBoxEnter.Decide(typed, listIsEmpty: false, inList))
+            {
+                case EnterOutcome.Refuse:
+                    IsValidTarget(typed);   // says why; nothing starts on a list that leaves out what was typed
+                    return false;
+                case EnterOutcome.AddAndStart:
+                    string watched = string.Join(", ", sessions.Take(3).Select(s => s.DisplayName)) + (sessions.Count > 3 ? $" and {sessions.Count - 3} more" : "");
+                    var answer = MessageBox.Show(this,
+                        $"The address box says \"{typed}\", which is not in the list that will be monitored ({watched}).\r\n\r\n"
+                        + "Yes: add it to the list and start\r\nNo: start the list as it is\r\nCancel: do not start",
+                        "PingTool", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                    if (answer == DialogResult.Cancel) return false;
+                    if (answer == DialogResult.Yes) AddHost(typed);
+                    return true;
+                default:
+                    return true;
             }
         }
 
