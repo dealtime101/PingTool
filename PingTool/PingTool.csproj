@@ -56,8 +56,9 @@
          1.20.1 = Enter in the address box adds the typed address before starting (PIN461.9);
          1.20.2 = the red of the diagnosis sentence reaches 4.5:1 on the dark window (PIN461.10);
          1.20.3 = PingTool has its own icon: window, notification area and exe (PIN461.11);
-         1.20.4 = started minimized, the window never appears, not even for a frame (PIN461.13). -->
-    <Version>1.20.4</Version>
+         1.20.4 = started minimized, the window never appears, not even for a frame (PIN461.13);
+         1.20.5 = after the report is saved, say where and offer to open it (PIN461.14). -->
+    <Version>1.20.5</Version>
   </PropertyGroup>
 
   <ItemGroup>

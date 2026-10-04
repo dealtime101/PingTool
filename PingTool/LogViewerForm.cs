@@ -80,6 +80,7 @@ namespace PingTool
             try
             {
                 File.WriteAllText(dialog.FileName, ReportBuilder.Build(data), new System.Text.UTF8Encoding(false));
+                FileOpener.OfferToOpen(this, "The report", dialog.FileName);   // where it is, and the offer to open it
             }
             catch (IOException ex)
             {
