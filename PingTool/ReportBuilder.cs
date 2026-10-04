@@ -13,6 +13,9 @@ namespace PingTool
         // A warning the last probe came with although it succeeded (a certificate about to expire).
         string? Notice = null);
 
+    // The probe settings a run was STARTED with: the boxes can be changed after Stop, and a report must describe the measures it holds.
+    internal sealed record RunSettings(int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent);
+
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
         IReadOnlyList<HostReport> Hosts, string? Diagnosis, string IncidentSummary, IReadOnlyList<Incident> Incidents,

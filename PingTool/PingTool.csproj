@@ -141,8 +141,9 @@
          1.21.63 = an error nobody caught is written to crash.log next to settings.json and said in a box, once per run; PingTool carries on after an error of the window's thread (PIN461.105);
          1.21.64 = the narrowest the Host column can get follows the screen scaling (PIN461.106);
          1.21.65 = the limit case of the column fit is written down: the floor is never reached at the window's minimum size (PIN461.107);
-         1.21.66 = a new run no longer drops the pings an unwritable log folder still holds: the same log goes on, or the old one is retried on its own (PIN461.108). -->
-    <Version>1.21.66</Version>
+         1.21.66 = a new run no longer drops the pings an unwritable log folder still holds: the same log goes on, or the old one is retried on its own (PIN461.108);
+         1.21.67 = the report states the settings and limits the run was started with, not the ones in the boxes after Stop (PIN461.109). -->
+    <Version>1.21.67</Version>
   </PropertyGroup>
 
   <ItemGroup>

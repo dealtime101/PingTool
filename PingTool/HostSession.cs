@@ -17,6 +17,9 @@ namespace PingTool
         // A readable name and limits of its own, when the user gave them (see TargetOptions).
         public TargetOptions? Options { get; set; }
 
+        // The limits of its own it was monitored with (Options may be edited later; the monitor keeps the old ones until the next Start).
+        public string? RunLimits { get; set; }
+
         // What the list, the alerts and the report call it: its name, or its address.
         public string DisplayName => TargetOptions.DisplayName(Address, Options);
         public SessionStats Stats { get; } = new();

@@ -18,6 +18,7 @@ namespace PingTool
         // Set when the window starts closing: late callbacks must leave the screen alone.
         private bool closing;
         private DateTimeOffset runStart = DateTimeOffset.Now;
+        private RunSettings? runSettings;   // the probe settings of the run in the list, fixed at Start
         private CancellationTokenSource? cts;
         private readonly List<HostSession> sessions = new();
         private HostSession? selected;
@@ -359,7 +360,7 @@ namespace PingTool
 
             settings.TargetOptions.TryGetValue(address, out var options);
             var (slow, loss, down) = TargetOptions.Effective(options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
-            var session = new HostSession(address, slow, loss, down) { Options = options };
+            var session = new HostSession(address, slow, loss, down) { Options = options, RunLimits = options is null ? null : TargetOptions.DescribeLimits(options) };
             sessions.Add(session);
             var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
@@ -706,9 +707,11 @@ namespace PingTool
                 {
                     var (slow, loss, down) = TargetOptions.Effective(s.Options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
                     s.ApplyThresholds(slow, loss, down);
+                    s.RunLimits = s.Options is null ? null : TargetOptions.DescribeLimits(s.Options);
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
+                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
@@ -992,13 +995,15 @@ namespace PingTool
             }
 
             var now = DateTimeOffset.Now;
+            // What the measures were taken with, not what the boxes say now (they are editable again after Stop).
+            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
             var data = new ReportData(now, runStart, Environment.MachineName,
                 AppVersion.Display,
-                (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
-                (int)numSlow.Value, (int)numLoss.Value,
+                run.IntervalMs, run.TimeoutMs, run.PacketSize,
+                run.DegradedLatencyMs, run.DegradedLossPercent,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
-                    s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options), s.Notice)).ToList(),
+                    s.Options?.Label, s.RunLimits, s.Notice)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
                 incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
