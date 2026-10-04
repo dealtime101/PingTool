@@ -36,6 +36,7 @@ namespace PingTool
     {
         private const int GraphWidth = 640;
         private const int GraphHeight = 90;
+        private const int MinScaleMs = 50;   // the top of a graph is the highest ping, never lower: a quiet host does not fill the height
 
         public static string Build(ReportData d)
         {
@@ -116,10 +117,10 @@ namespace PingTool
                 h.AppendLine(c, $"<p class=\"box\"><b>{Who(x)}</b>: {E(x.Notice!)}.</p>");
 
             h.AppendLine("<h2>Latency over the last pings</h2>");
-            h.AppendLine("<p><small>Each graph has its own scale (top = the highest value of that target). A red tick on the baseline is a lost ping.</small></p>");
+            h.AppendLine(c, $"<p><small>Each graph has its own scale (top = the highest value of that target, but never less than {MinScaleMs.ToString(c)} ms). A red tick on the baseline is a lost ping.</small></p>");
             foreach (var x in d.Hosts)
             {
-                long top = Math.Max(50, x.History.Count == 0 ? 0 : x.History.Max());
+                long top = Math.Max(MinScaleMs, x.History.Count == 0 ? 0 : x.History.Max());
                 h.AppendLine(c, $"<p><b>{Who(x)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
                 h.AppendLine(Svg(x.History, top, c, GraphAlt(x.Label ?? x.Address, x.History, top, c)));
                 h.AppendLine("</p>");
