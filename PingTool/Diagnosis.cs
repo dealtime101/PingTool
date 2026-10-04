@@ -52,6 +52,11 @@ namespace PingTool
             if (down.Count == n)
                 return $"All {n} targets are down: likely this PC or its network link, not the targets.";
 
+            // Some are down and EVERY other one is slow or losing packets: nothing answers well, whatever the target: that points at what they
+            // share (this PC's link, the path), not at the one that is down. (It used to say that the others "answer".)
+            if (slow.Count > 0 && down.Count + slow.Count == n)
+                return $"{down.Count} of {n} targets {(down.Count == 1 ? "is" : "are")} down and the other {(slow.Count == 1 ? "one is" : slow.Count + " are")} slow or losing packets: likely this PC's link or the path they share.";
+
             var local = targets.Where(t => t.Ip is not null && IsLocal(t.Ip)).ToList();
             var remote = targets.Where(t => t.Ip is not null && !IsLocal(t.Ip)).ToList();
 
@@ -66,6 +71,10 @@ namespace PingTool
                 if (local.All(t => t.State == HostState.Down) && remote.All(t => t.State != HostState.Down))
                     return "Internet targets answer but the local ones are down: likely those local devices.";
             }
+
+            // Slow ones among the rest are said, not counted as answering normally.
+            if (slow.Count > 0)
+                return $"Only {Names(down)} down and {Names(slow)} slow or losing packets while {Others(n - down.Count - slow.Count, "answers", "answer")}: likely specific to {Specific(down.Count + slow.Count)}.";
 
             return $"Only {Names(down)} down while {Others(n - down.Count, "answers", "answer")}: likely specific to {Specific(down.Count)}.";
         }

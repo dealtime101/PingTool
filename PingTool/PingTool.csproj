@@ -112,8 +112,9 @@
          1.21.34 = the incident rows are added to the list in one go (PIN461.71);
          1.21.35 = the incident list and the route box have an accessible name and description (PIN461.72);
          1.21.36 = the diagnosis says "their paths" when several targets are concerned (PIN461.73);
-         1.21.37 = a target without a resolved address is no longer counted as an Internet target by the diagnosis (PIN461.74). -->
-    <Version>1.21.37</Version>
+         1.21.37 = a target without a resolved address is no longer counted as an Internet target by the diagnosis (PIN461.74);
+         1.21.38 = the diagnosis no longer says the others answer when they are slow: it points at the shared link (PIN461.75). -->
+    <Version>1.21.38</Version>
   </PropertyGroup>
 
   <ItemGroup>
