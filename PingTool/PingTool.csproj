@@ -103,8 +103,9 @@
          1.21.25 = a deadline reported by the HTTP layer is labelled Timeout like a socket timeout (PIN461.61);
          1.21.26 = a name that exists but has no address of the requested type is no longer reported as an unknown name (PIN461.62);
          1.21.27 = the TCP probe times the connection only: the name lookup is done first and not counted (PIN461.63);
-         1.21.28 = Stop reaches an ICMP ping in flight through the token, in the window and in headless mode (PIN461.64). -->
-    <Version>1.21.28</Version>
+         1.21.28 = Stop reaches an ICMP ping in flight through the token, in the window and in headless mode (PIN461.64);
+         1.21.29 = in the incident list the Cause column takes the remaining width, in a wider window (PIN461.65). -->
+    <Version>1.21.29</Version>
   </PropertyGroup>
 
   <ItemGroup>

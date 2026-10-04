@@ -9,6 +9,10 @@ namespace PingTool
         public const int MinHostWidth = 60;
 
         public static int HostWidth(int clientWidth, int scrollBarWidth, int otherColumnsWidth) =>
-            Math.Max(MinHostWidth, clientWidth - Math.Max(0, scrollBarWidth) - Math.Max(0, otherColumnsWidth));
+            Fill(clientWidth, scrollBarWidth, otherColumnsWidth, MinHostWidth);
+
+        // The width of the one column that takes what the others leave (never below `min`).
+        public static int Fill(int clientWidth, int scrollBarWidth, int otherColumnsWidth, int min) =>
+            Math.Max(min, clientWidth - Math.Max(0, scrollBarWidth) - Math.Max(0, otherColumnsWidth));
     }
 }
