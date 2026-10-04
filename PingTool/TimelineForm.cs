@@ -7,6 +7,7 @@ namespace PingTool
         private const int LeftMargin = 46, TopMargin = 6, BottomMargin = 24, RightMargin = 8;
         private TimelineData data = Timeline.Build(Array.Empty<LogEntry>(), "", 1);
         private IReadOnlyList<Incident> incidents = Array.Empty<Incident>();
+        private IReadOnlyList<NetworkEvent> networkEvents = Array.Empty<NetworkEvent>();
 
         public TimelineChart()
         {
@@ -16,10 +17,11 @@ namespace PingTool
 
         public int PlotWidth => Math.Max(20, Width - LeftMargin - RightMargin);
 
-        public void Show(TimelineData d, IReadOnlyList<Incident> inc)
+        public void Show(TimelineData d, IReadOnlyList<Incident> inc, IReadOnlyList<NetworkEvent>? network = null)
         {
             data = d;
             incidents = inc;
+            networkEvents = network ?? Array.Empty<NetworkEvent>();
             Invalidate();
         }
 
@@ -43,7 +45,7 @@ namespace PingTool
             }
 
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            var shapes = TimelineLayout.Build(data, incidents, plotW, plotH);
+            var shapes = TimelineLayout.Build(data, incidents, plotW, plotH, networkEvents);
             float cell = Math.Max(1f, (float)plotW / data.Buckets.Count);
 
             g.TranslateTransform(LeftMargin, TopMargin);
@@ -53,6 +55,10 @@ namespace PingTool
                 using var band = new SolidBrush(kind == IncidentKind.Outage ? Color.FromArgb(70, 255, 99, 71) : Color.FromArgb(60, 255, 165, 0));
                 g.FillRectangle(band, x0, 0, x1 - x0, plotH);
             }
+
+            // A change of this PC's own network (Wi-Fi, VPN, cable, wake from sleep): a cyan dotted line, to be read against the outages.
+            using var netPen = new Pen(Color.Cyan, 1.5f) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            foreach (float x in shapes.NetworkMarkers ?? Array.Empty<float>()) g.DrawLine(netPen, x, 0, x, plotH);
 
             using var barBrush = new SolidBrush(Color.FromArgb(90, 192, 192, 192));
             foreach (var (x, yMin, yMax) in shapes.Bars)
@@ -93,6 +99,7 @@ namespace PingTool
     {
         private readonly IReadOnlyCollection<LogEntry> entries;
         private readonly string? droppedNote;
+        private readonly IReadOnlyList<NetworkEvent> networkEvents;
         private readonly IReadOnlyList<Incident> incidents;
         private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = "Target" };
         private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 290), AccessibleName = "Session timeline" };
@@ -100,8 +107,10 @@ namespace PingTool
         private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 340), Size = new Size(740, 62) };
 
         // droppedNote: what to say when the log has let its oldest pings go (null = nothing lost).
-        public TimelineForm(IReadOnlyCollection<LogEntry> entries, IReadOnlyList<Incident> incidents, IEnumerable<string> hosts, string? selected, string? droppedNote = null)
+        public TimelineForm(IReadOnlyCollection<LogEntry> entries, IReadOnlyList<Incident> incidents, IEnumerable<string> hosts, string? selected,
+                            string? droppedNote = null, IReadOnlyList<NetworkEvent>? networkEvents = null)
         {
+            this.networkEvents = networkEvents ?? Array.Empty<NetworkEvent>();
             this.droppedNote = droppedNote;
             this.entries = entries;
             this.incidents = incidents;
@@ -137,8 +146,9 @@ namespace PingTool
 
             // About one column per 4 pixels.
             var data = Timeline.Build(entries, host, Math.Max(10, chart.PlotWidth / 4));
-            chart.Show(data, incidents);
-            summary.Text = Timeline.Describe(data) + (droppedNote is null ? "" : "\n" + droppedNote);
+            chart.Show(data, incidents, networkEvents);
+            string? network = data.IsEmpty ? null : Timeline.DescribeNetwork(networkEvents, data.From, data.To);
+            summary.Text = Timeline.Describe(data) + (network is null ? "" : "\n" + network) + (droppedNote is null ? "" : "\n" + droppedNote);
         }
     }
 }

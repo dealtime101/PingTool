@@ -45,8 +45,9 @@
          1.12.14 = jitter is measured only between replies that follow each other, a loss breaks the chain (PIN456.29);
          1.13.0 = alerts can also be posted to webhooks (Slack, Discord, ntfy, JSON), and a webhook test command (PIN461.1);
          1.14.0 = a recorded log can be opened again: timeline, incidents and report (PIN461.2);
-         1.15.0 = "Diagnose my connection": gateway, DNS and Internet references in one click (PIN461.3). -->
-    <Version>1.15.0</Version>
+         1.15.0 = "Diagnose my connection": gateway, DNS and Internet references in one click (PIN461.3);
+         1.16.0 = changes of the PC's own network are noted on the timeline and in the report (PIN461.4). -->
+    <Version>1.16.0</Version>
   </PropertyGroup>
 
 </Project>

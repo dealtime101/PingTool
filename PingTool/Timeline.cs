@@ -21,7 +21,9 @@ namespace PingTool
         IReadOnlyList<(float X, float YMin, float YMax)> Bars,
         IReadOnlyList<IReadOnlyList<GraphPoint>> AvgRuns,
         IReadOnlyList<(float X, float Width, float Fraction)> LossCells,
-        IReadOnlyList<(float X0, float X1, IncidentKind Kind)> Bands);
+        IReadOnlyList<(float X0, float X1, IncidentKind Kind)> Bands,
+        // X of each network change of this PC that falls inside the time range (drawn as a vertical line).
+        IReadOnlyList<float>? NetworkMarkers = null);
 
     // The WHOLE session of one host, squeezed into a fixed number of columns, instead of the last
     // 180 pings. The first ping is the left edge and the last one the right edge.
@@ -90,6 +92,17 @@ namespace PingTool
 
         // Round times for the time axis (every 5 min, every hour...), in LOCAL time so that "10:00"
         // is really 10 o'clock whatever the UTC offset. At most maxTicks marks.
+        // "Network changes of this PC (cyan lines): 18:03 Wi-Fi: 192.168.0.12 -> 10.0.0.5; 18:40 ... (+2 more)". Null when none.
+        public static string? DescribeNetwork(IReadOnlyList<NetworkEvent> events, DateTimeOffset from, DateTimeOffset to, int shown = 2)
+        {
+            var inRange = events.Where(n => n.Time >= from && n.Time <= to).OrderBy(n => n.Time).ToList();
+            if (inRange.Count == 0) return null;
+
+            var c = CultureInfo.CurrentCulture;
+            string text = string.Join("; ", inRange.Take(shown).Select(n => n.Time.ToLocalTime().ToString("t", c) + " " + n.Text));
+            return "Network changes of this PC (cyan lines): " + text + (inRange.Count > shown ? " (+" + (inRange.Count - shown).ToString(c) + " more)" : "");
+        }
+
         public static IReadOnlyList<(DateTimeOffset Time, string Label)> Ticks(DateTimeOffset from, DateTimeOffset to, int maxTicks)
         {
             // seconds: 1 s .. 1 min .. 1 h .. 1 day .. 1 week .. 1 month .. 1 year
@@ -122,7 +135,8 @@ namespace PingTool
 
     internal static class TimelineLayout
     {
-        public static TimelineShapes Build(TimelineData d, IReadOnlyList<Incident> incidents, int width, int plotHeight)
+        public static TimelineShapes Build(TimelineData d, IReadOnlyList<Incident> incidents, int width, int plotHeight,
+                                           IReadOnlyList<NetworkEvent>? networkEvents = null)
         {
             var bars = new List<(float, float, float)>();
             var runs = new List<IReadOnlyList<GraphPoint>>();
@@ -162,7 +176,12 @@ namespace PingTool
                 bands.Add((x0, x1, i.Kind));
             }
 
-            return new TimelineShapes(bars, runs, cells, bands);
+            // A change at the very edge is still a line (clamped inside the plot); one outside the time range is not drawn.
+            var markers = (networkEvents ?? Array.Empty<NetworkEvent>())
+                .Where(n => n.Time >= d.From && n.Time <= d.To)
+                .Select(n => Math.Clamp(X(n.Time), 0f, width - 1f)).ToList();
+
+            return new TimelineShapes(bars, runs, cells, bands, markers);
         }
     }
 }

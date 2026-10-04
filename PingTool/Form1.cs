@@ -29,6 +29,10 @@ namespace PingTool
         // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
         private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
         // Alerts also go to the webhooks of settings.json, in the background (see WebhookSender); null when none.
+        // Changes of this PC's own network during the run (see NetworkWatch): cyan lines on the timeline, a table in the report.
+        private readonly List<NetworkEvent> networkEvents = new();
+        private List<NicState> lastNetwork = new();
+        private readonly System.Windows.Forms.Timer networkTimer = new() { Interval = 1500 };
         private WebhookSender? webhooks;
         private readonly HashSet<string> webhookWarned = new();
         private readonly IncidentLog incidents = new();
@@ -74,6 +78,12 @@ namespace PingTool
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
             ApplySettings();
             autoLogTimer.Tick += (_, _) => FlushAutoLog();
+
+            // The system says "something changed" several times for one real change (address, then availability, then
+            // the gateway): a short wait lets them settle, and only then the cards are compared with what they were.
+            networkTimer.Tick += (_, _) => ReadNetworkChange();
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += OnNetworkAddressChanged;
+            System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
 
             if (settings.Webhooks.Count > 0)
             {
@@ -133,6 +143,9 @@ namespace PingTool
                 cts?.Cancel();
                 autoLogTimer.Stop();
                 trayIconTimer.Stop();
+                networkTimer.Stop();
+                System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
+                System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
                 webhooks?.Dispose();
                 FlushAutoLog();
                 SaveSettings();
@@ -588,6 +601,8 @@ namespace PingTool
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
+                networkEvents.Clear();
+                lastNetwork = NetworkWatch.Snapshot();
                 incidents.Clear();
                 UpdateIncidentButton();
                 foreach (ListViewItem item in lstHosts.Items) RenderRow(item);
@@ -845,7 +860,7 @@ namespace PingTool
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray())).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
-                incidents.Summary(now), incidents.Incidents.ToList());
+                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
             using var dialog = new SaveFileDialog
             {
@@ -924,7 +939,7 @@ namespace PingTool
                 return;
             }
 
-            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote);
+            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote, networkEvents.ToList());
             dialog.ShowDialog(this);
         }
 
@@ -1077,6 +1092,36 @@ namespace PingTool
 
             sound.Play();
             ShowBalloon(text, icon);
+        }
+
+        // These two events come from a system thread: the window is only touched through BeginInvoke.
+        private void OnNetworkAddressChanged(object? sender, EventArgs e) => NetworkSignal();
+        private void OnNetworkAvailabilityChanged(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e) => NetworkSignal();
+
+        private void NetworkSignal()
+        {
+            if (closing || !IsHandleCreated) return;
+            try
+            {
+                BeginInvoke(() =>
+                {
+                    networkTimer.Stop();
+                    networkTimer.Start();
+                });
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
+            {
+                // The window is closing.
+            }
+        }
+
+        private void ReadNetworkChange()
+        {
+            networkTimer.Stop();
+            var now = NetworkWatch.Snapshot();
+            string? text = NetworkWatch.Describe(lastNetwork, now);
+            lastNetwork = now;
+            if (text is not null && isRunning && !closing) networkEvents.Add(new NetworkEvent(DateTimeOffset.Now, text));
         }
 
         // One balloon per webhook and per run, not one per lost alert: a receiver that is down would otherwise
