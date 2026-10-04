@@ -143,7 +143,14 @@ namespace PingTool
             hostBox.SelectedIndexChanged += (_, _) => Redraw();
             Controls.AddRange(new Control[] { hostBox, chart, summary, note, close });
 
-            hostBox.SelectedIndex = Math.Max(0, Array.IndexOf(list, selected));
+            int first = Timeline.InitialHost(list, selected);
+            if (first >= 0) hostBox.SelectedIndex = first;
+            else
+            {
+                // No target at all: an empty box has no index 0 to select (that threw). Say so, as the chart does without data.
+                hostBox.Enabled = false;
+                summary.Text = Timeline.Describe(Timeline.Build(Array.Empty<LogEntry>(), "", 10));
+            }
         }
 
         private void Redraw()

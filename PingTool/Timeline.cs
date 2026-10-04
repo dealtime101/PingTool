@@ -72,6 +72,14 @@ namespace PingTool
             return new TimelineData(host, from, to, TimeSpan.FromTicks(ticks), list, top, mine.Count, mine.Count(e => e.RttMs is null), peak);
         }
 
+        // The index to select when the window opens: the host that was selected in the main window, else the first; -1 when there is none.
+        internal static int InitialHost(IReadOnlyList<string> hosts, string? selected)
+        {
+            if (hosts.Count == 0) return -1;
+            for (int i = 0; i < hosts.Count; i++) if (hosts[i] == selected) return i;
+            return 0;
+        }
+
         public const double ScalePercentile = 0.98;
 
         // The top of the chart: the 98th percentile of the columns' highest replies, rounded up to 1, 2 or 5 times a power of ten,
