@@ -26,6 +26,15 @@ namespace PingTool
         public const int MaxRecent = 10;
         private static readonly JsonSerializerOptions WriteOptions = new() { WriteIndented = true };
 
+        // The file is meant to be edited by hand (the log folder, the limits, the webhooks live only there): a trailing comma, a
+        // comment or "intervalMs" for "IntervalMs" is not a reason to throw away the host list and the profiles.
+        private static readonly JsonSerializerOptions ReadOptions = new()
+        {
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            PropertyNameCaseInsensitive = true,
+        };
+
         public string Address { get; set; } = "google.ca";
         public List<string> Recent { get; set; } = new();
         public List<string> Hosts { get; set; } = new();
@@ -71,7 +80,7 @@ namespace PingTool
         {
             try
             {
-                var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path)) ?? new Settings();
+                var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(path), ReadOptions) ?? new Settings();
                 s.Normalize();
                 return s;
             }
