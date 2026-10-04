@@ -125,8 +125,9 @@
          1.21.47 = a profile name cannot hold invisible formatting characters (zero width, bidi); profiles already saved with one keep their place under the visible name (PIN461.85);
          1.21.48 = the profile book trims a name before adding it, as it does to find or remove one: no duplicate under "Home " (PIN461.86);
          1.21.49 = the command line help takes the limits of the interval option from the settings limits instead of repeating them (PIN461.87);
-         1.21.50 = a command line switch written with a value (start=false and the like) is refused instead of switching the option on (PIN461.88). -->
-    <Version>1.21.50</Version>
+         1.21.50 = a command line switch written with a value (start=false and the like) is refused instead of switching the option on (PIN461.88);
+         1.21.51 = with a loss limit of 10 % or less a host no longer flips between degraded and recovered on every ping: the way back is strictly under the way in (PIN461.90). -->
+    <Version>1.21.51</Version>
   </PropertyGroup>
 
   <ItemGroup>
