@@ -149,8 +149,9 @@
          1.21.71 = under each report graph, the pings as text in time order (losses in words), for whoever cannot read the curve (PIN461.116);
          1.21.72 = the report says its graphs never have a scale under 50 ms (PIN461.118);
          1.21.73 = a settings file that could not be read is no longer overwritten by the defaults: a copy is made first, and without it nothing is replaced (PIN461.119);
-         1.21.74 = two PingTool windows saving the settings at the same moment no longer lose saves: each writes its own temporary file (PIN461.121). -->
-    <Version>1.21.74</Version>
+         1.21.74 = two PingTool windows saving the settings at the same moment no longer lose saves: each writes its own temporary file (PIN461.121);
+         1.21.75 = the time axis of the timeline never carries more marks than its limit, whatever the range and where it starts (PIN461.123). -->
+    <Version>1.21.75</Version>
   </PropertyGroup>
 
   <ItemGroup>

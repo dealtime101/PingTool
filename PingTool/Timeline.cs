@@ -176,16 +176,33 @@ namespace PingTool
         // as the 3rd of October by one person and the 10th of March by another.
         internal static string MonthDay(CultureInfo c) => c.DateTimeFormat.MonthDayPattern.Replace("MMMM", "MMM");
 
+        // seconds: 1 s .. 1 min .. 1 h .. 1 day .. 1 week .. 1 month .. 1 year
+        private static readonly long[] TickSteps = { 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400,
+            172800, 604800, 1209600, 2592000, 7776000, 31536000 };
+
+        // At most maxTicks marks (at least 1 is allowed: a zero or negative limit means 1).
         public static IReadOnlyList<(DateTimeOffset Time, string Label)> Ticks(DateTimeOffset from, DateTimeOffset to, int maxTicks)
         {
-            // seconds: 1 s .. 1 min .. 1 h .. 1 day .. 1 week .. 1 month .. 1 year
-            var steps = new long[] { 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400,
-                172800, 604800, 1209600, 2592000, 7776000, 31536000 };
+            int max = Math.Max(1, maxTicks);
             double span = Math.Max(1, (to - from).TotalSeconds);
-            long step = steps.FirstOrDefault(s => span / s <= Math.Max(1, maxTicks));
+            long step = TickSteps.FirstOrDefault(s => span / s <= max);
             // longer than any listed step allows: whole days, as many as needed
-            if (step == 0) step = (long)Math.Ceiling(span / Math.Max(1, maxTicks) / 86400) * 86400;
+            if (step == 0) step = (long)Math.Ceiling(span / max / 86400) * 86400;
 
+            // The step above counts INTERVALS, and both ends carry a mark when they fall on the step: one mark more than the limit can
+            // come out (10 s, limit 2: marks at 0, 5 and 10). A coarser step until what is really produced fits.
+            while (true)
+            {
+                var ticks = TicksAt(from, to, step);
+                if (ticks.Count <= max) return ticks;
+                long next = TickSteps.FirstOrDefault(s => s > step);
+                step = next != 0 ? next : step * 2;   // past the listed steps the step is whole days: doubling keeps it so
+            }
+        }
+
+        private static List<(DateTimeOffset Time, string Label)> TicksAt(DateTimeOffset from, DateTimeOffset to, long step)
+        {
+            double span = Math.Max(1, (to - from).TotalSeconds);
             var local = from.ToLocalTime();
             var origin = new DateTimeOffset(local.Year, local.Month, local.Day, 0, 0, 0, local.Offset);
             double firstIndex = Math.Ceiling((local - origin).TotalSeconds / step);
