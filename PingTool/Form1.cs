@@ -1255,7 +1255,18 @@ namespace PingTool
         {
             DoubleBuffered = true;
             BackColor = Color.FromArgb(40, 40, 40);
+            AccessibleName = "Latency graph";
+            AccessibleRole = AccessibleRole.Chart;
         }
+
+        // What a screen reader gets: the picture says nothing, so the figures are read out from the data - computed when a
+        // reader asks, not at every ping.
+        private sealed class GraphAccessibleObject(LatencyGraph owner) : ControlAccessibleObject(owner)
+        {
+            public override string? Description => GraphSummary.Describe(owner.series);
+        }
+
+        protected override AccessibleObject CreateAccessibilityInstance() => new GraphAccessibleObject(this);
 
         // One host. Draws the host's own queue: it is repainted, never copied.
         public void Show(IReadOnlyCollection<long>? history)
@@ -1340,5 +1351,4 @@ namespace PingTool
         }
     }
 
-    internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples);
 }
