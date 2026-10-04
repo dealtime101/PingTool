@@ -11,11 +11,17 @@ namespace PingTool
 
         public TraceForm(HostSession session, IPAddress ip)
         {
+            // Positions and sizes below are written for 96 DPI: the form scales them to the screen (like TimelineForm and
+            // IncidentsForm), and the trace box grows with the window since a long route does not fit in a fixed one.
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Route to " + session.Address;
             ClientSize = new Size(560, 330);
+            MinimumSize = SizeFromClientSize(new Size(400, 200));
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
@@ -30,10 +36,12 @@ namespace PingTool
                 ForeColor = Color.White,
                 Location = new Point(10, 10),
                 Size = new Size(540, 276),
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
                 AccessibleName = "Route to the host",
                 Text = "Tracing the route to " + session.Address + " (" + ip + ")...",
             };
-            var close = new Button { Text = "Close", Location = new Point(470, 294), Size = new Size(80, 28), DialogResult = DialogResult.Cancel };
+            var close = new Button { Text = "Close", Location = new Point(470, 294), Size = new Size(80, 28), DialogResult = DialogResult.Cancel,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
             Controls.Add(output);
             Controls.Add(close);
