@@ -216,7 +216,17 @@ namespace PingTool
             }
 
             mustKeepCopy = false;   // the original is safe now (or there was none): later saves are ordinary ones
-            string temp = full + ".tmp";
+
+            // A name of its own for each save: two PingTool windows closing together, or two saves in a row, must not share the file
+            // they write (one would delete or move the other's, and its settings would be lost with an exception nobody reads).
+            // A crash leaves its temp file behind, and a unique name is never overwritten by the next save: old ones are swept here.
+            string temp = full + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            foreach (string old in Directory.EnumerateFiles(Path.GetDirectoryName(full)!, Path.GetFileName(full) + ".*.tmp"))
+            {
+                try { if (File.GetLastWriteTimeUtc(old) < DateTime.UtcNow.AddHours(-1)) File.Delete(old); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+            }
+
             try
             {
                 // Flush(true) asks the disk itself to commit the bytes: without it a power cut right after the move can leave
