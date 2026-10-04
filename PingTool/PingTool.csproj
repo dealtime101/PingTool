@@ -163,8 +163,9 @@
          1.21.85 = a loopback target (127.0.0.1, ::1) no longer counts as proof that the local network answers in the diagnosis (PIN461.145);
          1.21.86 = when every target is down the diagnosis lists the possible causes instead of ruling the targets out (PIN461.146);
          1.21.87 = a log file left ending in half a row by a crash or a power cut is cut back to its last complete row before the next rows are appended (PIN461.147);
-         1.21.88 = a dns:// address must be just a name: a query, a fragment, a user part, a space or an empty label is refused (PIN461.150). -->
-    <Version>1.21.88</Version>
+         1.21.88 = a dns:// address must be just a name: a query, a fragment, a user part, a space or an empty label is refused (PIN461.150);
+         1.21.89 = the in-memory ping log hands out a copy of its entries, not its own queue: it can no longer be changed behind its cap and counter (PIN461.154). -->
+    <Version>1.21.89</Version>
   </PropertyGroup>
 
   <ItemGroup>

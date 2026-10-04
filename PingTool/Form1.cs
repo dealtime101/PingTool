@@ -1124,14 +1124,15 @@ namespace PingTool
         // The whole session of a host, not just the last 180 pings of the live graph.
         private void btnTimeline_Click(object? sender, EventArgs e)
         {
-            var hosts = sessions.Select(s => s.Address).Where(a => log.Entries.Any(x => x.Host == a)).ToList();
+            var snapshot = log.Entries;   // one copy of the log for this window
+            var hosts = sessions.Select(s => s.Address).Where(a => snapshot.Any(x => x.Host == a)).ToList();
             if (hosts.Count == 0)
             {
                 MessageBox.Show("Nothing to show yet: start pinging first.", "PingTool");
                 return;
             }
 
-            using var dialog = new TimelineForm(log.Entries, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote, networkEvents.ToList());
+            using var dialog = new TimelineForm(snapshot, incidents.Incidents.ToList(), hosts, selected?.Address, log.DroppedNote, networkEvents.ToList());
             dialog.ShowDialog(this);
         }
 
