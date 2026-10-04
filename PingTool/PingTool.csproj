@@ -147,8 +147,9 @@
          1.21.69 = compared curves all look different (the pattern changes each time the colours come round), and the legend reaches every host: pages on click, a sample of each curve, the full name in a tooltip (PIN461.111);
          1.21.70 = what a screen reader is told about the graph names every compared host, not the first five (PIN461.112);
          1.21.71 = under each report graph, the pings as text in time order (losses in words), for whoever cannot read the curve (PIN461.116);
-         1.21.72 = the report says its graphs never have a scale under 50 ms (PIN461.118). -->
-    <Version>1.21.72</Version>
+         1.21.72 = the report says its graphs never have a scale under 50 ms (PIN461.118);
+         1.21.73 = a settings file that could not be read is no longer overwritten by the defaults: a copy is made first, and without it nothing is replaced (PIN461.119). -->
+    <Version>1.21.73</Version>
   </PropertyGroup>
 
   <ItemGroup>

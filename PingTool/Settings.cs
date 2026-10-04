@@ -106,9 +106,10 @@ namespace PingTool
                 return new Settings
                 {
                     LoadProblem = $"The settings file could not be read ({Short(ex.Message)}). "
-                        + (kept is null ? "It could not be kept aside either: fix or remove it before closing PingTool, which would overwrite it. "
+                        + (kept is null ? "It could not be kept aside either: PingTool will not replace it without first keeping a copy (settings.json.unread-...). "
                                         : $"It was kept as {kept} so that you can fix it. ")
                         + "PingTool starts with its default settings.",
+                    mustKeepCopy = kept is null,
                 };
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
@@ -118,7 +119,9 @@ namespace PingTool
                 return new Settings
                 {
                     LoadProblem = $"The settings file could not be opened ({Short(ex.Message)}). The file was left as it is; "
-                        + "PingTool starts with its default settings and will overwrite it when it closes unless you fix the problem first.",
+                        + "PingTool starts with its default settings. It will not replace the file without first keeping a copy of it "
+                        + "(settings.json.unread-...), and not at all while it cannot make that copy.",
+                    mustKeepCopy = true,
                 };
             }
         }
@@ -126,6 +129,10 @@ namespace PingTool
         // What went wrong while loading, for the window to show; null when nothing did. Never saved.
         [JsonIgnore]
         public string? LoadProblem { get; private set; }
+
+        // The file exists but was not read (locked, or damaged and not moved aside): what is in memory is the defaults, not the user's
+        // settings, so the first save must not be the end of the file. See Save.
+        private bool mustKeepCopy;
 
         // settings.json -> settings.json.bad-20261003-142501-123 (a counter if that name is taken), so that two
         // damaged files in a row do not overwrite each other. Null when the move itself failed.
@@ -195,6 +202,20 @@ namespace PingTool
             // CreateDirectory refuses: resolve against the current folder first.
             string full = Path.GetFullPath(path);
             Directory.CreateDirectory(Path.GetDirectoryName(full)!);   // null only for a root, which is no file path
+
+            // The load failed on a file that is there: what we would write is the defaults. A copy first, and without it no save at all
+            // (the user's hosts and profiles stay in the original, whatever happens to this run).
+            if (mustKeepCopy && File.Exists(full))
+            {
+                string copy = full + ".unread-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
+                try { File.Copy(full, copy, overwrite: true); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    throw new IOException("The settings file could not be read when PingTool started and a copy of it could not be made: it was not replaced.", ex);
+                }
+            }
+
+            mustKeepCopy = false;   // the original is safe now (or there was none): later saves are ordinary ones
             string temp = full + ".tmp";
             try
             {
