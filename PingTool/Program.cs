@@ -11,6 +11,9 @@ namespace PingTool
             // A bad option is said in a box and nothing starts: a shortcut that silently ignored a typo
             // would monitor the wrong thing without anybody noticing. With --headless nobody is there to click the
             // box (a scheduled task would wait for ever): the message goes to the error output, and the exit code says it.
+            // The handler of last resort comes first, so that nothing below can fail without leaving a trace in crash.log.
+            AppDomain.CurrentDomain.UnhandledException += (_, e) => OnFatal(e.ExceptionObject);
+
             bool headlessAsked = args.Any(a => string.Equals(a, "--headless", StringComparison.OrdinalIgnoreCase));
             if (!StartupOptions.TryParse(args, out var startup, out string message))
             {
@@ -33,6 +36,12 @@ namespace PingTool
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
 
+            // An error in the window's own thread (an event handler, an await that resumed there) is logged and PingTool carries on:
+            // a monitoring stopped by one stray exception would be worse than the error. Before any window exists, as required.
+            guiStarted = true;
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (_, e) => OnWindowThreadError(e.Exception);
+
             if (startup.TestWebhooks)
             {
                 MessageBox.Show(TestWebhooks(), "PingTool");
@@ -41,6 +50,32 @@ namespace PingTool
 
             Application.Run(new MainForm(startup));
             return 0;
+        }
+
+        private static bool guiStarted;
+        private static bool windowErrorShown;
+
+        // The process is going down (an exception nobody caught on another thread): write what is known, say so where someone can read it.
+        private static void OnFatal(object? exception)
+        {
+            string entry = CrashLog.Entry(exception, DateTimeOffset.Now, AppVersion.Display, fatal: true);
+            bool saved = CrashLog.TryAppend(CrashLog.DefaultPath, entry);
+            string what = exception is Exception ex ? ex.GetType().Name + ": " + ex.Message : "unknown error";
+            string where = saved ? "Details: " + CrashLog.DefaultPath : "The details could not be saved.";
+            if (guiStarted) MessageBox.Show("PingTool hit an unexpected error and must close.\r\n\r\n" + what + "\r\n\r\n" + where, "PingTool - unexpected error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else Console.Error.WriteLine("Unexpected error: " + what + ". " + where);
+        }
+
+        // Every error is written to the log; the box is shown once per run (a loop failing every second must not bury the window in boxes).
+        private static void OnWindowThreadError(Exception exception)
+        {
+            bool saved = CrashLog.TryAppend(CrashLog.DefaultPath, CrashLog.Entry(exception, DateTimeOffset.Now, AppVersion.Display, fatal: false));
+            if (windowErrorShown) return;
+            windowErrorShown = true;
+            MessageBox.Show("PingTool hit an unexpected error and carries on; the monitoring may be incomplete. Later errors of this kind are only logged.\r\n\r\n"
+                + exception.GetType().Name + ": " + exception.Message + "\r\n\r\n"
+                + (saved ? "Details: " + CrashLog.DefaultPath : "The details could not be saved."),
+                "PingTool - unexpected error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         // "PingTool.exe --headless --duration 8h --report night.html [targets]": see HeadlessRunner. Everything it has to say goes to
