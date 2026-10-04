@@ -75,6 +75,7 @@ namespace PingTool
             try
             {
                 var path = await TraceRunner.RunAsync(session.Address, ip, PingHopProbe.Create(1000), DateTimeOffset.Now, token: cts.Token,
+                    giveUpAfter: TraceRunner.MaxHops,   // asked for, watched and cancellable: no early stop on a few firewalled hops
                     progress: hops => ShowProgress(session, ip, hops));
                 if (IsDisposed) return;
 

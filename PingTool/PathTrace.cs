@@ -29,6 +29,10 @@ namespace PingTool
         public required DateTimeOffset Time { get; init; }
         public required IReadOnlyList<Hop> Hops { get; init; }
 
+        // Set when the trace stopped by itself after this many silent hops in a row: the hops beyond were NOT probed, so silence there
+        // is not an answer. Null when it ran to the destination, to the hop limit, or was never meant to give up.
+        public int? GaveUpAfter { get; init; }
+
         public bool Reached => Hops.Count > 0 && Hops[^1].Status == HopStatus.Reached;
 
         // The farthest hop that said anything: where the answers stop.
@@ -76,9 +80,15 @@ namespace PingTool
                 return $"The probe itself failed at hop {last.Ttl} ({last.Detail}): the route could not be traced. This says nothing about the network.";
 
             var farthest = LastResponding;
-            return farthest is null
-                ? "Nothing answered, not even the first router: this PC, its link, or a router or firewall that does not answer these probes can be the cause (many never do), so this alone does not tell which."
-                : $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
+            if (farthest is null)
+                return "Nothing answered, not even the first router: this PC, its link, or a router or firewall that does not answer these probes can be the cause (many never do), so this alone does not tell which.";
+
+            // The trace gave up: the hops beyond were never tried, so "they do not answer" would be a claim nobody checked.
+            if (GaveUpAfter is int silent)
+                return $"No reply after hop {farthest.Ttl} ({farthest.Address}); the trace stopped there after {silent} silent hops in a row and did not try the hops beyond. "
+                    + "Routers and firewalls that do not answer these probes are common, so this does not show that the path ends there.";
+
+            return $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
         }
 
         // What differs from the path seen while the target was healthy. Empty when nothing does.
@@ -132,6 +142,7 @@ namespace PingTool
         {
             var hops = new List<Hop>();
             int silent = 0;
+            bool gaveUp = false;
 
             for (int ttl = 1; ttl <= maxHops; ttl++)
             {
@@ -164,10 +175,10 @@ namespace PingTool
                 if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
 
                 silent = reply.Status == HopStatus.Timeout ? silent + 1 : 0;
-                if (silent >= giveUpAfter) break;
+                if (silent >= giveUpAfter) { gaveUp = true; break; }
             }
 
-            return new PathCapture { Host = host, Target = target, Time = time, Hops = hops };
+            return new PathCapture { Host = host, Target = target, Time = time, Hops = hops, GaveUpAfter = gaveUp ? giveUpAfter : null };
         }
     }
 

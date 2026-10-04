@@ -151,8 +151,9 @@
          1.21.73 = a settings file that could not be read is no longer overwritten by the defaults: a copy is made first, and without it nothing is replaced (PIN461.119);
          1.21.74 = two PingTool windows saving the settings at the same moment no longer lose saves: each writes its own temporary file (PIN461.121);
          1.21.75 = the time axis of the timeline never carries more marks than its limit, whatever the range and where it starts (PIN461.123);
-         1.21.76 = the timeline summary ends at the last ping really made: a single ping no longer reads as a one second session (PIN461.125). -->
-    <Version>1.21.76</Version>
+         1.21.76 = the timeline summary ends at the last ping really made: a single ping no longer reads as a one second session (PIN461.125);
+         1.21.77 = a trace that gave up after three silent hops says it did not try the rest, and the trace asked for from the window never gives up early (PIN461.129). -->
+    <Version>1.21.77</Version>
   </PropertyGroup>
 
   <ItemGroup>
