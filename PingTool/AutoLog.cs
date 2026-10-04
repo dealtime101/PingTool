@@ -28,6 +28,22 @@ namespace PingTool
 
         public int Pending => pending.Count;
 
+        public string Folder => folder;
+
+        // What the next run logs to, given the log of the run before (null = it had none) and the folder wanted (null = no log).
+        // Same folder: the same log goes on, queue included (the file names are per host and day, so nothing changes). Another
+        // folder, or no log at all: what the old one still holds is not thrown away, it goes into `retired` and keeps being retried.
+        // ponytail: retired logs are not capped, one per run with a folder that stays unwritable (20 000 entries at most each).
+        public static AutoLog? Next(AutoLog? previous, string? folder, List<AutoLog> retired)
+        {
+            if (previous is not null && folder is not null && string.Equals(previous.folder, folder, StringComparison.OrdinalIgnoreCase)) return previous;
+            if (previous is { Pending: > 0 }) retired.Add(previous);
+            return folder is null ? null : new AutoLog(folder);
+        }
+
+        // One try for each retired log; the ones that got everything out are forgotten.
+        public static void FlushRetired(List<AutoLog> retired) => retired.RemoveAll(r => r.Flush());
+
         // Why the last Flush could not write everything; null when it did.
         public string? LastError { get; private set; }
 

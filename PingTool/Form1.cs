@@ -24,6 +24,7 @@ namespace PingTool
         private readonly PingLog log = new();
         // Every ping on disk as it happens (when "Save log to disk" is ticked); written every few seconds.
         private AutoLog? autoLog;
+        private readonly List<AutoLog> retiredLogs = new();   // logs of earlier runs that still hold pings to write
         private bool autoLogWarned;
         private int droppedReported;
         private bool dropWarned;
@@ -759,24 +760,35 @@ namespace PingTool
             }
         }
 
-        // A new run starts a new log. Whatever the previous run could not write yet gets one last try.
+        // A new run: whatever the previous run could not write yet gets a try now, and what still fails is NOT dropped (the balloon said
+        // it would be retried): the same log goes on when the folder is the same, otherwise the old one is retired and still retried.
         private void StartAutoLog()
         {
             FlushAutoLog();
             string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
-            autoLog = chkSaveLog.Checked ? new AutoLog(folder) : null;
-            autoLogWarned = false;
-            droppedReported = 0;
-            dropWarned = false;
+            var previous = autoLog;
+            autoLog = AutoLog.Next(previous, chkSaveLog.Checked ? folder : null, retiredLogs);
+            if (!ReferenceEquals(autoLog, previous))
+            {
+                autoLogWarned = false;
+                droppedReported = 0;
+                dropWarned = false;
+            }
+
             // The timer keeps running after Stop: pings still in flight are written by the next tick.
-            autoLogTimer.Enabled = autoLog is not null;
+            autoLogTimer.Enabled = autoLog is not null || retiredLogs.Count > 0;
         }
 
         // A file that cannot be written (open in a spreadsheet, disk full) never stops the monitoring:
         // one balloon says so, the entries wait and go out at the next tick that works.
         private void FlushAutoLog()
         {
-            if (autoLog is null) return;
+            AutoLog.FlushRetired(retiredLogs);
+            if (autoLog is null)
+            {
+                if (retiredLogs.Count == 0) autoLogTimer.Stop();
+                return;
+            }
 
             bool written = autoLog.Flush();
             if (written) autoLogWarned = false;
