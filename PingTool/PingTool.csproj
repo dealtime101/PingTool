@@ -117,8 +117,9 @@
          1.21.39 = the comment on the capacity of the automatic log queue gives the right figures (PIN461.76);
          1.21.40 = pings thrown away by a log folder that stays unwritable are counted and reported (PIN461.77);
          1.21.41 = a log batch half-written by a full disk or a dropped share is cut back before the retry, no duplicated rows (PIN461.78);
-         1.21.42 = a flush that fails no longer rebuilds a file name for every queued ping, a full queue costs 4-11 ms and 0.5 MB per try instead of 17-32 ms and 10 MB (PIN461.79). -->
-    <Version>1.21.42</Version>
+         1.21.42 = a flush that fails no longer rebuilds a file name for every queued ping, a full queue costs 4-11 ms and 0.5 MB per try instead of 17-32 ms and 10 MB (PIN461.79);
+         1.21.43 = tcp://host:port/ with a trailing slash is accepted, as dns:// already was (PIN461.81). -->
+    <Version>1.21.43</Version>
   </PropertyGroup>
 
   <ItemGroup>

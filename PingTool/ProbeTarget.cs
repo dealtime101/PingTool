@@ -45,7 +45,8 @@ namespace PingTool
             switch (scheme)
             {
                 case "tcp":
-                    if (!TryHostPort(rest, out string host, out int port))
+                    // A trailing slash is what a pasted address often ends with; dns:// already accepts it.
+                    if (!TryHostPort(rest.TrimEnd('/'), out string host, out int port))
                     {
                         error = "tcp:// needs a host and a port from 1 to 65535, for example tcp://example.com:443";
                         return false;
