@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace PingTool
 {
     // A named, reusable way of monitoring: the targets and every setting that shapes the probing.
@@ -34,10 +36,14 @@ namespace PingTool
             else if (string.Equals(name, DiagnosticTargets.ProfileName, StringComparison.OrdinalIgnoreCase))
                 error = "That name is reserved for the built-in diagnosis: choose another.";
             else if (name.Length > MaxNameLength) error = $"The name is limited to {MaxNameLength} characters.";
-            else if (name.Any(char.IsControl)) error = "The name cannot contain control characters.";
+            else if (name.Any(IsInvisible)) error = "The name cannot contain control or invisible formatting characters.";
 
             return error.Length == 0;
         }
+
+        // Control characters and the invisible "format" ones (zero width space, bidi marks): "Home" and "Home" + U+200B look
+        // the same on screen but would be two profiles.
+        private static bool IsInvisible(char c) => char.IsControl(c) || char.GetUnicodeCategory(c) == UnicodeCategory.Format;
 
         public static Profile? Find(IEnumerable<Profile> book, string? name) =>
             book.FirstOrDefault(p => string.Equals(p.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -68,7 +74,10 @@ namespace PingTool
             var clean = new List<Profile>();
             foreach (var p in loaded ?? Enumerable.Empty<Profile?>())
             {
-                if (p is null || !TryName(p.Name, out string name, out _)) continue;
+                if (p is null) continue;
+                // A profile saved before the format characters were refused keeps its place, under the name as it looked.
+                p.Name = string.Concat((p.Name ?? "").Where(c => char.GetUnicodeCategory(c) != UnicodeCategory.Format));
+                if (!TryName(p.Name, out string name, out _)) continue;
                 if (Find(clean, name) is not null) continue;
 
                 p.Name = name;
