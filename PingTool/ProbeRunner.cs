@@ -93,14 +93,24 @@ namespace PingTool
         }
 
         // The time to open the connection, nothing more: that is "the port is reachable".
-        private static async Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token)
+        private static Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => TcpAsync(t, timeoutMs, token, Dns.GetHostAddressesAsync);
+
+        // The name is resolved FIRST and the clock starts after it: a slow resolver (or a first lookup that is not cached yet) is not a slow
+        // port. The whole probe, resolution included, still has to fit in the timeout. `resolve` is injected so that a test can make it slow.
+        internal static async Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolve)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             deadline.CancelAfter(timeoutMs);
             using var client = new TcpClient();
 
+            var addresses = await resolve(t.Host, deadline.Token);
+            if (addresses.Length == 0) return new ProbeOutcome(-1, new PingFailure("No host", "The name resolved to no address"), null);
+
+            // The addresses are tried in the order the system gave them, as it does itself: what a slow first one costs before the
+            // second one answers is part of what a connection to this name costs.
             var clock = Stopwatch.StartNew();
-            await client.ConnectAsync(t.Host, t.Port, deadline.Token);
+            await client.ConnectAsync(addresses, t.Port, deadline.Token);
             long rtt = clock.ElapsedMilliseconds;
 
             // A dual-stack socket reports an IPv4 peer as ::ffff:a.b.c.d.
