@@ -85,8 +85,9 @@
          1.21.7 = the incident number of a target is a counter, not a count of the whole list (PIN461.41);
          1.21.8 = the comment of the incident number says it is counted per target and per kind (PIN461.42);
          1.21.9 = a trace whose probe cannot be sent says so, instead of blaming this PC or its link (PIN461.43);
-         1.21.10 = a hop is tried up to 3 times before it is called silent: rate-limited routers no longer cut or falsify the route (PIN461.44). -->
-    <Version>1.21.10</Version>
+         1.21.10 = a hop is tried up to 3 times before it is called silent: rate-limited routers no longer cut or falsify the route (PIN461.44);
+         1.21.11 = a trace where nothing answers no longer concludes that the fault is on this PC (PIN461.45). -->
+    <Version>1.21.11</Version>
   </PropertyGroup>
 
   <ItemGroup>

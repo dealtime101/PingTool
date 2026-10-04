@@ -65,7 +65,7 @@ namespace PingTool
 
             var farthest = LastResponding;
             return farthest is null
-                ? "Nothing answered, not even the first router: the fault is on this PC or its link."
+                ? "Nothing answered, not even the first router: this PC, its link, or a router or firewall that does not answer these probes can be the cause (many never do), so this alone does not tell which."
                 : $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
         }
 
