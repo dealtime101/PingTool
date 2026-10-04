@@ -82,8 +82,9 @@
          1.21.4 = a slowdown noticed during the first failures of an outage is no longer left ending before it starts (PIN461.38);
          1.21.5 = a second "degraded" report closes the first slowdown instead of leaving it open for ever (PIN461.39);
          1.21.6 = outages of several targets at the same time are counted once in the incident summary (PIN461.40);
-         1.21.7 = the incident number of a target is a counter, not a count of the whole list (PIN461.41). -->
-    <Version>1.21.7</Version>
+         1.21.7 = the incident number of a target is a counter, not a count of the whole list (PIN461.41);
+         1.21.8 = the comment of the incident number says it is counted per target and per kind (PIN461.42). -->
+    <Version>1.21.8</Version>
   </PropertyGroup>
 
   <ItemGroup>

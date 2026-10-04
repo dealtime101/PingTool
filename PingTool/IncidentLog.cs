@@ -23,7 +23,8 @@ namespace PingTool
         public double LossPercent { get; init; }
         public double? AvgMs { get; init; }
 
-        // 1 for the first outage of this host, 2 for the second...: how often it came back.
+        // 1 for the first incident of this host AND of this kind, 2 for the second...: outages and slowdowns are counted
+        // separately, per host (an outage is "how often it went down", a slowdown "how often it got slow").
         public int Occurrence { get; init; }
 
         // Outage only: the route to the host captured when the outage was declared, and what
