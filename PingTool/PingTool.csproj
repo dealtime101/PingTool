@@ -160,8 +160,9 @@
          1.21.82 = a connection aborted by this computer is no longer reported as closed by the other side (PIN461.138);
          1.21.83 = the "not enough resources" ping status no longer says the shortage is on the path (PIN461.139);
          1.21.84 = the incident summary wraps over two lines inside the window instead of running past its edge (PIN461.142);
-         1.21.85 = a loopback target (127.0.0.1, ::1) no longer counts as proof that the local network answers in the diagnosis (PIN461.145). -->
-    <Version>1.21.85</Version>
+         1.21.85 = a loopback target (127.0.0.1, ::1) no longer counts as proof that the local network answers in the diagnosis (PIN461.145);
+         1.21.86 = when every target is down the diagnosis lists the possible causes instead of ruling the targets out (PIN461.146). -->
+    <Version>1.21.86</Version>
   </PropertyGroup>
 
   <ItemGroup>

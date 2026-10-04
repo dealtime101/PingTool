@@ -55,7 +55,9 @@ namespace PingTool
             }
 
             if (down.Count == n)
-                return $"All {n} targets are down: likely this PC or its network link, not the targets.";
+                // Possibilities, not a verdict: this PC, its link, or a path (or a fault) the targets share can each give this; the targets
+                // may even be one device. Ruling the targets out would need independent ones and a check point that answers.
+                return $"All {n} targets are down: this PC, its network link, or something the targets share (a path, a provider) can be the cause; pinging alone cannot tell which.";
 
             // Some are down and EVERY other one is slow or losing packets: nothing answers well, whatever the target: that points at what they
             // share (this PC's link, the path), not at the one that is down. (It used to say that the others "answer".)
