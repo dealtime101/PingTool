@@ -47,7 +47,7 @@ namespace PingTool
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
-        private readonly NotifyIcon notifyIcon = new() { Icon = SystemIcons.Application, Text = "PingTool" };
+        private readonly NotifyIcon notifyIcon = new() { Icon = AppIcon.Load(SystemInformation.SmallIconSize), Text = "PingTool" };
 
         // How the program was started (command line); None when opened normally.
         private readonly StartupOptions startup;
@@ -60,6 +60,7 @@ namespace PingTool
         {
             this.startup = startup ?? StartupOptions.None;
             InitializeComponent();
+            Icon = AppIcon.Load();   // the title bar, Alt+Tab and the taskbar
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
             toolTip.SetToolTip(cboProfile, "Profile = the target list and all settings, under a name. Pick one to load it; type a name and press Save to keep the current setup.");

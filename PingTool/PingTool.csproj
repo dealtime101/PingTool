@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- The icon of the program (see tools/make-icon.py): on the exe, in the window and in the notification area. -->
+    <ApplicationIcon>PingTool.ico</ApplicationIcon>
     <!-- THE version of PingTool: bump it by hand at each delivery (see pingtool-deploy.sh).
          1.0.0 = the repository as first received; 1.1.0 = after audits 451-453 (+ version system);
          1.2.0 = recent-window percentiles and jitter (PIN453.5);
@@ -52,8 +54,13 @@
          1.19.0 = web targets can check the page content and warn before the certificate expires (PIN461.7);
          1.20.0 = a headless mode for scheduled runs: a duration, a report, an exit code (PIN461.8);
          1.20.1 = Enter in the address box adds the typed address before starting (PIN461.9);
-         1.20.2 = the red of the diagnosis sentence reaches 4.5:1 on the dark window (PIN461.10). -->
-    <Version>1.20.2</Version>
+         1.20.2 = the red of the diagnosis sentence reaches 4.5:1 on the dark window (PIN461.10);
+         1.20.3 = PingTool has its own icon: window, notification area and exe (PIN461.11). -->
+    <Version>1.20.3</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="PingTool.ico" LogicalName="PingTool.ico" />
+  </ItemGroup>
 
 </Project>
