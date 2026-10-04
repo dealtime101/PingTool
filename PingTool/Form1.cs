@@ -611,6 +611,7 @@ namespace PingTool
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
+                noticed.Clear();
                 networkEvents.Clear();
                 lastNetwork = NetworkWatch.Snapshot();
                 incidents.Clear();
@@ -794,6 +795,7 @@ namespace PingTool
                     // What actually answered beats what DNS listed first.
                     if (outcome.Ip is not null) session.SetIp(outcome.Ip);
                     UpdatePingUI(session, outcome.Rtt, outcome.Failure);
+                    RaiseNotice(session, outcome.Warning);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
@@ -870,7 +872,7 @@ namespace PingTool
                 (int)numSlow.Value, (int)numLoss.Value,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
-                    s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options))).ToList(),
+                    s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options), s.Notice)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
                 incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
@@ -1153,6 +1155,19 @@ namespace PingTool
             string? text = NetworkWatch.Describe(lastNetwork, now);
             lastNetwork = now;
             if (text is not null && isRunning && !closing) networkEvents.Add(new NetworkEvent(DateTimeOffset.Now, text));
+        }
+
+        // What a successful probe still has to say (a certificate about to expire): kept on the host for the report, and told ONCE
+        // per host and per text, which changes with the day count - so a reminder a day, not a balloon at every probe.
+        private readonly HashSet<string> noticed = new();
+
+        private void RaiseNotice(HostSession session, string? text)
+        {
+            session.Notice = text;
+            if (text is null || closing || !chkAlert.Checked || !noticed.Add(session.Address + "|" + text)) return;
+
+            webhooks?.Send(new WebhookEvent(session.DisplayName, HostChange.Notice, text, null, DateTimeOffset.Now));
+            ShowBalloon(text, ToolTipIcon.Warning);
         }
 
         // One balloon per webhook and per run, not one per lost alert: a receiver that is down would otherwise

@@ -1,13 +1,36 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace PingTool
 {
     // One probe's answer. Rtt < 0 = failure, and then Failure says why. Error keeps the raw
     // exception when there was one, for the debug trace.
-    internal sealed record ProbeOutcome(long Rtt, PingFailure? Failure, IPAddress? Ip, Exception? Error = null);
+    // Warning = something to say although the probe succeeded (a certificate about to expire).
+    internal sealed record ProbeOutcome(long Rtt, PingFailure? Failure, IPAddress? Ip, Exception? Error = null, string? Warning = null);
+
+    // How close a certificate is to its end, in words. null = nothing to say.
+    internal static class CertWatch
+    {
+        public static string? Warning(string host, DateTime notAfterUtc, DateTime nowUtc, int warnDays)
+        {
+            if (warnDays <= 0) return null;
+
+            double days = (notAfterUtc - nowUtc).TotalDays;
+            if (days >= warnDays) return null;
+
+            string when = notAfterUtc.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if (days < 0) return $"The certificate of {host} expired on {when}";
+            int whole = (int)Math.Floor(days);
+            return whole == 0 ? $"The certificate of {host} expires today or tomorrow ({when})"
+                : $"The certificate of {host} expires in {whole.ToString(CultureInfo.InvariantCulture)} day{(whole == 1 ? "" : "s")} ({when})";
+        }
+    }
 
     // Runs ONE probe against a target. The caller loops. Cancelling the token (Stop, Close)
     // throws OperationCanceledException; every other failure comes back as a ProbeOutcome.
@@ -19,7 +42,13 @@ namespace PingTool
 
         private static HttpClient CreateWebClient()
         {
-            var client = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }) { Timeout = Timeout.InfiniteTimeSpan };
+            // HttpClientHandler (not SocketsHttpHandler.SslOptions): only its callback is handed the request, which is where
+            // the end date of the certificate is kept.
+            var client = new HttpClient(new HttpClientHandler
+            {
+                AllowAutoRedirect = false,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+            }) { Timeout = Timeout.InfiniteTimeSpan };
             client.DefaultRequestHeaders.UserAgent.ParseAdd("PingTool/" + AppVersion.Number);
             return client;
         }
@@ -81,7 +110,21 @@ namespace PingTool
 
         // The time until the status line and headers arrive, on a NEW connection each time (so the
         // figure includes the TCP and TLS handshakes, like a first visit). 4xx and 5xx are failures.
-        private static async Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token)
+        // Where the certificate's end date of a request is kept while the request is in flight (see ValidateServerCertificate).
+        private static readonly HttpRequestOptionsKey<DateTime> CertificateEnd = new("PingTool.CertificateEnd");
+        public const int MaxBodyBytes = 64 * 1024;
+
+        // The default validation, plus a note of when the server's certificate ends. Returning "no policy error" is exactly what the
+        // default check does, so nothing is trusted that was not before.
+        public static bool ValidateServerCertificate(HttpRequestMessage request, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)
+        {
+            if (certificate is not null) request.Options.Set(CertificateEnd, certificate.NotAfter.ToUniversalTime());
+            return errors == SslPolicyErrors.None;
+        }
+
+        private static Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => HttpAsync(t, timeoutMs, token, Web);
+
+        internal static async Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token, HttpClient client)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             deadline.CancelAfter(timeoutMs);
@@ -89,14 +132,38 @@ namespace PingTool
             request.Headers.ConnectionClose = true;
 
             var clock = Stopwatch.StartNew();
-            using var response = await Web.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
             long rtt = clock.ElapsedMilliseconds;
 
             int code = (int)response.StatusCode;
             if (code >= 400)
                 return new ProbeOutcome(-1, new PingFailure("HTTP " + code, "The server answered " + code + " " + response.ReasonPhrase), null);
 
-            return new ProbeOutcome(rtt, null, null);
+            // The page must contain the expected text: a redirect (to a login page, as a captive portal does) or a maintenance
+            // page that answers "200" is then a failure, not a success.
+            if (t.ExpectText is { } expected)
+            {
+                if (code is >= 300 and < 400)
+                    return new ProbeOutcome(-1, new PingFailure("Redirect", $"The server redirected (HTTP {code}) instead of serving the page with the expected text: a login page of a captive portal does this"), null);
+
+                string body = await ReadStart(response, deadline.Token);
+                if (!body.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                    return new ProbeOutcome(-1, new PingFailure("Content", "The page answered but does not contain the expected text (a maintenance page, an error page or a captive portal)"), null);
+            }
+
+            string? warning = request.Options.TryGetValue(CertificateEnd, out DateTime end)
+                ? CertWatch.Warning(t.Host, end, DateTime.UtcNow, t.CertWarnDays) : null;
+            return new ProbeOutcome(rtt, null, null, Warning: warning);
+        }
+
+        // The first MaxBodyBytes of the answer, read as UTF-8 (anything that is not text just does not match).
+        private static async Task<string> ReadStart(HttpResponseMessage response, CancellationToken token)
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(token);
+            var buffer = new byte[MaxBodyBytes];
+            int total = 0, read;
+            while (total < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(total), token)) > 0) total += read;
+            return Encoding.UTF8.GetString(buffer, 0, total);
         }
 
         // Through the operating system's resolver, so its cache applies: a name looked up a moment

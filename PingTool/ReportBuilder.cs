@@ -9,7 +9,9 @@ namespace PingTool
         // Pings sent and lost per clock hour, for the hour-by-day grid (null = not recorded).
         IReadOnlyList<HourCell>? Hours = null,
         // The name the user gave the target and the limits it ran with, when they are not the defaults (see TargetOptions).
-        string? Label = null, string? Limits = null);
+        string? Label = null, string? Limits = null,
+        // A warning the last probe came with although it succeeded (a certificate about to expire).
+        string? Notice = null);
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
@@ -106,6 +108,9 @@ namespace PingTool
                     + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? "global limits")}</td></tr>");
             }
             h.AppendLine("</table>");
+
+            foreach (var x in d.Hosts.Where(x => x.Notice is not null))
+                h.AppendLine(c, $"<p class=\"box\"><b>{Who(x)}</b>: {E(x.Notice!)}.</p>");
 
             h.AppendLine("<h2>Latency over the last pings</h2>");
             h.AppendLine("<p><small>Each graph has its own scale (top = the highest value of that target). A red tick on the baseline is a lost ping.</small></p>");

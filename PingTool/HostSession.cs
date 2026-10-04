@@ -34,6 +34,9 @@ namespace PingTool
         // Why the last ping failed; null when it succeeded or none was sent.
         public PingFailure? LastFailure { get; private set; }
 
+        // Something worth knowing although the last probe succeeded (a certificate about to expire); null when nothing.
+        public string? Notice { get; set; }
+
         // "IPv4 142.250.80.35", "IPv6 2607:f8b0::2004", "-" before resolution.
         public string IpText { get; private set; } = "-";
 
@@ -47,6 +50,7 @@ namespace PingTool
             History.Clear();
             Last = null;
             LastFailure = null;
+            Notice = null;
             IpText = "-";
             Ip = null;
             BaselinePath = null;

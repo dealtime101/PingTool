@@ -41,6 +41,18 @@ Type an address in the box and press **Enter** (or **Start**). The text before `
 
 Use **Add address** to build a list of several targets, then **Start** to probe them all in parallel.
 
+### Web address options
+
+A web address can end with options after a `#` (never sent to the server):
+
+| Option | Effect |
+|---|---|
+| `https://example.com/#contains=Welcome` | the page must contain that text (case ignored, first 64 KB read). A maintenance page, an error page that answers `200`, or the login page of a captive portal (hotel Wi-Fi: a redirect) is then a **failure** (`Content` or `Redirect`) instead of a success. Write spaces as `%20` |
+| `https://example.com/#cert=30` | a **notice** (balloon, webhook, report) when the TLS certificate expires in less than 30 days; default 14, `0` = never. A reminder a day while it lasts. An expired or untrusted certificate is a `TLS` failure as before |
+| `https://example.com/#contains=Welcome&cert=7` | both |
+
+A mistyped option is refused with a message rather than silently ignored.
+
 ## Alerts
 
 For each target, PingTool looks at the last 10 pings:

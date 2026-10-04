@@ -48,8 +48,9 @@
          1.15.0 = "Diagnose my connection": gateway, DNS and Internet references in one click (PIN461.3);
          1.16.0 = changes of the PC's own network are noted on the timeline and in the report (PIN461.4);
          1.17.0 = the report opens with an availability summary and a loss-by-hour grid (PIN461.5);
-         1.18.0 = a name and limits of their own for each target (PIN461.6). -->
-    <Version>1.18.0</Version>
+         1.18.0 = a name and limits of their own for each target (PIN461.6);
+         1.19.0 = web targets can check the page content and warn before the certificate expires (PIN461.7). -->
+    <Version>1.19.0</Version>
   </PropertyGroup>
 
 </Project>

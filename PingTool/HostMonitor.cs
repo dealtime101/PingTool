@@ -1,6 +1,8 @@
 namespace PingTool
 {
-    internal enum HostChange { None, Down, Up, Degraded, Recovered }
+    // Notice = something worth knowing that is not a change of state (a certificate about to expire): only ever raised by the
+    // probe, never by HostMonitor.
+    internal enum HostChange { None, Down, Up, Degraded, Recovered, Notice }
 
     internal enum HostState { Up, Degraded, Down }
 
