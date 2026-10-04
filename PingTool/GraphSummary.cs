@@ -28,7 +28,32 @@ namespace PingTool
             var recent = RecentStats.From(s.Samples);
             string lastText = last < 0 ? "last ping lost" : "last " + last.ToString(c) + " ms";
             string p95 = recent.P95 is double p ? ", 95th percentile " + p.ToString("0.#", c) + " ms" : "";
-            return $"{who}: {lastText}{p95}, {recent.Lost.ToString(c)} of the last {recent.Samples.ToString(c)} pings lost";
+            // The one target on screen also gets its curve in words: the window in quarters, oldest first (a compared set would be too long).
+            string trend = s.Name.Length == 0 ? Trend(s.Samples, c) : "";
+            return $"{who}: {lastText}{p95}, {recent.Lost.ToString(c)} of the last {recent.Samples.ToString(c)} pings lost{trend}";
+        }
+
+        public const int TrendParts = 4;
+
+        // "; over the window, oldest first: 21 ms 0 lost / 22 ms 0 lost / 95 ms 3 lost / 40 ms 1 lost": what the line of the graph shows.
+        // Nothing when there are too few pings to cut into at least two parts of two.
+        internal static string Trend(IReadOnlyCollection<long> samples, CultureInfo c)
+        {
+            var list = samples.ToList();
+            int parts = Math.Min(TrendParts, list.Count / 2);
+            if (parts < 2) return "";
+
+            var texts = new List<string>();
+            for (int p = 0; p < parts; p++)
+            {
+                int from = p * list.Count / parts, to = (p + 1) * list.Count / parts;
+                var slice = list.Skip(from).Take(to - from).ToList();
+                var replies = slice.Where(v => v >= 0).ToList();
+                string avg = replies.Count == 0 ? "no reply" : replies.Average().ToString("0.#", c) + " ms";
+                texts.Add($"{avg} {slice.Count - replies.Count} lost");
+            }
+
+            return "; over the window, oldest first: " + string.Join(" / ", texts);
         }
     }
 }
