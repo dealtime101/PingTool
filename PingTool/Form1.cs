@@ -1069,7 +1069,7 @@ namespace PingTool
         private void RenderDiagnosis()
         {
             lblDiagnosis.Text = Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()) ?? "";
-            lblDiagnosis.ForeColor = sessions.Any(s => s.Monitor.State != HostState.Up) ? Color.Tomato : Color.Silver;
+            lblDiagnosis.ForeColor = sessions.Any(s => s.Monitor.State != HostState.Up) ? UiColors.SmallTextRed : Color.Silver;
         }
 
         // Big value, stats and graph all follow the host selected in the list.
