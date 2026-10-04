@@ -110,7 +110,7 @@ The published folder holds `PingTool.exe` and the few files next to it (`PingToo
 
 ## Versions
 
-The version number lives in one place, `<Version>` in `PingTool/PingTool.csproj`, and is shown in the window title (`PingTool v1.7.2`). A build made with `-p:SourceRevisionId=<commit>` also carries the commit it came from (`1.7.2+077830b`), which shows in the file properties of `PingTool.exe`. Releases are tagged `vX.Y.Z`.
+The version number lives in one place, `<Version>` in `PingTool/PingTool.csproj`, and is shown in the window title (`PingTool v1.7.2`). A build made with `-p:SourceRevisionId=<commit>` also carries the commit it came from (`1.7.2+077830b`), which shows in the file properties of `PingTool.exe`. Releases are tagged `vX.Y.Z`, and each tag gets a [GitHub Release](https://github.com/dealtime101/PingTool/releases) with the zip (`PingTool-X.Y.Z-win-x64.zip`) and its SHA-256, built by a GitHub Actions workflow (`.github/workflows/release.yml`) from the tagged commit.
 
 ## Things worth knowing
 

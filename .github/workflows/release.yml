@@ -1,0 +1,94 @@
+name: Release
+
+# One GitHub Release per version: when the version in PingTool.csproj has a tag (vX.Y.Z) and no release yet,
+# the program is built from that tag, zipped, and published as a Release with its SHA-256.
+# Runs on every push to master (the version script pushes the commit and the tag together) and by hand.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Is there a release to make?
+        id: v
+        run: |
+          ver=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' PingTool/PingTool.csproj | head -1)
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          if ! git rev-parse -q --verify "refs/tags/v$ver" >/dev/null; then
+            echo "No tag v$ver yet: nothing to release."; echo "go=no" >> "$GITHUB_OUTPUT"
+          elif gh release view "v$ver" >/dev/null 2>&1; then
+            echo "Release v$ver already exists."; echo "go=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.v.outputs.go == 'yes'
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build the zip from the tag
+        if: steps.v.outputs.go == 'yes'
+        env:
+          VER: ${{ steps.v.outputs.ver }}
+        run: |
+          ver="$VER"
+          git checkout -q "v$ver"
+          commit=$(git rev-parse --short HEAD)
+          dotnet publish PingTool/PingTool.csproj -c Release -r win-x64 --self-contained false \
+            -p:EnableWindowsTargeting=true -p:SourceRevisionId="$commit" -o out
+          python3 - "$ver" "$(git show -s --format=%cI HEAD)" <<'EOF'
+          import sys, zipfile, datetime
+          ver, stamp = sys.argv[1:3]
+          t = datetime.datetime.fromisoformat(stamp)
+          dt = (max(t.year, 1980), t.month, t.day, t.hour, t.minute, t.second - t.second % 2)
+          files = [("LICENSE.txt", "LICENSE.txt")] + [(n, "out/" + n) for n in
+                  ("PingTool.deps.json", "PingTool.dll", "PingTool.exe", "PingTool.runtimeconfig.json")]
+          with zipfile.ZipFile(f"PingTool-{ver}-win-x64.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for name, path in files:
+                  info = zipfile.ZipInfo(name, dt)
+                  info.compress_type = zipfile.ZIP_DEFLATED
+                  info.external_attr = 0o644 << 16
+                  z.writestr(info, open(path, "rb").read())
+          EOF
+          sha256sum "PingTool-$ver-win-x64.zip" > "PingTool-$ver-win-x64.zip.sha256"
+          cat "PingTool-$ver-win-x64.zip.sha256"
+
+      - name: Publish the release
+        if: steps.v.outputs.go == 'yes'
+        env:
+          VER: ${{ steps.v.outputs.ver }}
+          REPO: ${{ github.repository }}
+        run: |
+          ver="$VER"
+          sum=$(cut -d' ' -f1 "PingTool-$ver-win-x64.zip.sha256")
+          change=$(grep -F " $ver = " PingTool/PingTool.csproj | sed -E 's/^ *//; s/[;.]? *-?-?>? *$//; s/ *\(PIN[0-9.]+\)//' | head -1)
+          {
+            echo "**PingTool $ver**"
+            [ -n "$change" ] && echo && echo "$change"
+            echo
+            echo "Windows 10/11 (x64). Needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0). Unzip anywhere and run \`PingTool.exe\`."
+            echo
+            echo "SHA-256 of the zip: \`$sum\`"
+            echo
+            echo "See the [README](https://github.com/$REPO#readme) for what it does."
+          } > notes.md
+          gh release create "v$ver" "PingTool-$ver-win-x64.zip" "PingTool-$ver-win-x64.zip.sha256" \
+            --title "PingTool $ver" --notes-file notes.md --verify-tag
