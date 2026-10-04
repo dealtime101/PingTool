@@ -7,7 +7,9 @@ namespace PingTool
     internal sealed record HostReport(string Address, string IpText, HostState State, int Sent, int Lost,
         double LossPercent, double? Min, double? Avg, double? Max, double? Jitter, IReadOnlyList<long> History,
         // Pings sent and lost per clock hour, for the hour-by-day grid (null = not recorded).
-        IReadOnlyList<HourCell>? Hours = null);
+        IReadOnlyList<HourCell>? Hours = null,
+        // The name the user gave the target and the limits it ran with, when they are not the defaults (see TargetOptions).
+        string? Label = null, string? Limits = null);
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
@@ -38,6 +40,8 @@ namespace PingTool
             string N(double? v) => v is null ? "-" : v.Value.ToString("0.#", c);
             string T(DateTimeOffset t) => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", c);
             // Cut, never rounded up, to two decimals: 99.997 % with a real outage must not read "100 %" in a claim to a provider.
+            // "Box (192.168.1.1)" when the target has a name, its address otherwise; the address is what the pings went to.
+            string Who(HostReport x) => x.Label is null ? E(x.Address) : E(x.Label) + " <small>(" + E(x.Address) + ")</small>";
             string Pct(double v) => (Math.Floor(v * 100 + 1e-9) / 100).ToString("0.##", c);
 
             h.AppendLine("<!DOCTYPE html>");
@@ -76,7 +80,7 @@ namespace PingTool
                 {
                     var row = Availability.For(x.Address, d.Incidents, d.RunStart, end);
                     string Dur(TimeSpan? t) => t is null ? "-" : IncidentLog.FormatDuration(t.Value);
-                    h.AppendLine(c, $"<tr><td>{E(x.Address)}</td><td class=\"n\">{(row.AvailabilityPercent is null ? "-" : Pct(row.AvailabilityPercent.Value) + " %")}</td>"
+                    h.AppendLine(c, $"<tr><td>{Who(x)}</td><td class=\"n\">{(row.AvailabilityPercent is null ? "-" : Pct(row.AvailabilityPercent.Value) + " %")}</td>"
                         + $"<td class=\"n\">{row.Outages.ToString(c)}</td><td class=\"n\">{E(Dur(row.TotalDown))}</td><td class=\"n\">{E(Dur(row.Mean))}</td><td class=\"n\">{E(Dur(row.Longest))}</td>"
                         + $"<td class=\"n\">{N(x.LossPercent)} %</td></tr>");
                 }
@@ -94,12 +98,12 @@ namespace PingTool
 
             h.AppendLine("<h2>Targets</h2>");
             h.AppendLine("<table><tr><th>Target</th><th>Address</th><th>State</th><th>Sent</th><th>Lost</th><th>Loss %</th>"
-                + "<th>Min ms</th><th>Avg ms</th><th>Max ms</th><th>Jitter ms</th></tr>");
+                + "<th>Min ms</th><th>Avg ms</th><th>Max ms</th><th>Jitter ms</th><th>Limits</th></tr>");
             foreach (var x in d.Hosts)
             {
                 string state = x.State switch { HostState.Down => "<td class=\"down\">Down</td>", HostState.Degraded => "<td class=\"deg\">Degraded</td>", _ => "<td>Up</td>" };
-                h.AppendLine(c, $"<tr><td>{E(x.Address)}</td><td>{E(x.IpText)}</td>{state}<td class=\"n\">{x.Sent.ToString(c)}</td><td class=\"n\">{x.Lost.ToString(c)}</td>"
-                    + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td></tr>");
+                h.AppendLine(c, $"<tr><td>{Who(x)}</td><td>{E(x.IpText)}</td>{state}<td class=\"n\">{x.Sent.ToString(c)}</td><td class=\"n\">{x.Lost.ToString(c)}</td>"
+                    + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? "global limits")}</td></tr>");
             }
             h.AppendLine("</table>");
 
@@ -108,7 +112,7 @@ namespace PingTool
             foreach (var x in d.Hosts)
             {
                 long top = Math.Max(50, x.History.Count == 0 ? 0 : x.History.Max());
-                h.AppendLine(c, $"<p><b>{E(x.Address)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
+                h.AppendLine(c, $"<p><b>{Who(x)}</b> <small>(0 to {top.ToString(c)} ms, {x.History.Count.ToString(c)} pings)</small><br />");
                 h.AppendLine(Svg(x.History, top, c));
                 h.AppendLine("</p>");
             }
@@ -123,7 +127,7 @@ namespace PingTool
                     + $"The {Availability.MaxGridDays.ToString(c)} most recent days are shown. Hover a square for its figures.</small></p>");
                 foreach (var x in grids)
                 {
-                    h.AppendLine(c, $"<p><b>{E(x.Address)}</b></p>");
+                    h.AppendLine(c, $"<p><b>{Who(x)}</b></p>");
                     h.Append("<table class=\"grid\"><tr><th></th>");
                     for (int hour = 0; hour < 24; hour++) h.Append(c, $"<th>{hour}</th>");
                     h.AppendLine("</tr>");

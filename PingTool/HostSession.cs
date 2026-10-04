@@ -13,6 +13,12 @@ namespace PingTool
         }
 
         public string Address { get; }
+
+        // A readable name and limits of its own, when the user gave them (see TargetOptions).
+        public TargetOptions? Options { get; set; }
+
+        // What the list, the alerts and the report call it: its name, or its address.
+        public string DisplayName => TargetOptions.DisplayName(Address, Options);
         public SessionStats Stats { get; } = new();
         public HostMonitor Monitor { get; private set; }
 

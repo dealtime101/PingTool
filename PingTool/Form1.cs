@@ -132,6 +132,7 @@ namespace PingTool
             // Right-click (or the menu key) on a host: where does the path to it stop?
             var hostMenu = new ContextMenuStrip();
             hostMenu.Items.Add("Trace route to this host").Click += (_, _) => TraceSelected();
+            hostMenu.Items.Add("Name and limits of this host...").Click += (_, _) => EditSelectedTarget();
             hostMenu.Opening += (_, e) => e.Cancel = selected is null;
             lstHosts.ContextMenuStrip = hostMenu;
             FormClosing += (_, _) =>
@@ -256,9 +257,11 @@ namespace PingTool
             var existing = sessions.Find(s => string.Equals(s.Address, address, StringComparison.OrdinalIgnoreCase));
             if (existing != null) return existing;
 
-            var session = new HostSession(address, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            settings.TargetOptions.TryGetValue(address, out var options);
+            var (slow, loss, down) = TargetOptions.Effective(options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            var session = new HostSession(address, slow, loss, down) { Options = options };
             sessions.Add(session);
-            var item = new ListViewItem(new[] { address, "-", "-", "-" }) { Tag = session };
+            var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
             item.Selected = true;
             return session;
@@ -306,6 +309,9 @@ namespace PingTool
                 DegradedLatencyMs = (int)numSlow.Value,
                 DegradedLossPercent = (int)numLoss.Value,
                 DownAfter = (int)numDownAfter.Value,
+                // The names and own limits of this profile's hosts go with it.
+                TargetOptions = hosts.Where(settings.TargetOptions.ContainsKey)
+                    .ToDictionary(h => h, h => settings.TargetOptions[h], StringComparer.OrdinalIgnoreCase),
             };
 
             if (!ProfileBook.Upsert(settings.Profiles, profile))
@@ -473,6 +479,9 @@ namespace PingTool
             numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             chkAlert.Checked = profile.Alert;
 
+            // The profile's names and limits for its hosts replace the ones of the same addresses (AddHost reads them).
+            foreach (var (address, options) in profile.TargetOptions) settings.TargetOptions[address] = options;
+
             sessions.Clear();
             lstHosts.Items.Clear();
             selected = null;
@@ -594,7 +603,8 @@ namespace PingTool
                 // ones in the boxes (it builds a fresh monitor with them).
                 foreach (var s in sessions)
                 {
-                    s.ApplyThresholds((int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+                    var (slow, loss, down) = TargetOptions.Effective(s.Options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+                    s.ApplyThresholds(slow, loss, down);
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
@@ -838,6 +848,7 @@ namespace PingTool
         private static void RenderRow(ListViewItem item)
         {
             var s = (HostSession)item.Tag!;
+            item.SubItems[0].Text = s.DisplayName;
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
             item.SubItems[3].Text = s.Stats.Sent == 0 ? "-" : s.Stats.LossPercent.ToString("0.#", CultureInfo.CurrentCulture) + "%";
@@ -858,7 +869,8 @@ namespace PingTool
                 (int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value,
                 (int)numSlow.Value, (int)numLoss.Value,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
-                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours)).ToList(),
+                    s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
+                    s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options))).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
                 incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
 
@@ -914,6 +926,25 @@ namespace PingTool
             {
                 Debug.WriteLine($"Path capture for {session.Address} failed: {ex}");
             }
+        }
+
+        // A readable name and limits of its own for the selected host. Kept in settings.json by address (and in the profiles
+        // saved afterwards); the name shows at once, the limits from the next Start.
+        private void EditSelectedTarget()
+        {
+            if (selected is not { } session) return;
+
+            using var dialog = new TargetOptionsForm(session.Address, session.Options,
+                (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+            session.Options = dialog.Result;
+            if (dialog.Result is null) settings.TargetOptions.Remove(session.Address);
+            else settings.TargetOptions[session.Address] = dialog.Result;
+
+            foreach (ListViewItem item in lstHosts.Items) if (ReferenceEquals(item.Tag, session)) RenderRow(item);
+            RenderSelected();
+            SaveSettings();
         }
 
         private void TraceSelected()
@@ -1029,9 +1060,9 @@ namespace PingTool
         private void RenderSelected()
         {
             if (closing) return;
-            Text = AppVersion.Title(selected?.Address);
+            Text = AppVersion.Title(selected?.DisplayName);
             if (chkCompare.Checked)
-                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.Address, HostPalette.ColorFor(i), s.History)).ToList());
+                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.DisplayName, HostPalette.ColorFor(i), s.History)).ToList());
             else
                 graphLatency.Show(selected?.History);
             RenderDiagnosis();
@@ -1081,7 +1112,7 @@ namespace PingTool
             if (closing || change == HostChange.None || !chkAlert.Checked) return;
 
             var monitor = session.Monitor;
-            string text = AlertMessage.For(session.Address, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
+            string text = AlertMessage.For(session.DisplayName, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
             webhooks?.Send(new WebhookEvent(session.Address, change, text, outage, DateTimeOffset.Now));
             var (sound, icon) = change switch
             {
