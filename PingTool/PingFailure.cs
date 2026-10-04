@@ -58,8 +58,12 @@ namespace PingTool
             var socket = ex as SocketException ?? ex.InnerException as SocketException;
             return socket?.SocketErrorCode switch
             {
-                SocketError.HostNotFound or SocketError.NoData
+                SocketError.HostNotFound
                     => new("No host", "Name could not be resolved"),
+                // The name EXISTS but has no address of the kind asked for (no IPv6 record, say): calling it "no host" would send the
+                // user to correct a good name.
+                SocketError.NoData
+                    => new("No addr", "The name exists but has no address of the requested type (for example no IPv6 record)"),
                 // A passing failure of the DNS server, not a wrong name: say so, or the user "fixes" a good name.
                 SocketError.TryAgain
                     => new("DNS fail", "The DNS server failed for the moment (temporary): the name may be right, try again"),
