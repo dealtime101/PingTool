@@ -6,8 +6,12 @@ namespace PingTool
     internal sealed record TimelineBucket(DateTimeOffset Start, int Sent, int Lost, double? MinMs, double? AvgMs, double? MaxMs);
 
     internal sealed record TimelineData(string Host, DateTimeOffset From, DateTimeOffset To, TimeSpan BucketSpan,
-        IReadOnlyList<TimelineBucket> Buckets, long TopMs, int Sent, int Lost, long PeakMs = 0)
+        IReadOnlyList<TimelineBucket> Buckets, long TopMs, int Sent, int Lost, long PeakMs = 0, DateTimeOffset? Last = null)
     {
+        // To is the right edge of the DRAWING (a single instant is given one second of width); Last is the time of the last ping
+        // really observed, and what the text says about the session ends there.
+        public DateTimeOffset ObservedTo => Last ?? To;
+        public TimeSpan Observed => ObservedTo - From;
         // TopMs is the scale of the chart; PeakMs is the true highest reply. They differ when a rare spike would flatten the rest.
         public bool IsClipped => PeakMs > TopMs;
         public bool IsEmpty => Sent == 0;
@@ -42,7 +46,8 @@ namespace PingTool
 
             var from = mine.Min(e => e.Time);
             var to = mine.Max(e => e.Time);
-            if (to - from < TimeSpan.FromSeconds(1)) to = from + TimeSpan.FromSeconds(1);   // a single instant still needs a width
+            var last = to;
+            if (to - from < TimeSpan.FromSeconds(1)) to = from + TimeSpan.FromSeconds(1);   // a single instant still needs a width (to draw)
 
             long ticks = Math.Max(1, (to - from).Ticks / buckets);
             var sent = new int[buckets];
@@ -69,7 +74,7 @@ namespace PingTool
 
             long peak = (long)Math.Ceiling(list.Max(b => b.MaxMs ?? 0));
             long top = Scale(list.Where(b => b.MaxMs is not null).Select(b => b.MaxMs!.Value).ToList());
-            return new TimelineData(host, from, to, TimeSpan.FromTicks(ticks), list, top, mine.Count, mine.Count(e => e.RttMs is null), peak);
+            return new TimelineData(host, from, to, TimeSpan.FromTicks(ticks), list, top, mine.Count, mine.Count(e => e.RttMs is null), peak, last);
         }
 
         // The index to select when the window opens: the host that was selected in the main window, else the first; -1 when there is none.
@@ -143,7 +148,7 @@ namespace PingTool
             string num(double v) => v.ToString("0.#", c);
 
             string lines = Loc.T("timeline.summary",
-                when(d.From), when(d.To), IncidentLog.FormatDuration(d.Span), d.Sent, d.Lost, num(100.0 * d.Lost / d.Sent));
+                when(d.From), when(d.ObservedTo), IncidentLog.FormatDuration(d.Observed), d.Sent, d.Lost, num(100.0 * d.Lost / d.Sent));
 
             var slowest = d.Buckets.Where(b => b.AvgMs is not null).OrderByDescending(b => b.AvgMs).FirstOrDefault();
             if (slowest is not null)
