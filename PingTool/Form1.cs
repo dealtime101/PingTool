@@ -851,9 +851,7 @@ namespace PingTool
             int timeout = (int)numTimeout.Value;
             byte[] buffer = new byte[(int)numSize.Value];
 
-            using Ping ping = new Ping();
-            // Stop must not wait out a ping already in flight (up to the timeout).
-            using var cancelPing = token.Register(ping.SendAsyncCancel);
+            using Ping ping = new Ping();   // Stop reaches a ping in flight through the token given to ProbeRunner
 
             // Resolve first so the IP shows even for a host that never answers.
             // Not for dns://, whose probe IS the lookup and sets the address itself.

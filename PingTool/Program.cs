@@ -74,7 +74,6 @@ namespace PingTool
                 async Task<ProbeOutcome> Probe(ProbeTarget target, int timeoutMs, CancellationToken token)
                 {
                     using var ping = new System.Net.NetworkInformation.Ping();
-                    using var cancelPing = token.Register(ping.SendAsyncCancel);
                     return await ProbeRunner.RunAsync(target, timeoutMs, ping, new byte[settings.PacketSize], token);
                 }
 

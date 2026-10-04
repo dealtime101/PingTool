@@ -59,7 +59,7 @@ namespace PingTool
             {
                 return target.Kind switch
                 {
-                    ProbeKind.Icmp => await IcmpAsync(target, timeoutMs, ping, buffer),
+                    ProbeKind.Icmp => await IcmpAsync(target, timeoutMs, ping, buffer, token),
                     ProbeKind.Tcp => await TcpAsync(target, timeoutMs, token),
                     ProbeKind.Http => await HttpAsync(target, timeoutMs, token),
                     ProbeKind.Dns => await DnsAsync(target, timeoutMs, token),
@@ -81,11 +81,11 @@ namespace PingTool
             }
         }
 
-        private static async Task<ProbeOutcome> IcmpAsync(ProbeTarget t, int timeoutMs, Ping ping, byte[]? buffer)
+        // The token goes to the call: Stop or Close cancels a ping in flight, like the other probes (the class promises it). A null buffer
+        // is the system's default one.
+        private static async Task<ProbeOutcome> IcmpAsync(ProbeTarget t, int timeoutMs, Ping ping, byte[]? buffer, CancellationToken token)
         {
-            var reply = buffer is null
-                ? await ping.SendPingAsync(t.Host, timeoutMs)
-                : await ping.SendPingAsync(t.Host, timeoutMs, buffer);
+            var reply = await ping.SendPingAsync(t.Host, TimeSpan.FromMilliseconds(timeoutMs), buffer, null, token);
 
             return reply.Status == IPStatus.Success
                 ? new ProbeOutcome(reply.RoundtripTime, null, reply.Address)
