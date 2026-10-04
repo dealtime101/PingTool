@@ -96,8 +96,9 @@
          1.21.18 = a timeline chart with no room asks for a bigger window instead of saying there is no data (PIN461.54);
          1.21.19 = the left margin of the timeline chart is as wide as its top value, and the margins follow the screen scaling (PIN461.55);
          1.21.20 = a profile file with a bad value names the place in the file, not in a copy of it (PIN461.56);
-         1.21.21 = one unreadable profile or number in a profile file no longer rejects the whole file (PIN461.57). -->
-    <Version>1.21.21</Version>
+         1.21.21 = one unreadable profile or number in a profile file no longer rejects the whole file (PIN461.57);
+         1.21.22 = the size limit of a profile file counts bytes, not characters (PIN461.58). -->
+    <Version>1.21.22</Version>
   </PropertyGroup>
 
   <ItemGroup>

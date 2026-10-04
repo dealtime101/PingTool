@@ -59,7 +59,10 @@ namespace PingTool
             imported = new Imported(new List<Profile>(), 0, 0);
             error = "";
 
-            if (json.Length > MaxFileBytes)
+            // Bytes, as the name says: a character takes up to 4. (MainForm already refuses a bigger FILE before reading it; this
+            // protects every other way to hand a string in.) Length first: it is free, and a string longer than the limit in
+            // characters is longer in bytes.
+            if (json.Length > MaxFileBytes || System.Text.Encoding.UTF8.GetByteCount(json) > MaxFileBytes)
             {
                 error = "That file is too large to be a list of profiles.";
                 return false;
