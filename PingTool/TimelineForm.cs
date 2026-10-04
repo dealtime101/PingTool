@@ -131,9 +131,9 @@ namespace PingTool
         private readonly IReadOnlyList<NetworkEvent> networkEvents;
         private readonly IReadOnlyList<Incident> incidents;
         private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = "Target" };
-        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 290), AccessibleName = "Session timeline" };
-        // Room for four lines: the three of the summary and, when the log let pings go, the note about it.
-        private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 340), Size = new Size(740, 62) };
+        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 246), AccessibleName = "Session timeline", Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
+        // Room for six lines: the summary (up to four with the peak and the incidents), the network changes and, when the log let pings go, the note about it.
+        private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 294), Size = new Size(740, 106), Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
 
         // droppedNote: what to say when the log has let its oldest pings go (null = nothing lost).
         public TimelineForm(IReadOnlyCollection<LogEntry> entries, IReadOnlyList<Incident> incidents, IEnumerable<string> hosts, string? selected,
@@ -144,11 +144,17 @@ namespace PingTool
             this.entries = entries;
             this.incidents = incidents;
 
+            // Positions and sizes below are written for 96 DPI: the form scales them to the screen (like MainForm does), so
+            // that the text, which does grow with the scaling, still has its room at 125 %, 150 % or 200 %.
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Session timeline";
             ClientSize = new Size(760, 440);
+            MinimumSize = SizeFromClientSize(new Size(560, 400));
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
+            FormBorderStyle = FormBorderStyle.Sizable;
+            MaximizeBox = true;
             MinimizeBox = false;
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
@@ -157,13 +163,15 @@ namespace PingTool
             {
                 Text = "Each column is a slice of the session: grey = lowest to highest reply, green = average, red at the bottom = lost pings (stronger = more), striped red background = outage, plain orange tint = slowdown.",
                 ForeColor = Color.Silver, AutoSize = false, Location = new Point(10, 402), Size = new Size(640, 34),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             };
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(660, 408), Size = new Size(90, 28) };
+            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(660, 408), Size = new Size(90, 28), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
 
             var list = hosts.ToArray();
             hostBox.Items.AddRange(list.Cast<object>().ToArray());
             hostBox.SelectedIndexChanged += (_, _) => Redraw();
+            chart.SizeChanged += (_, _) => Redraw();   // a wider chart gets more columns
             Controls.AddRange(new Control[] { hostBox, chart, summary, note, close });
 
             int first = Timeline.InitialHost(list, selected);

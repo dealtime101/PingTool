@@ -91,8 +91,9 @@
          1.21.13 = Stop cancels a trace probe even before it is on the wire (PIN461.47);
          1.21.14 = the timeline window opens without error when there is no target (PIN461.48);
          1.21.15 = outages are striped on the timeline, so they differ from slowdowns by more than a colour (PIN461.50);
-         1.21.16 = the timeline chart takes the focus and tells a screen reader its summary and incidents (PIN461.51). -->
-    <Version>1.21.16</Version>
+         1.21.16 = the timeline chart takes the focus and tells a screen reader its summary and incidents (PIN461.51);
+         1.21.17 = the timeline window follows the screen scaling and can be resized and maximized (PIN461.52). -->
+    <Version>1.21.17</Version>
   </PropertyGroup>
 
   <ItemGroup>
