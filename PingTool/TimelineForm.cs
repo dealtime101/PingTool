@@ -53,7 +53,11 @@ namespace PingTool
 
             foreach (var (x0, x1, kind) in shapes.Bands)
             {
-                using var band = new SolidBrush(kind == IncidentKind.Outage ? Color.FromArgb(70, 255, 99, 71) : Color.FromArgb(60, 255, 165, 0));
+                // Two codings, not one: an outage is HATCHED red, a slowdown is a plain orange tint. Red against orange at this opacity
+                // is almost the same for a red-green colour-blind eye; a stripe pattern is not.
+                using Brush band = kind == IncidentKind.Outage
+                    ? new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.WideUpwardDiagonal, Color.FromArgb(170, 255, 99, 71), Color.FromArgb(50, 255, 99, 71))
+                    : new SolidBrush(Color.FromArgb(60, 255, 165, 0));
                 g.FillRectangle(band, x0, 0, x1 - x0, plotH);
             }
 
@@ -132,7 +136,7 @@ namespace PingTool
 
             var note = new Label
             {
-                Text = "Each column is a slice of the session: grey = lowest to highest reply, green = average, red at the bottom = lost pings (stronger = more), tinted background = outage (red) or slowdown (orange).",
+                Text = "Each column is a slice of the session: grey = lowest to highest reply, green = average, red at the bottom = lost pings (stronger = more), striped red background = outage, plain orange tint = slowdown.",
                 ForeColor = Color.Silver, AutoSize = false, Location = new Point(10, 402), Size = new Size(640, 34),
             };
             var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(660, 408), Size = new Size(90, 28) };
