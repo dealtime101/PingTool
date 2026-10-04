@@ -1304,6 +1304,8 @@ namespace PingTool
             base.OnPaint(e);
             var g = e.Graphics;
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            // The labels are text like the rest of the window: ClearType, as the labels of the controls, not the grey smoothing GDI+ picks.
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
             long top = Math.Max(50, series.Count == 0 ? 0 : series.Max(s => s.Samples.Count == 0 ? 0 : s.Samples.Max()));
             using var grey = new SolidBrush(palette.Text);

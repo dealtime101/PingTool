@@ -45,6 +45,7 @@ namespace PingTool
             }
 
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;   // like the labels of the controls
             var shapes = TimelineLayout.Build(data, incidents, plotW, plotH, networkEvents);
             float cell = Math.Max(1f, (float)plotW / data.Buckets.Count);
 
