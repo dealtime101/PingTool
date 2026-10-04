@@ -10,16 +10,13 @@ namespace PingTool
     // the recent pings and how many were lost - the same figures the eye reads off the drawing.
     internal static class GraphSummary
     {
-        public const int MaxTargets = 5;
-
         public static string Describe(IReadOnlyList<GraphSeries> series)
         {
             if (series.Count == 0) return "No data yet: start pinging.";
 
             var c = CultureInfo.CurrentCulture;
-            var parts = series.Take(MaxTargets).Select(s => One(s, c)).ToList();
-            string text = string.Join("; ", parts);
-            return series.Count > MaxTargets ? text + $"; and {(series.Count - MaxTargets).ToString(c)} more" : text;
+            // Every target, by its full name: a reader asks for this on purpose and cannot see which ones "and N more" would be.
+            return string.Join("; ", series.Select(s => One(s, c)));
         }
 
         private static string One(GraphSeries s, CultureInfo c)

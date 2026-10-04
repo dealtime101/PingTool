@@ -144,8 +144,9 @@
          1.21.66 = a new run no longer drops the pings an unwritable log folder still holds: the same log goes on, or the old one is retried on its own (PIN461.108);
          1.21.67 = the report states the settings and limits the run was started with, not the ones in the boxes after Stop (PIN461.109);
          1.21.68 = in compact mode Start asks what to do with a new address typed in the box, instead of ignoring it while the hidden list is monitored (PIN461.110);
-         1.21.69 = compared curves all look different (the pattern changes each time the colours come round), and the legend reaches every host: pages on click, a sample of each curve, the full name in a tooltip (PIN461.111). -->
-    <Version>1.21.69</Version>
+         1.21.69 = compared curves all look different (the pattern changes each time the colours come round), and the legend reaches every host: pages on click, a sample of each curve, the full name in a tooltip (PIN461.111);
+         1.21.70 = what a screen reader is told about the graph names every compared host, not the first five (PIN461.112). -->
+    <Version>1.21.70</Version>
   </PropertyGroup>
 
   <ItemGroup>
