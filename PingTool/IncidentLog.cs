@@ -206,6 +206,10 @@ namespace PingTool
             ? $"Cause: {CauseText(i, c)} ({i.FailedPings.ToString(c)} failed ping(s))"
             : $"Detail: {CauseText(i, c)}";
 
+        // What the route panel says when the list above it is empty (a blank panel under a blank list does not say that nothing went wrong
+        // rather than that something failed to load).
+        public const string NoIncidentDetail = "No incident was recorded in this run: no outage and no slowdown. Nothing failed to load; there is simply nothing to show here.";
+
         public string Summary(DateTimeOffset now)
         {
             if (incidents.Count == 0) return "No incident.";
