@@ -127,10 +127,13 @@ namespace PingTool
         // (label, reason) once a webhook has given up on an alert. Raised from a background thread.
         public event Action<string, string>? Failed;
 
+        private readonly TimeSpan closeGrace;
+
         public WebhookSender(IEnumerable<Uri> urls, string version, HttpMessageHandler? handler = null,
-                             TimeSpan[]? retryDelays = null, TimeSpan? timeout = null)
+                             TimeSpan[]? retryDelays = null, TimeSpan? timeout = null, TimeSpan? closeGrace = null)
         {
             this.version = version;
+            this.closeGrace = closeGrace ?? DefaultCloseGrace;
             this.timeout = timeout ?? DefaultTimeout;
             this.retryDelays = retryDelays ?? DefaultRetryDelays;
             // No redirects: a POST that is redirected is turned into a GET by some servers, and the alert would be lost silently.
@@ -254,10 +257,17 @@ namespace PingTool
             }
         }
 
+        // How long closing waits for the alerts still queued to be sent (a "down" raised just before the user quits is the one that
+        // matters), before what is left is cut short.
+        public static readonly TimeSpan DefaultCloseGrace = TimeSpan.FromSeconds(2);
+
         public void Dispose()
         {
-            stop.Cancel();
-            foreach (var target in targets) target.Queue.Writer.TryComplete();
+            foreach (var target in targets) target.Queue.Writer.TryComplete();   // no new alert; the workers send what is queued, then end
+            try { Task.WaitAll(workers.ToArray(), closeGrace); }
+            catch (AggregateException) { /* a worker that ended badly has nothing more to say */ }
+
+            stop.Cancel();   // only what the grace period did not finish
             try { Task.WaitAll(workers.ToArray(), TimeSpan.FromSeconds(1)); }
             catch (AggregateException) { /* workers end by cancellation */ }
             http.Dispose();
