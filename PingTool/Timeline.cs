@@ -129,7 +129,7 @@ namespace PingTool
                 string One(Incident i)
                 {
                     string start = i.Start.ToLocalTime().ToString("G", c);
-                    string length = IncidentLog.FormatDuration(i.Duration(d.To));
+                    string length = IncidentLog.FormatDuration(i.Duration(d.ObservedTo));   // not To: it may be widened for the drawing
                     string how = i.End is null ? Loc.T("timeline.ongoing", length) : length;
                     return i.Kind == IncidentKind.Outage ? Loc.T("timeline.outage", start, how) : Loc.T("timeline.slowdown", start, how);
                 }
