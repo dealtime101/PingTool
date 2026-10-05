@@ -322,8 +322,9 @@
          1.21.244 = the fatal-error handler writes the log first and guards every step after it: an exception whose Message throws, or a box that cannot be shown, no longer replaces the error being reported (PIN472.259);
          1.21.245 = with no incident, the route panel of the incident list says so instead of staying blank (PIN472.262);
          1.21.246 = a narrow column of the incident list grows to hold its title and the sort arrow when it is sorted (PIN472.263);
-         1.21.247 = the host of an IPv6 web address has no brackets, like the host of the same address with tcp:// (PIN472.264) -->
-    <Version>1.21.247</Version>
+         1.21.247 = the host of an IPv6 web address has no brackets, like the host of the same address with tcp:// (PIN472.264);
+         1.21.248 = a web address option written twice is reported as given twice, not as an unknown option (PIN472.265) -->
+    <Version>1.21.248</Version>
   </PropertyGroup>
 
   <ItemGroup>

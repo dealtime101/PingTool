@@ -182,6 +182,12 @@ namespace PingTool
                         return false;
                     }
                 }
+                else if (key is "contains" or "cert")
+                {
+                    // A known option, written a second time: not a typo to look for, the same one twice (and which one is kept is not a guess to make).
+                    error = $"#{key}= is given twice in the web address: use each option once, separated by & (#contains=text&cert=days).";
+                    return false;
+                }
                 else
                 {
                     error = "Unknown option after # in the web address: use #contains=text and/or #cert=days (separated by &), each once.";
