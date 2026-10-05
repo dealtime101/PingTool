@@ -53,7 +53,18 @@ namespace PingTool
         {
             if (!Table.TryGetValue(key, out var pair)) return key;   // a missing key shows itself: ugly, and found at once
             string text = Language == "fr" && pair.Fr.Length > 0 ? pair.Fr : pair.En;
-            return args.Length == 0 ? text : string.Format(CultureInfo.CurrentCulture, text, args);
+            if (args.Length == 0) return text;
+            try
+            {
+                return string.Format(CultureInfo.CurrentCulture, text, args);
+            }
+            catch (FormatException ex)
+            {
+                // A caller that gives fewer arguments than the sentence has places (or a sentence with a broken place) must not take the
+                // alert or the timeline down with it: the sentence as it is, with its key, shows the fault at once and stays readable.
+                System.Diagnostics.Debug.WriteLine($"Loc.T(\"{key}\"): {ex.Message}");
+                return text + " [" + key + "]";
+            }
         }
     }
 }
