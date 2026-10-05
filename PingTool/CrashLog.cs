@@ -41,8 +41,11 @@ namespace PingTool
             }
         }
 
-        // False when it could not be written (no folder, disk full...): the caller says so, nothing is thrown.
-        public static bool TryAppend(string path, string entry)
+        // False when it could not be written (no folder, disk full...): the caller says so, nothing is thrown. WHATEVER the cause: this is
+        // the last-resort handler, called from the code that handles what nobody else caught, and an exception leaving it (a
+        // SecurityException from a locked-down profile, a path the system refuses in a way not foreseen here) would replace the error
+        // that is being reported by another one and end the program. `write` is a seam for the tests: what appends the text.
+        public static bool TryAppend(string path, string entry, Action<string, string>? write = null)
         {
             try
             {
@@ -60,12 +63,12 @@ namespace PingTool
                         System.Diagnostics.Debug.WriteLine("crash.log could not be rotated: " + ex.Message);
                     }
 
-                    File.AppendAllText(path, entry, new UTF8Encoding(false));
+                    (write ?? ((p, text) => File.AppendAllText(p, text, new UTF8Encoding(false))))(path, entry);
                 }
 
                 return true;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+            catch (Exception)
             {
                 return false;
             }

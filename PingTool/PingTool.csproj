@@ -309,8 +309,9 @@
          1.21.231 = the network watch keeps a VPN adapter reported as a tunnel card: only Teredo, 6to4 and ISATAP pseudo-cards are left out (PIN472.221);
          1.21.232 = when no IPv4 card is left, the network watch says that, not "connection lost" (an IPv6 network may still be there) (PIN472.222);
          1.21.233 = the order of the graph samples (oldest first) is written where the series type is defined (PIN472.227);
-         1.21.234 = the incident list sort breaks every tie (kind, then the number of the incident), so two different incidents are never equal (PIN472.228) -->
-    <Version>1.21.234</Version>
+         1.21.234 = the incident list sort breaks every tie (kind, then the number of the incident), so two different incidents are never equal (PIN472.228);
+         1.21.235 = the crash log writer, the last-resort handler, lets no exception out whatever its type (a SecurityException included) (PIN472.229) -->
+    <Version>1.21.235</Version>
   </PropertyGroup>
 
   <ItemGroup>
