@@ -277,8 +277,9 @@
          1.21.199 = a hop whose probes disagree is decided by a rule, not by the order of the answers: the destination answering wins, then unreachable, then the first time exceeded (PIN472.145);
          1.21.200 = the path comparison calls a hop silent only when it timed out: an unreachable report without an address is said as such (PIN472.148);
          1.21.201 = a webhook retry waits at least the Retry-After of the receiver (seconds or date, at most 60 s) instead of using up its attempts inside the restriction (PIN472.152);
-         1.21.202 = the expected-text check of a web target reads the page in its own encoding (byte order mark, then the Content-Type charset, then UTF-8) (PIN472.154) -->
-    <Version>1.21.202</Version>
+         1.21.202 = the expected-text check of a web target reads the page in its own encoding (byte order mark, then the Content-Type charset, then UTF-8) (PIN472.154);
+         1.21.203 = the expected text is searched as the page arrives and the probe ends at the first read that brings it, instead of waiting for the end of a slow body (PIN472.155) -->
+    <Version>1.21.203</Version>
   </PropertyGroup>
 
   <ItemGroup>

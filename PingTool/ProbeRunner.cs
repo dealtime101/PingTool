@@ -156,8 +156,8 @@ namespace PingTool
                 if (code is >= 300 and < 400)
                     return new ProbeOutcome(-1, new PingFailure("Redirect", $"The server redirected (HTTP {code}) instead of serving the page with the expected text: a login page of a captive portal does this"), null);
 
-                var (body, truncated) = await ReadStart(response, deadline.Token);
-                if (!body.Contains(expected, StringComparison.OrdinalIgnoreCase))
+                var (found, truncated) = await ReadStart(response, expected, deadline.Token);
+                if (!found)
                     return new ProbeOutcome(-1, new PingFailure("Content", truncated
                         ? $"The text was not found in the first {MaxBodyBytes / 1024} KiB of the page, which is all that is searched; the page is longer, so the text may be further down"
                         : "The page answered but does not contain the expected text (a maintenance page, an error page or a captive portal)"), null);
@@ -168,16 +168,29 @@ namespace PingTool
             return new ProbeOutcome(rtt, null, null, Warning: warning);
         }
 
-        // The first MaxBodyBytes of the answer, read as UTF-8 (anything that is not text just does not match), and whether the page goes
-        // on beyond them: a text that is not found then may simply be further down, which the message must not call a maintenance page.
-        private static async Task<(string Text, bool Truncated)> ReadStart(HttpResponseMessage response, CancellationToken token)
+        private static async Task<(bool Found, bool Truncated)> ReadStart(HttpResponseMessage response, string expected, CancellationToken token)
         {
             await using var stream = await response.Content.ReadAsStreamAsync(token);
+            return await Search(stream, response.Content.Headers.ContentType?.CharSet, expected, token);
+        }
+
+        // Looks for `expected` in the first MaxBodyBytes of the stream, as the page arrives: it stops at the first read that brings the text
+        // (a page that has already said what we wait for and then sends the rest slowly must not turn into a timeout). What was read is
+        // decoded again whole after each read, so a text cut in two by two reads is found, at the price of a few decodings of 64 KiB.
+        // Truncated: the page goes on beyond the limit, and the text was not in what was read - "not found" then may simply mean
+        // "further down", which the message must not call a maintenance page.
+        internal static async Task<(bool Found, bool Truncated)> Search(Stream stream, string? charset, string expected, CancellationToken token)
+        {
             var buffer = new byte[MaxBodyBytes];
             int total = 0, read;
-            while (total < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(total), token)) > 0) total += read;
+            while (total < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(total), token)) > 0)
+            {
+                total += read;
+                if (Decode(buffer, total, charset).Contains(expected, StringComparison.OrdinalIgnoreCase)) return (true, false);
+            }
+
             bool more = total == buffer.Length && await stream.ReadAsync(new byte[1], token) > 0;
-            return (Decode(buffer, total, response.Content.Headers.ContentType?.CharSet), more);
+            return (false, more);
         }
 
         // The text of a page in the encoding it says it has: a byte order mark first (it is certain), then the charset of the
