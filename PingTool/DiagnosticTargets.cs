@@ -88,6 +88,29 @@ namespace PingTool
         internal static List<string> Discover(IEnumerable<Func<NicSnapshot>> readers, out bool gatewayFound, IPAddress? routedFrom = null) =>
             From(ReadCards(readers), out gatewayFound, routedFrom);
 
+        // Words of a card's description that say it is not a piece of hardware: the virtual switches of Hyper-V, VirtualBox, VMware and
+        // Docker, the tunnel adapters of VPNs, the pseudo-interfaces. Most of them declare the type "Ethernet", so the type alone lets them
+        // through. "Hyper-V" is NOT in the list on its own: "Microsoft Hyper-V Network Adapter" is the real card of a virtual machine.
+        private static readonly string[] VirtualWords =
+        {
+            "virtual", "vethernet", "tap-windows", "tap-win", "wintun", "wireguard", "openvpn", "nordlynx", "tailscale", "zerotier", "hamachi",
+            "docker", "vmnet", "vboxnet", "loopback", "pseudo", "npcap", "teredo", "isatap", "6to4", "miniport",
+        };
+
+        // Names the system gives its virtual interfaces (Linux and macOS: docker0, veth…, virbr0, br-…, tun0, tap0, wg0, utun0, lo).
+        // Long or distinctive prefixes: whatever follows (docker0, veth9a9ac9f, br-e4de740698dd, virbr0). Short ones: digits only
+        // (tun0, tap1, wg0, utun3, lo), so that "Tunnel to the office" and "lounge" are not taken for them.
+        private static readonly string[] VirtualNamePrefixes = { "docker", "veth", "virbr", "br-", "vmnet", "vboxnet" };
+        private static readonly string[] VirtualShortNames = { "tun", "tap", "wg", "utun", "lo" };
+
+        internal static bool LooksVirtual(string name, string description, NetworkInterfaceType type)
+        {
+            if (type is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel) return true;
+            if (VirtualWords.Any(w => description.Contains(w, StringComparison.OrdinalIgnoreCase) || name.Contains(w, StringComparison.OrdinalIgnoreCase))) return true;
+            return VirtualNamePrefixes.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                || VirtualShortNames.Any(p => name.StartsWith(p, StringComparison.OrdinalIgnoreCase) && name[p.Length..].All(char.IsDigit));
+        }
+
         private static List<Func<NicSnapshot>> CardReaders()
         {
             var readers = new List<Func<NicSnapshot>>();
@@ -102,7 +125,7 @@ namespace PingTool
                         return new NicSnapshot(
                             card.Name,
                             card.OperationalStatus == OperationalStatus.Up,
-                            card.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel,
+                            LooksVirtual(card.Name, card.Description, card.NetworkInterfaceType),
                             props.GatewayAddresses.Select(g => g.Address).ToList(),
                             props.DnsAddresses.ToList(),
                             props.UnicastAddresses.Select(u => u.Address).Where(a => a.AddressFamily == AddressFamily.InterNetwork).ToList());

@@ -249,8 +249,9 @@
          1.21.171 = on the comparison graph the loss tick of each host is at least one pixel long, so the losses of the 7th host and the following ones are drawn instead of vanishing (PIN472.110);
          1.21.172 = the recent figures under the graph (last pings, jitter, loss, voice quality) are worded in the display language like the rest, with the numbers still in the regional format (PIN472.112);
          1.21.173 = the diagnosis reads each network card on its own: one whose properties cannot be read is left out and the real card next to it is still used (PIN472.113);
-         1.21.174 = the diagnosis takes the gateway of the card the system routes the Internet through, found by asking the routing table, not simply the first card of the list (PIN472.114) -->
-    <Version>1.21.174</Version>
+         1.21.174 = the diagnosis takes the gateway of the card the system routes the Internet through, found by asking the routing table, not simply the first card of the list (PIN472.114);
+         1.21.175 = the diagnosis recognises virtual adapters (Hyper-V, VirtualBox, VMware, Docker, VPN tunnels) by their description and name, not only by their declared type (PIN472.115) -->
+    <Version>1.21.175</Version>
   </PropertyGroup>
 
   <ItemGroup>
