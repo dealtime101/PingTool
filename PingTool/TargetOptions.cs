@@ -15,7 +15,10 @@ namespace PingTool
         {
             if (o is null) return null;
 
-            string? label = o.Label?.Trim();
+            // The invisible FORMAT characters (a right-to-left override, a zero width space...) are taken out, as for the name of a profile
+            // (the joiners that hold an emoji together stay): a name that reads the other way round, or two names that look alike and are
+            // not, would make one target pass for another in the list, the alerts and the report.
+            string? label = o.Label is null ? null : ProfileBook.WithoutInvisibleFormat(o.Label).Trim();
             if (string.IsNullOrEmpty(label) || label.Any(char.IsControl)) label = null;
             else if (label.Length > MaxLabelLength) label = CutToUnits(label, MaxLabelLength).TrimEnd();
 
