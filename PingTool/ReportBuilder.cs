@@ -176,6 +176,10 @@ namespace PingTool
 
             h.AppendLine("<h2>Incidents</h2>");
             h.AppendLine(c, $"<p>{E(d.IncidentSummary)}</p>");
+            // The incidents of a log are found again from its pings, not read back: said where they are listed, so that they are not
+            // taken for the incidents the program showed at the time (other limits, another version of the detection may have been in use).
+            if (d.FromLogFile)
+                h.AppendLine("<p><small>These incidents were detected again from the pings of the log, with the default limits given above: the log does not record the limits that were in use, so they may differ from what was shown while it was recorded.</small></p>");
             if (d.Incidents.Count > 0)
             {
                 h.AppendLine("<table><tr><th>Target</th><th>Type</th><th>Start</th><th>End</th><th>Duration</th><th>Failed pings</th><th>Cause / detail</th><th>#</th></tr>");
