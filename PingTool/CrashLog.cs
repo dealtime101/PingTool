@@ -20,8 +20,25 @@ namespace PingTool
             var text = new StringBuilder();
             text.Append(time.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture))
                 .Append(" PingTool ").Append(version).Append(fatal ? " - FATAL" : " - continued").Append("\r\n")
-                .Append(exception?.ToString() ?? "(no exception object)").Append("\r\n\r\n");
+                .Append(Describe(exception)).Append("\r\n\r\n");
             return text.ToString();
+        }
+
+        // The text of the exception. This runs in the handler of last resort, where a throw is a trace lost: an exception whose own ToString,
+        // Message or StackTrace throws is described by its type (and what can still be read of it) instead of breaking the entry.
+        private static string Describe(object? exception)
+        {
+            if (exception is null) return "(no exception object)";
+            try
+            {
+                return exception.ToString() ?? "(no text)";
+            }
+            catch (Exception ex)
+            {
+                string type = exception.GetType().FullName ?? exception.GetType().Name;
+                string why = ex.GetType().FullName ?? ex.GetType().Name;
+                return $"{type} (its own text could not be read: {why})";
+            }
         }
 
         // False when it could not be written (no folder, disk full...): the caller says so, nothing is thrown.

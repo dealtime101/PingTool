@@ -262,8 +262,9 @@
          1.21.184 = the sentence a screen reader says about the graph agrees in number: "of the last 1 ping lost", not "of the last 1 pings lost" (PIN472.126);
          1.21.185 = the two real hours that share a clock hour when the clocks go back are kept apart in the figures; the report grid shows the worse of the two and says so, instead of averaging a bad hour away (PIN472.127);
          1.21.186 = sorting the incident list on its "Cause / detail" column orders the slowdowns by the figures the column shows, not as one block of empty texts (PIN472.128);
-         1.21.187 = a crash log that cannot be rotated (its old copy is locked) still gets the new entry, instead of losing the very error it was asked to keep (PIN472.129) -->
-    <Version>1.21.187</Version>
+         1.21.187 = a crash log that cannot be rotated (its old copy is locked) still gets the new entry, instead of losing the very error it was asked to keep (PIN472.129);
+         1.21.188 = a crash entry is written even for an exception whose own text throws: it falls back to its type (PIN472.130) -->
+    <Version>1.21.188</Version>
   </PropertyGroup>
 
   <ItemGroup>
