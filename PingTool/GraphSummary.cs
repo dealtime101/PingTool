@@ -56,7 +56,7 @@ namespace PingTool
                 var slice = list.Skip(from).Take(to - from).ToList();
                 var replies = slice.Where(v => v >= 0).ToList();
                 string avg = replies.Count == 0 ? Loc.T("graph.noreply") : Loc.T("graph.ms", replies.Average().ToString("0.#", c));
-                texts.Add(Loc.T("graph.trend.part", avg, (slice.Count - replies.Count).ToString(c)));
+                texts.Add(Loc.T("graph.trend.part", avg, Loc.Lost(slice.Count - replies.Count)));
             }
 
             return Loc.T("graph.trend", string.Join(" / ", texts));

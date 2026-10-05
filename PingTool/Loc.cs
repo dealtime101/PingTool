@@ -17,7 +17,12 @@ namespace PingTool
         internal static readonly IReadOnlyDictionary<string, (string En, string Fr)> Table = new Dictionary<string, (string, string)>
         {
             ["timeline.empty"] = ("No data yet: start pinging this host.", "Aucune donnée pour l'instant : lancez les pings sur cet hôte."),
-            ["timeline.summary"] = ("{0} to {1} ({2}) | {3} pings, {4} lost ({5}%)", "De {0} à {1} ({2}) | {3} pings, {4} perdu(s) ({5} %)"),
+            // {3} and {4} are phrases made with the count.* keys, which agree with the number (1 ping, 2 pings; French: 0 or 1 perdu, 2 perdus).
+            ["timeline.summary"] = ("{0} to {1} ({2}) | {3}, {4} ({5}%)", "De {0} à {1} ({2}) | {3}, {4} ({5} %)"),
+            ["count.ping.one"] = ("{0} ping", "{0} ping"),
+            ["count.ping.many"] = ("{0} pings", "{0} pings"),
+            ["count.lost.one"] = ("{0} lost", "{0} perdu"),
+            ["count.lost.many"] = ("{0} lost", "{0} perdus"),
             ["timeline.slowest"] = ("Highest average: {0} ms around {1}", "Moyenne la plus haute : {0} ms vers {1}"),
             ["timeline.lossiest"] = ("Most losses: {0}% of the pings ({1} of {2}) around {3}", "Le plus de pertes : {0} % des pings ({1} sur {2}) vers {3}"),
             ["timeline.peak"] = ("Highest reply: {0} ms, above the scale of the chart ({1} ms): those columns are cut at the top and marked.", "Réponse la plus haute : {0} ms, au-dessus de l'échelle du graphique ({1} ms) : ces colonnes sont coupées en haut et marquées."),
@@ -50,7 +55,7 @@ namespace PingTool
             ["graph.line.one"] = ("{0}: {1}{2}, {3} of the last {4} ping lost{5}", "{0} : {1}{2}, {3} perdu sur {4} ping{5}"),
             ["graph.line.many"] = ("{0}: {1}{2}, {3} of the last {4} pings lost{5}", "{0} : {1}{2}, {3} perdus sur les {4} derniers pings{5}"),
             ["graph.trend"] = ("; over the window, oldest first: {0}", " ; sur la fenêtre, du plus ancien au plus récent : {0}"),
-            ["graph.trend.part"] = ("{0} {1} lost", "{0}, {1} perdu(s)"),
+            ["graph.trend.part"] = ("{0} {1}", "{0}, {1}"),   // {1} is a count.lost phrase
             ["graph.noreply"] = ("no reply", "aucune réponse"),
             ["graph.ms"] = ("{0} ms", "{0} ms"),
             ["stats.waiting"] =("Last pings: waiting for data", "Derniers pings : en attente de données"),
@@ -70,6 +75,11 @@ namespace PingTool
             ["alert.degraded.noreply"] = ("{0} is degraded: {1:0.#}% loss, no reply in the last {2} pings", "{0} est dégradé : {1:0.#} % de perte, aucune réponse sur les {2} derniers pings"),
             ["alert.recovered"] = ("{0} is back to normal", "{0} est revenu à la normale"),
         };
+
+        // "1 ping" / "5 pings", "0 perdu" / "1 perdu" / "2 perdus": the count with the word that agrees with it (the rule of each language
+        // lives in the table: English has one form for "lost", French splits at 2).
+        internal static string Pings(long n) => T(n == 1 ? "count.ping.one" : "count.ping.many", n.ToString(CultureInfo.CurrentCulture));
+        internal static string Lost(long n) => T(n >= 2 ? "count.lost.many" : "count.lost.one", n.ToString(CultureInfo.CurrentCulture));
 
         // The text for a key in the current language, with its arguments formatted in the current regional format.
         public static string T(string key, params object[] args)

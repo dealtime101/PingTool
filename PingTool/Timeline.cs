@@ -179,7 +179,7 @@ namespace PingTool
             string num(double v) => v.ToString("0.#", c);
 
             string lines = Loc.T("timeline.summary",
-                when(d.From), when(d.ObservedTo), IncidentLog.FormatDuration(d.Observed), d.Sent, d.Lost, num(100.0 * d.Lost / d.Sent));
+                when(d.From), when(d.ObservedTo), IncidentLog.FormatDuration(d.Observed), Loc.Pings(d.Sent), Loc.Lost(d.Lost), num(100.0 * d.Lost / d.Sent));
 
             var slowest = d.Buckets.Where(b => b.AvgMs is not null).OrderByDescending(b => b.AvgMs).FirstOrDefault();
             if (slowest is not null)
