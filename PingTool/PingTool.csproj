@@ -266,8 +266,9 @@
          1.21.188 = a crash entry is written even for an exception whose own text throws: it falls back to its type (PIN472.130);
          1.21.189 = loading a profile gives its hosts only the names and limits that profile defines: a host it says nothing about goes back to the global limits, not to those of the profile loaded before (PIN472.131);
          1.21.190 = a webhook failure that arrives while the window is closing no longer risks an exception from a window handle that is gone: it goes through the same guarded call as the network signal (PIN472.132);
-         1.21.191 = the comparison graph puts the pings of every host on one time axis, so a host that stopped being measured ends where it stopped and a long silence breaks its line, instead of all the series being ended at "now" by rank (PIN472.133) -->
-    <Version>1.21.191</Version>
+         1.21.191 = the comparison graph puts the pings of every host on one time axis, so a host that stopped being measured ends where it stopped and a long silence breaks its line, instead of all the series being ended at "now" by rank (PIN472.133);
+         1.21.192 = an outage declared before the address of the host was known gets its route traced as soon as the address is there, once, instead of staying without one for good (PIN472.134) -->
+    <Version>1.21.192</Version>
   </PropertyGroup>
 
   <ItemGroup>

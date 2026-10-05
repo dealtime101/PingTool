@@ -64,12 +64,28 @@ namespace PingTool
             BaselinePath = null;
             BaselineRequested = false;
             baselineFailures = 0;
+            pendingCapture = null;
         }
 
         // The route to this host while it was healthy, to compare with the one at an outage.
         // Captured once per run, at the first reply.
         public PathCapture? BaselinePath { get; set; }
         public bool BaselineRequested { get; set; }
+
+        // An outage that was declared before the address of the host was known: the route cannot be traced without it, so the capture waits
+        // here and is started at the first ping after the address is there (TakePendingCapture). One at a time: a new outage replaces it.
+        private Incident? pendingCapture;
+
+        public void CaptureWhenAddressKnown(Incident outage) => pendingCapture = outage;
+
+        // The outage that was waiting for the address, if the address is known now and that outage is still going on (the route of an outage
+        // that is over says nothing about it); it is handed over once. null otherwise.
+        public Incident? TakePendingCapture()
+        {
+            if (pendingCapture is not { } waiting || Ip is null) return null;
+            pendingCapture = null;
+            return waiting.Ongoing ? waiting : null;
+        }
 
         public const int MaxBaselineTries = 3;
         private int baselineFailures;

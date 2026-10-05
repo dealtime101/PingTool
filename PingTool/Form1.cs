@@ -1084,8 +1084,20 @@ namespace PingTool
             // Where do the answers stop? Trace the route the moment an outage is declared, and once
             // while the host is healthy, so the two can be compared.
             var token = cts?.Token ?? CancellationToken.None;
+            // An outage declared before the address was known gets its route now that the address is there.
+            Incident? traced = null;
+            if (session.TakePendingCapture() is { } waiting)
+            {
+                StartPathCapture(session, waiting, token);
+                traced = waiting;
+            }
+
             if (change == HostChange.Down)
-                StartPathCapture(session, incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage && i.Ongoing), token);
+            {
+                // The same outage is never traced twice (it may be the one that was waiting for the address).
+                var current = incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage && i.Ongoing);
+                if (!ReferenceEquals(current, traced)) StartPathCapture(session, current, token);
+            }
             else if (ping >= 0 && !session.BaselineRequested)
                 StartPathCapture(session, null, token);
 
@@ -1155,7 +1167,13 @@ namespace PingTool
         // outage = the incident to attach the route to; null = the healthy baseline of the host.
         private void StartPathCapture(HostSession session, Incident? outage, CancellationToken token)
         {
-            if (session.Ip is not { } ip) return;   // no address yet: try again at the next reply
+            if (session.Ip is not { } ip)
+            {
+                // No address yet: an outage keeps its place in line and is traced at the first ping after the address is known (see
+                // UpdatePingUI); the baseline needs no waiting list, it is asked again at the next reply by itself.
+                if (outage is not null) session.CaptureWhenAddressKnown(outage);
+                return;
+            }
             if (outage is null) session.BaselineRequested = true;
             pathCaptures.Add(CapturePathAsync(session, ip, outage, token));
         }
