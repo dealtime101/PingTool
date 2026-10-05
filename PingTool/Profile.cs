@@ -85,6 +85,15 @@ namespace PingTool
         public static bool SameTargets(IEnumerable<string> current, Profile? saved) =>
             new HashSet<string>(current, TargetKey.Comparer).SetEquals(saved?.Hosts ?? new List<string>());
 
+        // The names and limits the window uses for the hosts of a profile that is being loaded: ONLY what that profile defines. The table is
+        // by address and shared by every profile, so the options an earlier profile left for the same host must go first, or a profile that
+        // says nothing about a host would keep running it with the name and the limits of another one (instead of the global limits).
+        public static void ApplyTargetOptions(Dictionary<string, TargetOptions> table, Profile profile)
+        {
+            foreach (var host in profile.Hosts) table.Remove(host);
+            foreach (var (address, options) in profile.TargetOptions) table[address] = options;
+        }
+
         public static Profile? Find(IEnumerable<Profile> book, string? name) =>
             book.FirstOrDefault(p => string.Equals(p.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase));
 

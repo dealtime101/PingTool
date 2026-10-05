@@ -633,8 +633,9 @@ namespace PingTool
             numSize.Value = Math.Clamp(profile.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             chkAlert.Checked = profile.Alert;
 
-            // The profile's names and limits for its hosts replace the ones of the same addresses (AddHost reads them).
-            foreach (var (address, options) in profile.TargetOptions) settings.TargetOptions[address] = options;
+            // The profile's names and limits for its hosts replace the ones of the same addresses (AddHost reads them), and a host it says
+            // nothing about goes back to the global limits, not to those of the profile that was loaded before.
+            ProfileBook.ApplyTargetOptions(settings.TargetOptions, profile);
 
             sessions.Clear();
             lstHosts.Items.Clear();
