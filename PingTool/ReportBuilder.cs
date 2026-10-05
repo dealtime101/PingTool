@@ -172,7 +172,7 @@ namespace PingTool
                 {
                     bool outage = i.Kind == IncidentKind.Outage;
                     string detail = outage ? i.Cause : $"{Availability.FormatLoss(i.LossPercent, c)}% loss, average {N(i.AvgMs)} ms";
-                    h.AppendLine(c, $"<tr><td>{E(i.Host)}</td><td>{(outage ? "Outage" : "Slowdown")}</td><td>{E(T(i.Start))}</td>"
+                    h.AppendLine(c, $"<tr><td>{(d.Hosts.FirstOrDefault(x => TargetKey.Same(x.Address, i.Host)) is { } named ? Who(named) : E(i.Host))}</td><td>{(outage ? "Outage" : "Slowdown")}</td><td>{E(T(i.Start))}</td>"
                         + $"<td>{(i.End is null ? "ongoing" : E(T(i.End.Value)))}</td><td>{E(IncidentLog.FormatDuration(i.Duration(end)))}</td>"
                         + $"<td class=\"n\">{(outage ? i.FailedPings.ToString(c) : "-")}</td><td>{E(detail)}</td><td class=\"n\">{i.Occurrence.ToString(c)}</td></tr>");
                 }

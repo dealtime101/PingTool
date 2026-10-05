@@ -189,8 +189,9 @@
          1.21.111 = the network changes of a session that crosses midnight are dated with the day as well as the time (PIN472.41);
          1.21.112 = a report rebuilt from log files says "not recorded" in the limits column of a host, since a log does not keep them, instead of "global limits" (PIN472.42);
          1.21.113 = each square of the loss-per-hour grid of the report also holds its figures as text, hidden on screen and read by a screen reader, not only a colour and a hover text (PIN472.43);
-         1.21.114 = a loss percentage in the report and the incident texts never reads 0 when pings were lost nor 100 when some were answered: "<0.1" and ">99.9" (PIN472.44). -->
-    <Version>1.21.114</Version>
+         1.21.114 = a loss percentage in the report and the incident texts never reads 0 when pings were lost nor 100 when some were answered: "<0.1" and ">99.9" (PIN472.44);
+         1.21.115 = the incident table of the report names a target as the other tables do, with the name the user gave it and its address (PIN472.46). -->
+    <Version>1.21.115</Version>
   </PropertyGroup>
 
   <ItemGroup>
