@@ -3,8 +3,10 @@ using System.Net.Sockets;
 
 namespace PingTool
 {
-    // A change of the PC's own network during a run (a Wi-Fi access point, a VPN, a cable unplugged, a wake from sleep),
-    // dated, so that a cut seen by the pings can be put next to what happened on this side.
+    // A change of the PC's own network during a run (a VPN, a cable unplugged, a wake from sleep, a Wi-Fi access point when it changes
+    // the address or the gateway), dated, so that a cut seen by the pings can be put next to what happened on this side. A move between
+    // two access points of the same network that keeps the address and the gateway is NOT seen: the SSID and the BSSID come from the
+    // native Wi-Fi interface of Windows, which is not read (PIN472.185, deferred).
     internal sealed record NetworkEvent(DateTimeOffset Time, string Text);
 
     // One network card that is up, as far as the events need it. Addresses = its IPv4 addresses, sorted, joined.
