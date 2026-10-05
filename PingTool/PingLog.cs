@@ -72,6 +72,12 @@ namespace PingTool
             e.RttMs?.ToString(CultureInfo.InvariantCulture) ?? "",
             Field(e.Detail));
 
+        // What gets a ' in front of it when written: a value that starts like a formula, and also a value that already starts with ' and
+        // would then start like a formula once that ' is taken off ("'=x" written as it is would be read back as "=x": the ' that belongs to
+        // the value would be taken for the one the writer added). Read back by PingLogReader.Unprotect with the same rule.
+        internal static bool NeedsProtection(string value) =>
+            StartsLikeFormula(value) || (value.Length > 1 && value[0] == '\'' && NeedsProtection(value[1..]));
+
         // A spreadsheet runs a field as a formula when it begins with = + - @, or with a tab or a CR.
         // Looking at the very first character is not enough: spaces, a no-break space, a line feed, a
         // zero-width space or a byte-order mark in front hide the formula character from a check on
@@ -93,7 +99,7 @@ namespace PingTool
         // run as a formula: the host is whatever the user typed.
         private static string Field(string value)
         {
-            if (StartsLikeFormula(value)) value = "'" + value;
+            if (NeedsProtection(value)) value = "'" + value;
             if (value.IndexOfAny(CsvSpecials) < 0) return value;
             return "\"" + value.Replace("\"", "\"\"") + "\"";
         }

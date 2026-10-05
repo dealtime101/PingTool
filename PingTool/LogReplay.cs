@@ -56,7 +56,7 @@ namespace PingTool
         // PingLog protects a field a spreadsheet would run as a formula by putting ' in front: take it off again,
         // but only when what follows would indeed have been protected (a host that really starts with ' keeps it).
         private static string Unprotect(string field) =>
-            field.Length > 1 && field[0] == '\'' && PingLog.StartsLikeFormula(field[1..]) ? field[1..] : field;
+            field.Length > 1 && field[0] == '\'' && PingLog.NeedsProtection(field[1..]) ? field[1..] : field;
 
         private static string Clip(string s) => s.Length <= 30 ? s : s[..30] + "...";
 
