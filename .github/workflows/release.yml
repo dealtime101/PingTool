@@ -110,7 +110,9 @@ jobs:
         run: |
           ver="$VER"
           sum=$(cut -d' ' -f1 "PingTool-$ver-win-x64.zip.sha256")
-          change=$(grep -F " $ver = " PingTool/PingTool.csproj | sed -E 's/^ *//; s/[;.]? *-?-?>? *$//; s/ *\(PIN[0-9.]+\)//' | head -1)
+          change=$(grep -F " $ver = " PingTool/PingTool.csproj \
+            | sed -E 's/^ *//; s/[;.]? *-?-?>? *$//; s/ *\(PIN[0-9.]+\)//' \
+            | head -1)
           {
             echo "**PingTool $ver**"
             [ -n "$change" ] && echo && echo "$change"
