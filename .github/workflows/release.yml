@@ -46,7 +46,8 @@ jobs:
       - name: Is there a release to make?
         id: v
         run: |
-          ver=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' PingTool/PingTool.csproj | head -1)
+          ver=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' \
+            PingTool/PingTool.csproj | head -1)
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
           if [ "$RECREATE" = "true" ] && gh release view "v$ver" >/dev/null 2>&1; then
             echo "Deleting the release v$ver (the tag stays) to publish it again."
