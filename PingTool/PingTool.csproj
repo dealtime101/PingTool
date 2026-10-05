@@ -214,8 +214,9 @@
          1.21.136 = a profiles file edited by hand is no longer refused for a comma after its last item or for comments (PIN472.71);
          1.21.137 = a complete last row of a log file that has no final line end (saved by an editor or a spreadsheet) is kept and given its line end, instead of being cut like a half row left by a crash (PIN472.72);
          1.21.138 = two PingTool windows logging the same host into the same file take turns, so neither cuts or overwrites the rows of the other (PIN472.73);
-         1.21.139 = the log files are written off the window's thread, one write at a time, so a network share that went away no longer freezes the window at every flush (PIN472.74) -->
-    <Version>1.21.139</Version>
+         1.21.139 = the log files are written off the window's thread, one write at a time, so a network share that went away no longer freezes the window at every flush (PIN472.74);
+         1.21.140 = the note about pings dropped from a blocked log folder names each gap separately, instead of one period that also covers what was written between two blockages (PIN472.75) -->
+    <Version>1.21.140</Version>
   </PropertyGroup>
 
   <ItemGroup>

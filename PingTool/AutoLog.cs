@@ -63,12 +63,31 @@ namespace PingTool
         // The pings that were thrown away because the folder stayed unwritable too long: how many, and the time they span. The log
         // would otherwise look complete with hours missing.
         public int Dropped { get; private set; }
-        public DateTimeOffset? DroppedFrom { get; private set; }
+        public DateTimeOffset? DroppedFrom { get; private set; }   // the first and the last ping dropped, whatever was written between
         public DateTimeOffset? DroppedTo { get; private set; }
 
+        // The gaps themselves: a folder blocked, repaired, blocked again leaves two, and what was written in between is on the disk. A drop
+        // that follows the previous one with nothing written between them goes on the same gap. Touched on the window's thread only.
+        private readonly List<(DateTimeOffset From, DateTimeOffset To)> gaps = new();
+        private volatile bool writtenSinceDrop;
+
+        public int Gaps => gaps.Count;
+
         // The sentence for the user; null when nothing was lost.
-        public string? DropNote => Dropped == 0 ? null : string.Create(CultureInfo.CurrentCulture,
-            $"{Dropped} ping(s) from {DroppedFrom?.ToLocalTime():G} to {DroppedTo?.ToLocalTime():G} could not be saved to the log files: the log folder was not writable for too long. The log has a gap there.");
+        public string? DropNote
+        {
+            get
+            {
+                if (Dropped == 0) return null;
+                string Span((DateTimeOffset From, DateTimeOffset To) g) => string.Create(CultureInfo.CurrentCulture, $"from {g.From.ToLocalTime():G} to {g.To.ToLocalTime():G}");
+                if (gaps.Count == 1)
+                    return $"{Dropped} ping(s) {Span(gaps[0])} could not be saved to the log files: the log folder was not writable for too long. The log has a gap there.";
+
+                // At most three are named; the rest is counted, so the sentence stays one a balloon can hold.
+                string named = string.Join("; ", gaps.Take(3).Select(Span)) + (gaps.Count > 3 ? $"; and {gaps.Count - 3} more" : "");
+                return $"{Dropped} ping(s) could not be saved to the log files: the log folder was not writable for too long. The log has {gaps.Count} gaps, {named}; what was written between them is in the files.";
+            }
+        }
 
         // On the window's thread: it is also the only one that writes Dropped, DroppedFrom and DroppedTo.
         public void Add(LogEntry entry)
@@ -81,6 +100,10 @@ namespace PingTool
 
                 DroppedFrom ??= pending[0].Time;
                 DroppedTo = pending[over - 1].Time;
+                // Same gap when nothing was written since the last drop; a new one when some pings reached the disk in between.
+                if (gaps.Count > 0 && !writtenSinceDrop) gaps[^1] = (gaps[^1].From, pending[over - 1].Time);
+                else gaps.Add((pending[0].Time, pending[over - 1].Time));
+                writtenSinceDrop = false;
                 Dropped += over;
                 pending.RemoveRange(0, over);
             }
@@ -287,6 +310,7 @@ namespace PingTool
 
             lock (queue)
             {
+                if (written.Count > 0) writtenSinceDrop = true;   // what is dropped after this is a new gap
                 pending.RemoveAll(written.Contains);
                 return pending.Count == 0;
             }
