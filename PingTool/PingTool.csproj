@@ -243,8 +243,9 @@
          1.21.165 = the log window follows the screen scaling and shows what it says in a box that scrolls, instead of a label of a fixed height that cut the end off (PIN472.102);
          1.21.166 = in French the incidents of the timeline are "panne le ..." and "ralentissement le ...", not "depuis", which read as still going on (PIN472.105);
          1.21.167 = the French summary of the timeline reads "De ... à ..." for its period, right for times as well as for dates, instead of "... au ..." (PIN472.106);
-         1.21.168 = a text with a wrong number of arguments no longer makes the alert or the timeline fail: the sentence is shown as it is, followed by its key (PIN472.107) -->
-    <Version>1.21.168</Version>
+         1.21.168 = a text with a wrong number of arguments no longer makes the alert or the timeline fail: the sentence is shown as it is, followed by its key (PIN472.107);
+         1.21.169 = a failure to read the network cards is no longer taken for the network going away: the reading is ignored and the last known state kept, so no false "connection lost" and "connected" pair is recorded (PIN472.108) -->
+    <Version>1.21.169</Version>
   </PropertyGroup>
 
   <ItemGroup>
