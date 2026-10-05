@@ -42,6 +42,11 @@ namespace PingTool
 
         public static string Build(ReportData d)
         {
+            // A report rebuilt from a log ends at its last ping: without that time it would end "now", with availabilities, durations and
+            // ongoing outages counted over time that is not in the log. Said, not guessed.
+            if (d.FromLogFile && d.PeriodEnd is null)
+                throw new ArgumentException("A report from a log file needs the end of its period (PeriodEnd): the time of the last ping of the log.", nameof(d));
+
             var c = CultureInfo.InvariantCulture;
             var h = new StringBuilder();
             string E(string s) => WebUtility.HtmlEncode(s);
