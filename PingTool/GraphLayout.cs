@@ -43,7 +43,12 @@ namespace PingTool
 
         // The newest ping is on the right edge; one ping = one column of width/(maxSamples-1).
         // 0 ms is the bottom line, `top` ms the top line.
-        public static GraphShapes Build(IReadOnlyCollection<long> samples, int width, int height, long top, int maxSamples)
+        // times/now/interval (all three, `times` as many as `samples`): the pings are placed by WHEN they were made, a ping that is k
+        // intervals old k columns left of the right edge, instead of by rank. Several hosts compared are then on one time axis (their
+        // probes do not take the same time, and one that stopped being measured ends where it stopped, not at "now"). A silence of more
+        // than two intervals between two pings of a host breaks its line; pings older than the graph are not drawn.
+        public static GraphShapes Build(IReadOnlyCollection<long> samples, int width, int height, long top, int maxSamples,
+            IReadOnlyCollection<DateTimeOffset>? times = null, DateTimeOffset? now = null, TimeSpan? interval = null)
         {
             var lines = new List<(GraphPoint, GraphPoint)>();
             var dots = new List<GraphPoint>();
@@ -54,12 +59,32 @@ namespace PingTool
             float x0 = width - 1 - (samples.Count - 1) * step;
             float Y(long v) => height - 1 - (height - 1f) * v / top;
 
+            bool byTime = times is not null && times.Count == samples.Count && now is not null && interval is { } iv && iv > TimeSpan.Zero;
+            var stamps = byTime ? times!.ToArray() : null;
+            var gap = byTime ? interval!.Value * 2.5 : TimeSpan.Zero;
+
             GraphPoint? prev = null;
             bool joined = false;   // has `prev` been joined by a line to the ping before it?
             int i = 0;
             foreach (var v in samples)
             {
-                float x = x0 + i++ * step;
+                int at = i++;
+                float x;
+                if (stamps is null) x = x0 + at * step;
+                else
+                {
+                    double age = Math.Max(0, (now!.Value - stamps[at]).TotalSeconds / interval!.Value.TotalSeconds);
+                    x = width - 1 - (float)(age * step);
+                    // A long silence before this ping (the host was not measured then): no line across it.
+                    if (prev is GraphPoint before && at > 0 && stamps[at] - stamps[at - 1] > gap)
+                    {
+                        if (!joined) dots.Add(before);
+                        prev = null;
+                    }
+
+                    if (x < 0) { prev = null; continue; }   // older than the graph
+                }
+
                 if (v < 0)
                 {
                     if (prev is GraphPoint alone && !joined) dots.Add(alone);

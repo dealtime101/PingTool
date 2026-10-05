@@ -31,6 +31,10 @@ namespace PingTool
             Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
         public Queue<long> History { get; } = new();
 
+        // When each ping of History was made, in the same order (always as many as History): what lets the comparison graph put the
+        // pings of several hosts on ONE time axis, and lets a host that stopped being measured end where it stopped.
+        public Queue<DateTimeOffset> HistoryTimes { get; } = new();
+
         // null until the first reply or timeout of the current run.
         public long? Last { get; private set; }
 
@@ -51,6 +55,7 @@ namespace PingTool
             Stats.Reset();
             Monitor.Reset();
             History.Clear();
+            HistoryTimes.Clear();
             Last = null;
             LastFailure = null;
             Notice = null;
@@ -108,7 +113,8 @@ namespace PingTool
             LastFailure = ping < 0 ? failure ?? PingFailure.Timeout : null;
             Stats.Add(ping, at);
             History.Enqueue(ping);
-            while (History.Count > HistorySize) History.Dequeue();
+            HistoryTimes.Enqueue(at ?? DateTimeOffset.Now);
+            while (History.Count > HistorySize) { History.Dequeue(); HistoryTimes.Dequeue(); }
         }
     }
 }

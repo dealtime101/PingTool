@@ -1321,7 +1321,14 @@ namespace PingTool
             if (closing) return;
             Text = AppVersion.Title(selected?.DisplayName);
             if (chkCompare.Checked)
-                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.DisplayName, HostPalette.ColorFor(i), s.History)).ToList());
+            {
+                // The right edge is "now" while the run goes on; once it is stopped it is the last ping made, so the picture does not slide
+                // away from what it holds. The interval is the one the run started with (the box can be changed after Stop).
+                var lastPing = sessions.Select(s => s.HistoryTimes.LastOrDefault()).DefaultIfEmpty().Max();
+                var edge = isRunning || lastPing == default ? DateTimeOffset.Now : lastPing;
+                var every = TimeSpan.FromMilliseconds(runSettings?.IntervalMs ?? (int)numInterval.Value);
+                graphLatency.ShowAll(sessions.Select((s, i) => new GraphSeries(s.DisplayName, HostPalette.ColorFor(i), s.History, s.HistoryTimes)).ToList(), edge, every);
+            }
             else
                 graphLatency.Show(selected?.History);
             RenderDiagnosis();
@@ -1486,6 +1493,8 @@ namespace PingTool
         private readonly ToolTip legendTip = new();
         private IReadOnlyList<GraphSeries> series = Array.Empty<GraphSeries>();
         private bool compare;
+        private DateTimeOffset timeNow;   // the instant of the right edge, in compare mode
+        private TimeSpan interval;        // the time between two pings of a run, in compare mode
         private GraphPalette palette = GraphPalette.For(SystemInformation.HighContrast);
         private static readonly System.Drawing.Drawing2D.DashStyle[] LinePatterns =
         {
@@ -1528,11 +1537,14 @@ namespace PingTool
             Invalidate();
         }
 
-        // Every host on one shared scale: all queues end at "now", so the columns line up in time.
-        public void ShowAll(IReadOnlyList<GraphSeries> all)
+        // Every host on one shared scale AND one time axis: each ping is where its time puts it (now = the right edge, a ping one interval old
+        // one column to the left), so a host that stopped being measured ends where it stopped and two hosts' pings of one moment line up.
+        public void ShowAll(IReadOnlyList<GraphSeries> all, DateTimeOffset now, TimeSpan interval)
         {
             compare = true;
             series = all;
+            timeNow = now;
+            this.interval = interval;
             legendRows = 0;   // see Show
             Invalidate();
         }
@@ -1558,7 +1570,9 @@ namespace PingTool
         private void DrawSeries(Graphics g, GraphSeries s, long top, int index)
         {
             // Where everything goes is computed by GraphLayout (and tested there); this only paints.
-            var shapes = GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples);
+            var shapes = compare
+                ? GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples, s.Times, timeNow, interval)   // compared hosts: one time axis
+                : GraphLayout.Build(s.Samples, Width, Height, top, MaxSamples);
 
             var color = palette.Series(index, s.Color);
             using var line = new Pen(color, 1.5f) { DashStyle = LinePatterns[palette.Dash(index)] };

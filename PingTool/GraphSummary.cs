@@ -4,7 +4,8 @@ using System.Globalization;
 namespace PingTool
 {
     // One line of the latency graph: a target, its colour and the last pings (negative = lost).
-    internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples);
+    // Times = when each sample was made (same order and count), when the graph should place the samples in time and not by rank.
+    internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples, IReadOnlyCollection<DateTimeOffset>? Times = null);
 
     // What a screen reader says about the graph, which is only a picture: for each target the last answer, the 95th percentile of
     // the recent pings and how many were lost - the same figures the eye reads off the drawing.
