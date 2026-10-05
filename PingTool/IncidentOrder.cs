@@ -33,7 +33,8 @@ namespace PingTool
         private static int FailedOf(Incident i) => i.Kind == IncidentKind.Outage ? i.FailedPings : -1;
 
         // What the "Cause / detail" column shows is the cause of an outage and the figures of a slowdown: sort on the same text.
-        private static string CauseOf(Incident i) => i.Kind == IncidentKind.Outage ? i.Cause : "";
+        // (the text of the shared formatter the list itself uses, not a copy of it: the two cannot drift apart)
+        private static string CauseOf(Incident i) => IncidentLog.CauseText(i, System.Globalization.CultureInfo.CurrentCulture);
 
         // The keyboard way to the same sort (a column header takes no focus, so a click is out of reach without a mouse): Ctrl+1 is the
         // first column, Ctrl+2 the second... digit is the number on the key, 1 to 9. null when there is no such column.

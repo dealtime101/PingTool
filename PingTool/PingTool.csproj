@@ -260,8 +260,9 @@
          1.21.182 = a target name that is too long is cut between characters, never through an emoji or between a letter and its accent (PIN472.123);
          1.21.183 = the own down limit of a target is written with its unit in the report, "down after 2 failed pings in a row", not "down after 2" (PIN472.125);
          1.21.184 = the sentence a screen reader says about the graph agrees in number: "of the last 1 ping lost", not "of the last 1 pings lost" (PIN472.126);
-         1.21.185 = the two real hours that share a clock hour when the clocks go back are kept apart in the figures; the report grid shows the worse of the two and says so, instead of averaging a bad hour away (PIN472.127) -->
-    <Version>1.21.185</Version>
+         1.21.185 = the two real hours that share a clock hour when the clocks go back are kept apart in the figures; the report grid shows the worse of the two and says so, instead of averaging a bad hour away (PIN472.127);
+         1.21.186 = sorting the incident list on its "Cause / detail" column orders the slowdowns by the figures the column shows, not as one block of empty texts (PIN472.128) -->
+    <Version>1.21.186</Version>
   </PropertyGroup>
 
   <ItemGroup>
