@@ -148,8 +148,8 @@ namespace PingTool
         private readonly string? droppedNote;
         private readonly IReadOnlyList<NetworkEvent> networkEvents;
         private readonly IReadOnlyList<Incident> incidents;
-        private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = "Target" };
-        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 246), AccessibleName = "Session timeline", Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
+        private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = Loc.T("timeline.target") };
+        private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 246), AccessibleName = Loc.T("timeline.chart"), Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
         // Room for six lines: the summary (up to four with the peak and the incidents), the network changes and, when the log let pings go, the note about it.
         private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 294), Size = new Size(740, 106), Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
 
@@ -167,7 +167,7 @@ namespace PingTool
             AutoScaleDimensions = new SizeF(96F, 96F);
             AutoScaleMode = AutoScaleMode.Dpi;
 
-            Text = "PingTool - Session timeline";
+            Text = Loc.T("timeline.title");
             ClientSize = new Size(760, 440);
             MinimumSize = SizeFromClientSize(new Size(560, 400));
             StartPosition = FormStartPosition.CenterParent;
@@ -179,11 +179,11 @@ namespace PingTool
 
             var note = new Label
             {
-                Text = "Each column is a slice of the session: grey = lowest to highest reply, green = average, red at the bottom = lost pings (stronger = more), striped red background = outage, plain orange tint = slowdown.",
+                Text = Loc.T("timeline.legend"),
                 ForeColor = Color.Silver, AutoSize = false, Location = new Point(10, 402), Size = new Size(640, 34),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
             };
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Location = new Point(660, 408), Size = new Size(90, 28), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            var close = new Button { Text = Loc.T("timeline.close"), DialogResult = DialogResult.Cancel, Location = new Point(660, 408), Size = new Size(90, 28), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;
 
             var list = hosts.ToArray();
