@@ -177,7 +177,31 @@ namespace PingTool
             int total = 0, read;
             while (total < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(total), token)) > 0) total += read;
             bool more = total == buffer.Length && await stream.ReadAsync(new byte[1], token) > 0;
-            return (Encoding.UTF8.GetString(buffer, 0, total), more);
+            return (Decode(buffer, total, response.Content.Headers.ContentType?.CharSet), more);
+        }
+
+        // The text of a page in the encoding it says it has: a byte order mark first (it is certain), then the charset of the
+        // Content-Type, and UTF-8 when there is neither or the name is not one this system knows. A page in ISO-8859-1 or UTF-16 read
+        // as UTF-8 would not contain an expected text with an accent, and a good answer would count as a failure.
+        internal static string Decode(byte[] buffer, int count, string? charset)
+        {
+            var bom = buffer.AsSpan(0, count);
+            if (bom.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF })) return Encoding.UTF8.GetString(buffer, 3, count - 3);
+            if (bom.StartsWith(new byte[] { 0xFF, 0xFE })) return Encoding.Unicode.GetString(buffer, 2, count - 2);
+            if (bom.StartsWith(new byte[] { 0xFE, 0xFF })) return Encoding.BigEndianUnicode.GetString(buffer, 2, count - 2);
+
+            Encoding encoding = Encoding.UTF8;
+            if (!string.IsNullOrWhiteSpace(charset))
+            {
+                try
+                {
+                    Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);   // windows-1252 and the other code pages (idempotent)
+                    encoding = Encoding.GetEncoding(charset.Trim().Trim('"', '\''));
+                }
+                catch (ArgumentException) { }   // a name we do not know: UTF-8, as before
+            }
+
+            return encoding.GetString(buffer, 0, count);
         }
 
         // Through the operating system's resolver, so its cache applies: a name looked up a moment
