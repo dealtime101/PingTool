@@ -71,7 +71,8 @@ namespace PingTool
                     inline = arg[(eq + 1)..];
                 }
 
-                // "--start=false" would switch the option ON: a switch is on when written, off when not.
+                // A switch takes no value, and "--start=false" is REFUSED (not read as "off"): accepted, it would be easy to take for
+                // "off" what the program reads as written, that is ON. A switch is on when written, off when left out.
                 if (inline is not null && name.ToLowerInvariant() is "--start" or "--minimized" or "--test-webhooks" or "--diagnose" or "--headless" or "--help")
                 {
                     message = $"{name} takes no value: write it to switch it on, leave it out to switch it off.";
