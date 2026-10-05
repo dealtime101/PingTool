@@ -7,8 +7,8 @@ namespace PingTool
         // The columns of IncidentsForm, in order.
         public const int Host = 0, Type = 1, Start = 2, End = 3, Duration = 4, Failed = 5, Cause = 6, Number = 7, Columns = 8;
 
-        // Negative when a goes before b in ASCENDING order of the column. Equal values: the most recent start first, then the host,
-        // so that the order is the same every time.
+        // Negative when a goes before b in ASCENDING order of the column. Equal values: the most recent start first, then the host, then
+        // the kind and the number of the incident, so that the order is the same every time.
         public static int Compare(Incident a, Incident b, int column, DateTimeOffset now)
         {
             int c = column switch
@@ -26,7 +26,12 @@ namespace PingTool
             if (c != 0) return c;
 
             c = b.Start.CompareTo(a.Start);
-            return c != 0 ? c : string.Compare(a.Host, b.Host, StringComparison.CurrentCultureIgnoreCase);
+            if (c == 0) c = string.Compare(a.Host, b.Host, StringComparison.CurrentCultureIgnoreCase);
+            // Same start on the same host (an outage and a slowdown noticed together, a host written in two cases): the kind, then the
+            // number of the incident of that kind, which is never twice the same for one host: two different incidents are never equal,
+            // so the sort (which does not keep the order it was given) puts them in the same order every time.
+            if (c == 0) c = a.Kind.CompareTo(b.Kind);
+            return c != 0 ? c : a.Occurrence.CompareTo(b.Occurrence);
         }
 
         // A slowdown has no failed pings: it counts as none, so it sorts below every outage.
