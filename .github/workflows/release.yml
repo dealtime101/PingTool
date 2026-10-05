@@ -78,8 +78,9 @@ jobs:
           ver="$VER"
           git checkout -q "v$ver"
           commit=$(git rev-parse --short HEAD)
-          dotnet publish PingTool/PingTool.csproj -c Release -r win-x64 --self-contained false \
-            -p:EnableWindowsTargeting=true -p:SourceRevisionId="$commit" -o out
+          dotnet publish PingTool/PingTool.csproj -c Release -r win-x64 \
+            --self-contained false -p:EnableWindowsTargeting=true \
+            -p:SourceRevisionId="$commit" -o out
           python3 - "$ver" "$(git show -s --format=%cI HEAD)" <<'EOF'
           import sys, zipfile, datetime
           ver, stamp = sys.argv[1:3]
