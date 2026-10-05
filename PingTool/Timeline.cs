@@ -200,7 +200,10 @@ namespace PingTool
             if (inRange.Count == 0) return null;
 
             var c = CultureInfo.CurrentCulture;
-            string text = string.Join("; ", inRange.Take(shown).Select(n => n.Time.ToLocalTime().ToString("t", c) + " " + n.Text));
+            // A session over midnight: "18:03" alone does not say which day, so the date comes with the time (as on the axis).
+            bool severalDays = from.ToLocalTime().Date != to.ToLocalTime().Date;
+            string format = severalDays ? MonthDay(c) + " " + c.DateTimeFormat.ShortTimePattern : "t";
+            string text = string.Join("; ", inRange.Take(shown).Select(n => n.Time.ToLocalTime().ToString(format, c) + " " + n.Text));
             return Loc.T("timeline.network") + text + (inRange.Count > shown ? Loc.T("timeline.more", inRange.Count - shown) : "");
         }
 
