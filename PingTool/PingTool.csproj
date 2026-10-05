@@ -305,8 +305,9 @@
          1.21.227 = an unexpected error that ends the ping run is no longer written to the debugger only: it reaches the window-thread handler (crash log and one box); a Stop stays silent (PIN472.199);
          1.21.228 = the left margin of the session timeline is measured again when the font or the DPI changes, not only at Show (PIN472.205);
          1.21.229 = the README and the code say what the automatic log really promises: a crash loses at most the last few seconds still in memory, not nothing (PIN472.209);
-         1.21.230 = the incident list fills the route panel for the incident it selects at opening, without waiting for a selection event (PIN472.213) -->
-    <Version>1.21.230</Version>
+         1.21.230 = the incident list fills the route panel for the incident it selects at opening, without waiting for a selection event (PIN472.213);
+         1.21.231 = the network watch keeps a VPN adapter reported as a tunnel card: only Teredo, 6to4 and ISATAP pseudo-cards are left out (PIN472.221) -->
+    <Version>1.21.231</Version>
   </PropertyGroup>
 
   <ItemGroup>

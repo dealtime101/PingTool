@@ -16,8 +16,8 @@ namespace PingTool
     {
         public const int MaxTextLength = 220;
 
-        // The cards that are up and have an IPv4 address (loopback and tunnel pseudo-cards left out: Teredo and 6to4 change
-        // for no reason that matters). The Wi-Fi name (SSID) is not read: Windows hands it out through a different interface,
+        // The cards that are up and have an IPv4 address (loopback and the tunnel pseudo-cards Teredo, 6to4 and ISATAP left out: they change
+        // for no reason that matters; a VPN adapter of type Tunnel is kept - see IsPseudoTunnel). The Wi-Fi name (SSID) is not read: Windows hands it out through a different interface,
         // and the card name already tells Wi-Fi from Ethernet and from a VPN adapter.
         // null when the cards could not be read (all of them or one: a list with a card missing would be read as that card being
         // unplugged). The caller keeps what it knew and ignores this reading; an EMPTY list means the PC really has no network.
@@ -58,13 +58,20 @@ namespace PingTool
             return (now, Describe(last, now));
         }
 
+        // The tunnel cards Windows makes by itself (Teredo, 6to4, ISATAP: they come and go for no reason that matters). Not every card of
+        // the type "Tunnel": a VPN adapter can be one, and its connecting, disconnecting or changing address is exactly what this watch is for.
+        internal static bool IsPseudoTunnel(NetworkInterfaceType type, string name, string description) =>
+            type == NetworkInterfaceType.Tunnel
+            && new[] { name, description }.Any(t => t.Contains("Teredo", StringComparison.OrdinalIgnoreCase)
+                || t.Contains("6to4", StringComparison.OrdinalIgnoreCase) || t.Contains("ISATAP", StringComparison.OrdinalIgnoreCase));
+
         private static List<NicState> ReadCards()
         {
             var states = new List<NicState>();
             foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (nic.OperationalStatus != OperationalStatus.Up) continue;
-                if (nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel) continue;
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Loopback || IsPseudoTunnel(nic.NetworkInterfaceType, nic.Name, nic.Description)) continue;
 
                 var props = nic.GetIPProperties();
                 var addresses = props.UnicastAddresses.Select(a => a.Address)
