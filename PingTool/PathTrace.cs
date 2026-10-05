@@ -200,10 +200,14 @@ namespace PingTool
                     }
                 }
 
-                var answered = replies.Where(x => x.Status != HopStatus.Timeout).ToList();
-                var reply = answered.Count == 0 ? replies[0] : answered[0];   // the first answer gives the status
+                // A real answer is a router (or the destination) that said something. A probe that could not be sent (Failed) is not one: it
+                // must not win over a router that did answer at this distance, nor take part in its best time. Failed is the status of the
+                // hop only when no probe got a real answer; silent when none got anything.
+                var answered = replies.Where(x => x.Status is not (HopStatus.Timeout or HopStatus.Failed)).ToList();
+                var reply = answered.Count > 0 ? answered[0]   // the first answer gives the status
+                    : replies.FirstOrDefault(x => x.Status == HopStatus.Failed) ?? replies[0];
                 var also = answered.Where(x => x.Address is not null).Select(x => x.Address!).Distinct().ToList();
-                long? best = answered.Count == 0 || reply.Status == HopStatus.Failed ? null : answered.Min(x => x.RttMs);
+                long? best = answered.Count == 0 ? null : answered.Min(x => x.RttMs);
                 hops.Add(new Hop(ttl, reply.Address, best, reply.Status, reply.Detail, also));
                 progress?.Invoke(hops);   // the hops known so far; the caller reads them before the next await
                 if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
