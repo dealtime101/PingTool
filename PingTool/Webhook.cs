@@ -174,7 +174,8 @@ namespace PingTool
                 await foreach (var e in target.Queue.Reader.ReadAllAsync(stop.Token))
                 {
                     var result = await DeliverAsync(target.Url, e, stop.Token);
-                    if (!result.Ok) RaiseFailed(result.Label, result.Detail);
+                    // A delivery cut short because the sender is being closed did not fail: the user quit, nothing is wrong with the receiver.
+                    if (!result.Ok && !stop.IsCancellationRequested) RaiseFailed(result.Label, result.Detail);
                 }
             }
             catch (OperationCanceledException)
