@@ -19,12 +19,13 @@ namespace PingTool
         public const int MaxDnsServers = 2;
 
         // Internet references that do not depend on the user's provider (anycast, run by large operators).
-        public static readonly string[] InternetReferences = { "1.1.1.1", "8.8.8.8", "dns://www.cloudflare.com", "https://www.cloudflare.com/" };
+        // A read-only view: `readonly` on an array only fixes the reference, the elements stay open to any code of the assembly.
+        public static readonly IReadOnlyList<string> InternetReferences = Array.AsReadOnly(new[] { "1.1.1.1", "8.8.8.8", "dns://www.cloudflare.com", "https://www.cloudflare.com/" });
 
         // The same, for a PC that has no IPv4 gateway but an IPv6 one (an IPv6-only connection): the two literal addresses are IPv6 ones
         // (they would only fail there, and a failure of those proves nothing about the connection), the name lookup and the web address are
         // the same, a name reaches whichever family there is.
-        public static readonly string[] InternetReferencesIPv6 = { "2606:4700:4700::1111", "2001:4860:4860::8888", "dns://www.cloudflare.com", "https://www.cloudflare.com/" };
+        public static readonly IReadOnlyList<string> InternetReferencesIPv6 = Array.AsReadOnly(new[] { "2606:4700:4700::1111", "2001:4860:4860::8888", "dns://www.cloudflare.com", "https://www.cloudflare.com/" });
 
         // The list of targets, local ones first, no duplicates. gatewayFound says whether the first one is a real gateway.
         public static List<string> From(IEnumerable<NicSnapshot> nics, out bool gatewayFound, IPAddress? routedFrom = null)
