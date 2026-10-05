@@ -242,7 +242,7 @@ namespace PingTool
             }
             catch
             {
-                // A failed save must not leave a half-written settings.json.tmp beside the real file.
+                // A failed save must not leave its half-written temp file (settings.json.<guid>.tmp) beside the real file.
                 try { File.Delete(temp); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
                 throw;
             }
