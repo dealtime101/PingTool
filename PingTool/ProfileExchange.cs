@@ -24,9 +24,10 @@ namespace PingTool
             Converters = { new LenientInt() },
         };
 
-        // A number in a file written by hand: "5" between quotes is 5, and 1e12 does not fit an int: it is pulled to the nearest
-        // int and ProfileBook.Sanitize brings it into the range of its setting (the promise of the comment above), instead of the
-        // JSON reader refusing the whole file. Anything that is not a number at all still fails, for that profile only.
+        // A number in a file written by hand: "5" between quotes is 5; a number with decimals loses them (CUT toward zero, not rounded:
+        // 1000.9 is 1000, -1.5 is -1); and 1e12 does not fit an int: it goes to the nearest int that fits (the largest or the smallest)
+        // and ProfileBook.Sanitize brings it into the range of its setting (the promise of the comment above), instead of the JSON
+        // reader refusing the whole file. Anything that is not a number at all still fails, for that profile only.
         private sealed class LenientInt : System.Text.Json.Serialization.JsonConverter<int>
         {
             public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
