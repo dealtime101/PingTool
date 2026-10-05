@@ -7,12 +7,11 @@ namespace PingTool
     internal sealed class LogViewerForm : Form
     {
         private readonly ReplayResult replay;
-        private readonly List<LogEntry> entries;
 
+        // `entries` is only read here, in the constructor and the handlers it creates (they capture the parameter): not a field.
         public LogViewerForm(ReplayResult replay, List<LogEntry> entries, string sources)
         {
             this.replay = replay;
-            this.entries = entries;
 
             // Positions and sizes below are written for 96 DPI: the form scales them to the screen (like the main window and the timeline
             // do), so that the text, which does grow with the scaling, keeps its room at 125 %, 150 % or 200 %.
