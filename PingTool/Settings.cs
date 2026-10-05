@@ -66,10 +66,10 @@ namespace PingTool
         public int DegradedLossPercent { get; set; } = 30;
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
-        // Named monitoring profiles (see Profile) and the one last used.
         // A readable name and limits of their own for some targets, by address (see TargetOptions).
         public Dictionary<string, TargetOptions> TargetOptions { get; set; } = new(TargetKey.Comparer);
 
+        // Named monitoring profiles (see Profile) and the one last used.
         public List<Profile> Profiles { get; set; } = new();
         public string ActiveProfile { get; set; } = "";
 
