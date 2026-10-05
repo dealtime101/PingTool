@@ -45,6 +45,11 @@ namespace PingTool
             Func<DateTimeOffset>? clock = null, CancellationToken stop = default)
         {
             clock ??= () => DateTimeOffset.Now;
+            // The same ceiling as the command line (30 days). Past it, or below zero, the timer of the run would throw its own raw
+            // "Parameter 'delay'" error: a clear message in the same family as the one for the targets instead.
+            if (duration < TimeSpan.Zero || duration > StartupOptions.MaxDuration)
+                throw new ArgumentException($"The duration must not be negative or longer than {(int)StartupOptions.MaxDuration.TotalDays} days.");
+
             var targets = new List<(string Address, ProbeTarget Target)>();
             foreach (string address in addresses.Distinct(TargetKey.Comparer))
             {
