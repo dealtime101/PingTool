@@ -39,7 +39,7 @@ jobs:
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
       RECREATE: ${{ inputs.recreate }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
           # The steps below only read the repository (checkout of the tag,
