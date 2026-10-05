@@ -18,29 +18,31 @@ namespace PingTool
             // been turned into a list of strings.
             using var rows = Rows(csv.TrimStart('﻿')).GetEnumerator();
 
-            if (!rows.MoveNext() || string.Join(",", rows.Current) != PingLog.CsvHeader)
+            if (!rows.MoveNext() || string.Join(",", rows.Current.Fields) != PingLog.CsvHeader)
             {
                 error = "This is not a PingTool log: the first line should be \"" + PingLog.CsvHeader + "\".";
                 return false;
             }
 
-            for (int i = 1; rows.MoveNext(); i++)
+            while (rows.MoveNext())
             {
-                var r = rows.Current;
+                // `line` is the line of the FILE where the record starts, as an editor numbers it (a field with a line break in it
+                // makes the records after it come later than their rank).
+                var (r, line) = rows.Current;
                 if (r.Count == 1 && r[0].Length == 0) continue;   // blank line
-                if (r.Count != 5) { error = $"Line {i + 1}: expected 5 fields, found {r.Count}."; return false; }
+                if (r.Count != 5) { error = $"Line {line}: expected 5 fields, found {r.Count}."; return false; }
                 if (!DateTimeOffset.TryParseExact(r[0], "yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
-                { error = $"Line {i + 1}: the date \"{Clip(r[0])}\" is not in the log format."; return false; }
+                { error = $"Line {line}: the date \"{Clip(r[0])}\" is not in the log format."; return false; }
 
                 long? rtt = null;
                 if (r[3].Length > 0)
                 {
                     if (!long.TryParse(r[3], NumberStyles.None, CultureInfo.InvariantCulture, out long ms))
-                    { error = $"Line {i + 1}: the round-trip time \"{Clip(r[3])}\" is not a number."; return false; }
+                    { error = $"Line {line}: the round-trip time \"{Clip(r[3])}\" is not a number."; return false; }
                     rtt = ms;
                 }
 
-                if (r[1].Length == 0 || r[2].Length == 0) { error = $"Line {i + 1}: the host or the status is empty."; return false; }
+                if (r[1].Length == 0 || r[2].Length == 0) { error = $"Line {line}: the host or the status is empty."; return false; }
                 if (entries.Count >= MaxEntries) { error = "This file has more than " + MaxEntries.ToString("N0", CultureInfo.CurrentCulture) + " lines: too many to be a PingTool log."; return false; }
                 entries.Add(new LogEntry(time, Unprotect(r[1]), Unprotect(r[2]), rtt, Unprotect(r[4])));
             }
@@ -58,15 +60,18 @@ namespace PingTool
 
         // RFC 4180: quoted fields may hold commas, quotes ("") and line breaks.
         // One row at a time, as the reader asks for it (a row is handed over as soon as its line ends).
-        private static IEnumerable<List<string>> Rows(string text)
+        // Each record comes with the line of the FILE where it starts (from 1, a CRLF or a lone CR or LF is one line break, inside a
+        // quoted field too): a record is not a line once a field holds a line break.
+        private static IEnumerable<(List<string> Fields, int Line)> Rows(string text)
         {
             var row = new List<string>();
             var field = new StringBuilder();
             bool quoted = false, wasQuoted = false;
-            List<string>? finished = null;
+            (List<string> Fields, int Line)? finished = null;
+            int line = 1, rowStart = 1;
 
             void EndField() { row.Add(field.ToString()); field.Clear(); wasQuoted = false; }
-            void EndRow() { EndField(); finished = row; row = new List<string>(); }
+            void EndRow() { EndField(); finished = (row, rowStart); row = new List<string>(); }
 
             for (int i = 0; i < text.Length; i++)
             {
@@ -78,21 +83,26 @@ namespace PingTool
                         if (i + 1 < text.Length && text[i + 1] == '"') { field.Append('"'); i++; }
                         else quoted = false;
                     }
-                    else field.Append(c);
+                    else
+                    {
+                        field.Append(c);
+                        // A line break held in a field: the physical line goes on although the record does not end.
+                        if (c == '\n' || (c == '\r' && !(i + 1 < text.Length && text[i + 1] == '\n'))) line++;
+                    }
                 }
                 else if (c == '"' && field.Length == 0 && !wasQuoted) { quoted = true; wasQuoted = true; }
                 else if (c == ',') EndField();
-                else if (c == '\r') { if (i + 1 < text.Length && text[i + 1] == '\n') i++; EndRow(); }
-                else if (c == '\n') EndRow();
+                else if (c == '\r') { if (i + 1 < text.Length && text[i + 1] == '\n') i++; EndRow(); line++; rowStart = line; }
+                else if (c == '\n') { EndRow(); line++; rowStart = line; }
                 else field.Append(c);
 
-                if (finished is not null) { yield return finished; finished = null; }
+                if (finished is { } done) { yield return done; finished = null; }
             }
 
             if (field.Length > 0 || row.Count > 0 || wasQuoted)   // last line without a line break
             {
                 EndRow();
-                yield return finished!;
+                yield return finished!.Value;
             }
         }
     }
