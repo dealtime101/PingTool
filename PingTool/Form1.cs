@@ -787,10 +787,13 @@ namespace PingTool
                 {
                     await Task.WhenAll(sessions.ToArray().Select(s => StartPinging(s, runCts.Token)));
                 }
-                catch (Exception ex)
+                catch (OperationCanceledException)
                 {
-                    Debug.WriteLine("ERROR in ping run: " + ex);
+                    // Stop: expected, nothing to say.
                 }
+                // Anything else is an error nobody foresaw: it is NOT swallowed here (it only went to the debugger, so the monitoring
+                // stopped with no word to the user). It leaves this handler once the finally below has put the screen back, reaches the
+                // window-thread handler of Program (written to the crash log, one box per run) and PingTool carries on.
                 finally
                 {
                     // The loops ended by themselves (every host failed), not through Stop: the run
