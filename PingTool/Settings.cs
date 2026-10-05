@@ -220,10 +220,13 @@ namespace PingTool
 
             // The load failed on a file that is there: what we would write is the defaults. A copy first, and without it no save at all
             // (the user's hosts and profiles stay in the original, whatever happens to this run).
-            if (mustKeepCopy && File.Exists(full))
+            // No File.Exists as the condition: it answers false when the permissions forbid even the check, for a file that is there.
+            // The copy is tried, and only a "not found" says there is nothing to keep.
+            if (mustKeepCopy)
             {
                 string copy = full + ".unread-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
                 try { File.Copy(full, copy, overwrite: true); }
+                catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     throw new IOException("The settings file could not be read when PingTool started and a copy of it could not be made: it was not replaced.", ex);
