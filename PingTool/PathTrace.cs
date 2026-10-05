@@ -194,8 +194,13 @@ namespace PingTool
                     {
                         // A probe that cannot even be sent is not a silent router: it is said so, and the trace stops (the next
                         // hops would fail the same way and each look like "nothing answers"). Trying again would not help.
-                        replies.Clear();
-                        replies.Add(new HopReply(HopStatus.Failed, null, 0, Why(ex)));
+                        // What an earlier probe of this hop already brought back is kept: one failing probe does not undo a router's answer.
+                        if (!replies.Any(x => x.Status is not (HopStatus.Timeout or HopStatus.Failed)))
+                        {
+                            replies.Clear();
+                            replies.Add(new HopReply(HopStatus.Failed, null, 0, Why(ex)));
+                        }
+
                         break;
                     }
                 }
