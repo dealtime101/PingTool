@@ -113,11 +113,14 @@ jobs:
           change=$(grep -F " $ver = " PingTool/PingTool.csproj \
             | sed -E 's/^ *//; s/[;.]? *-?-?>? *$//; s/ *\(PIN[0-9.]+\)//' \
             | head -1)
+          runtime="https://dotnet.microsoft.com/en-us/download/dotnet/10.0"
           {
             echo "**PingTool $ver**"
             [ -n "$change" ] && echo && echo "$change"
             echo
-            echo "Windows 10/11 (x64). Needs the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0). Unzip anywhere and run \`PingTool.exe\`."
+            echo "Windows 10/11 (x64). Needs the" \
+              "[.NET 10 Desktop Runtime]($runtime)." \
+              "Unzip anywhere and run \`PingTool.exe\`."
             echo
             echo "SHA-256 of the zip: \`$sum\`"
             echo
