@@ -157,6 +157,19 @@ namespace PingTool
             }
         }
 
+        // Nothing was measured for this host from `time` on (a log with a hole in it): the outage or slowdown that is open ends at the
+        // last ping that was, not at the first one after the hole, and what the host was doing is not carried over it.
+        public void CloseOpen(string host, DateTimeOffset time)
+        {
+            if (!tracks.TryGetValue(host, out var t)) return;
+            if (t.Outage is not null) { t.Outage.End = time; t.Outage = null; }
+            if (t.Slow is not null) { t.Slow.End = time; t.Slow = null; }
+            t.StreakStart = null;
+            t.StreakCount = 0;
+            t.StreakCauses.Clear();
+            t.AnsweredWhileDown = null;
+        }
+
         private Incident Open(Track t, string host, IncidentKind kind, DateTimeOffset start, double loss, double? avg)
         {
             var incident = new Incident

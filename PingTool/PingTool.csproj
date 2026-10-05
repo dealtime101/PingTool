@@ -234,8 +234,9 @@
          1.21.156 = the headless run checks its duration, no negative value and no more than 30 days, and refuses it with a clear message instead of the timer's raw out-of-range error (PIN472.92);
          1.21.157 = the diagnosis sentences about local and Internet targets agree in number: one local target is "the local target ... that local device", not "the local ones ... those local devices" (PIN472.93);
          1.21.158 = a log file is read row by row, so one that is too big, or that is not a log, is refused at the limit without first turning every row of it into strings (PIN472.94);
-         1.21.159 = the line number in the error of a log file is the line of the file as an editor numbers it, even after a field that holds a line break (PIN472.95) -->
-    <Version>1.21.159</Version>
+         1.21.159 = the line number in the error of a log file is the line of the file as an editor numbers it, even after a field that holds a line break (PIN472.95);
+         1.21.160 = replaying logs no longer chains pings separated by a long silence: the incident open before the hole ends at the last ping before it, and the monitor starts again after it (PIN472.96) -->
+    <Version>1.21.160</Version>
   </PropertyGroup>
 
   <ItemGroup>

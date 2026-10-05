@@ -119,10 +119,23 @@ namespace PingTool
             var ordered = entries.Select((e, i) => (e, i)).OrderBy(x => x.e.Time).ThenBy(x => x.i).Select(x => x.e).ToList();
             var sessions = new Dictionary<string, HostSession>(StringComparer.Ordinal);
             var incidents = new IncidentLog();
+            var gapOf = GapLimits(ordered);
+            var lastSeen = new Dictionary<string, DateTimeOffset>(StringComparer.Ordinal);
 
             foreach (var e in ordered)
             {
                 if (!sessions.TryGetValue(e.Host, out var session)) sessions[e.Host] = session = new HostSession(e.Host);
+
+                // A hole in the log (PingTool was closed, the PC slept, one file per day): the pings on either side of it are not
+                // consecutive. Live, the run would have ended; here the incident open at the last ping before the hole ends there, and
+                // the monitor starts again, instead of one incident that also counts the time when nothing was measured.
+                if (lastSeen.TryGetValue(e.Host, out var before) && e.Time - before > gapOf[e.Host])
+                {
+                    incidents.CloseOpen(e.Host, before);
+                    session.ApplyThresholds(HostMonitor.DefaultLatencyMs, HostMonitor.DefaultLossPercent, HostMonitor.DefaultDownAfter);
+                }
+
+                lastSeen[e.Host] = e.Time;
 
                 bool ok = e.Status == "OK" && e.RttMs is not null;
                 long ping = ok ? e.RttMs!.Value : -1;
@@ -133,6 +146,27 @@ namespace PingTool
             }
 
             return new ReplayResult(sessions, incidents, ordered[0].Time, ordered[^1].Time);
+        }
+
+        // The silence after which two pings of one host are no longer consecutive: ten times its usual interval (the median of the
+        // gaps between its pings), and never less than five minutes, so that a few missed pings are not a hole.
+        public static readonly TimeSpan MinGap = TimeSpan.FromMinutes(5);
+        public const int GapFactor = 10;
+
+        internal static Dictionary<string, TimeSpan> GapLimits(IReadOnlyList<LogEntry> ordered)
+        {
+            var limits = new Dictionary<string, TimeSpan>(StringComparer.Ordinal);
+            foreach (var host in ordered.GroupBy(e => e.Host, StringComparer.Ordinal))
+            {
+                var times = host.Select(e => e.Time).ToList();
+                var steps = new List<TimeSpan>(times.Count);
+                for (int i = 1; i < times.Count; i++) steps.Add(times[i] - times[i - 1]);
+                steps.Sort();
+                var usual = steps.Count == 0 ? TimeSpan.Zero : steps[steps.Count / 2];
+                limits[host.Key] = usual * GapFactor > MinGap ? usual * GapFactor : MinGap;
+            }
+
+            return limits;
         }
     }
 }
