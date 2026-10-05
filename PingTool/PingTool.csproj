@@ -326,8 +326,9 @@
          1.21.248 = a web address option written twice is reported as given twice, not as an unknown option (PIN472.265);
          1.21.249 = the unreachable catch around the unescaping of the expected text is removed, the behaviour for a bad percent sequence is written down (PIN472.266);
          1.21.250 = replaying no ping at all says so (an ArgumentException with the reason) instead of an index error (PIN472.271);
-         1.21.251 = the contract of HostSession.ApplyThresholds (only the monitor is replaced; a new run follows it with Reset) is written down (PIN472.278) -->
-    <Version>1.21.251</Version>
+         1.21.251 = the contract of HostSession.ApplyThresholds (only the monitor is replaced; a new run follows it with Reset) is written down (PIN472.278);
+         1.21.252 = a ping above the scale of the graph is drawn at its top edge, not out of the graph (PIN472.284) -->
+    <Version>1.21.252</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -74,7 +74,9 @@ namespace PingTool
             top = Math.Max(1, top);   // Y divides by it: 0 gave NaN and infinity (the form passes at least 50, but this is public)
             float step = (width - 1f) / Math.Max(1, maxSamples - 1);
             float x0 = width - 1 - (samples.Count - 1) * step;
-            float Y(long v) => height - 1 - (height - 1f) * v / top;
+            // A ping above the scale is drawn at the top edge (the window takes the highest ping as the scale, so it never happens there;
+            // a caller with a fixed or lowered scale would otherwise get a negative Y, a point drawn out of the graph).
+            float Y(long v) => height - 1 - (height - 1f) * Math.Min(v, top) / top;
 
             bool byTime = times is not null && times.Count == samples.Count && now is not null && interval is { } iv && iv > TimeSpan.Zero;
             var stamps = byTime ? times!.ToArray() : null;
