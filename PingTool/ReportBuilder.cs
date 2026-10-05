@@ -91,7 +91,7 @@ namespace PingTool
                     string Dur(TimeSpan? t) => t is null ? "-" : IncidentLog.FormatDuration(t.Value);
                     h.AppendLine(c, $"<tr><td>{Who(x)}</td><td class=\"n\">{(row.AvailabilityPercent is null ? "-" : Pct(row.AvailabilityPercent.Value) + " %")}</td>"
                         + $"<td class=\"n\">{row.Outages.ToString(c)}</td><td class=\"n\">{E(Dur(row.TotalDown))}</td><td class=\"n\">{E(Dur(row.Mean))}</td><td class=\"n\">{E(Dur(row.Longest))}</td>"
-                        + $"<td class=\"n\">{(x.LossPercent is null ? "-" : N(x.LossPercent) + " %")}</td></tr>");
+                        + $"<td class=\"n\">{(x.LossPercent is null ? "-" : E(Availability.FormatLoss(x.LossPercent.Value, c)) + " %")}</td></tr>");
                 }
 
                 h.AppendLine("</table>");
@@ -112,7 +112,7 @@ namespace PingTool
             {
                 string state = x.State switch { HostState.Down => "<td class=\"down\">Down</td>", HostState.Degraded => "<td class=\"deg\">Degraded</td>", _ => "<td>Up</td>" };
                 h.AppendLine(c, $"<tr><td>{Who(x)}</td><td>{E(x.IpText)}</td>{state}<td class=\"n\">{x.Sent.ToString(c)}</td><td class=\"n\">{x.Lost.ToString(c)}</td>"
-                    + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? (d.FromLogFile ? "not recorded" : "global limits"))}</td></tr>");   // a log does not record the limits: do not claim the global ones
+                    + $"<td class=\"n\">{(x.LossPercent is null ? "-" : E(Availability.FormatLoss(x.LossPercent.Value, c)))}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? (d.FromLogFile ? "not recorded" : "global limits"))}</td></tr>");   // a log does not record the limits: do not claim the global ones
             }
             h.AppendLine("</table>");
 
@@ -171,7 +171,7 @@ namespace PingTool
                 foreach (var i in d.Incidents)
                 {
                     bool outage = i.Kind == IncidentKind.Outage;
-                    string detail = outage ? i.Cause : $"{N(i.LossPercent)}% loss, average {N(i.AvgMs)} ms";
+                    string detail = outage ? i.Cause : $"{Availability.FormatLoss(i.LossPercent, c)}% loss, average {N(i.AvgMs)} ms";
                     h.AppendLine(c, $"<tr><td>{E(i.Host)}</td><td>{(outage ? "Outage" : "Slowdown")}</td><td>{E(T(i.Start))}</td>"
                         + $"<td>{(i.End is null ? "ongoing" : E(T(i.End.Value)))}</td><td>{E(IncidentLog.FormatDuration(i.Duration(end)))}</td>"
                         + $"<td class=\"n\">{(outage ? i.FailedPings.ToString(c) : "-")}</td><td>{E(detail)}</td><td class=\"n\">{i.Occurrence.ToString(c)}</td></tr>");

@@ -32,6 +32,18 @@ namespace PingTool
 
         private static TimeSpan Clamp(TimeSpan t) => t < TimeSpan.Zero ? TimeSpan.Zero : t;
 
+        // A share of lost pings to one decimal, without ever saying more or less than is true: a real loss that rounds to 0 reads "<0.1"
+        // (not "0", which would call a lossy host clean), a loss below 100 that rounds to 100 reads ">99.9" (not "100").
+        public static string FormatLoss(double percent, IFormatProvider culture)
+        {
+            if (percent <= 0) return "0";
+            if (percent >= 100) return "100";
+            double rounded = Math.Round(percent, 1, MidpointRounding.AwayFromZero);
+            if (rounded <= 0) return "<0.1";
+            if (rounded >= 100) return ">99.9";
+            return rounded.ToString("0.#", culture);
+        }
+
         // The colour class of one cell of the hour-by-day grid: none = no ping that hour, then by the share of lost pings.
         public static string LossClass(HourCell? cell) => cell is null || cell.Sent == 0 ? "hn"
             : cell.Lost == 0 ? "h0"
@@ -63,6 +75,6 @@ namespace PingTool
         public static string Title(DateTime day, int hour, HourCell? cell) =>
             cell is null || cell.Sent == 0
                 ? string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - no ping")
-                : string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - {cell.LossPercent:0.#}% lost ({cell.Lost} of {cell.Sent})");
+                : string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - {FormatLoss(cell.LossPercent, CultureInfo.InvariantCulture)}% lost ({cell.Lost} of {cell.Sent})");
     }
 }
