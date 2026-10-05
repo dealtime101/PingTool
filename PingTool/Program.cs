@@ -64,12 +64,24 @@ namespace PingTool
         // The process is going down (an exception nobody caught on another thread): write what is known, say so where someone can read it.
         private static void OnFatal(object? exception)
         {
-            string entry = CrashLog.Entry(exception, DateTimeOffset.Now, AppVersion.Display, fatal: true);
-            bool saved = CrashLog.TryAppend(CrashLog.DefaultPath, entry);
-            string what = exception is Exception ex ? ex.GetType().Name + ": " + ex.Message : "unknown error";
+            // The log first (the one thing that must not be lost), then what is said to the user: nothing in this method may throw, an
+            // exception here would replace the error being reported by another one, and the log of it would not exist.
+            bool saved = false;
+            try { saved = CrashLog.TryAppend(CrashLog.DefaultPath, CrashLog.Entry(exception, DateTimeOffset.Now, AppVersion.Display, fatal: true)); }
+            catch (Exception) { }
+
+            string what = CrashLog.Summary(exception);
             string where = saved ? "Details: " + CrashLog.DefaultPath : "The details could not be saved.";
-            if (guiStarted) MessageBox.Show("PingTool hit an unexpected error and must close.\r\n\r\n" + what + "\r\n\r\n" + where, "PingTool - unexpected error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            else Console.Error.WriteLine("Unexpected error: " + what + ". " + where);
+            try
+            {
+                if (guiStarted) MessageBox.Show("PingTool hit an unexpected error and must close.\r\n\r\n" + what + "\r\n\r\n" + where, "PingTool - unexpected error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                else Console.Error.WriteLine("Unexpected error: " + what + ". " + where);
+            }
+            catch (Exception)
+            {
+                // The box could not be shown (no desktop to show it on, a thread that cannot pump messages): the line goes to the error output.
+                try { Console.Error.WriteLine("Unexpected error: " + what + ". " + where); } catch (Exception) { }
+            }
         }
 
         // Every error is written to the log; the box is shown once per run (a loop failing every second must not bury the window in boxes).
@@ -79,7 +91,7 @@ namespace PingTool
             if (windowErrorShown) return;
             windowErrorShown = true;
             MessageBox.Show("PingTool hit an unexpected error and carries on; the monitoring may be incomplete. Later errors of this kind are only logged.\r\n\r\n"
-                + exception.GetType().Name + ": " + exception.Message + "\r\n\r\n"
+                + CrashLog.Summary(exception) + "\r\n\r\n"
                 + (saved ? "Details: " + CrashLog.DefaultPath : "The details could not be saved."),
                 "PingTool - unexpected error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }

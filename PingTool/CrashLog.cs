@@ -24,6 +24,22 @@ namespace PingTool
             return text.ToString();
         }
 
+        // "TypeName: message" for a box or a console line; the type alone when the message cannot be read (a Message that throws), and a
+        // fixed word when there is no exception object. Never throws: it is called while the program is going down.
+        public static string Summary(object? exception)
+        {
+            if (exception is not Exception ex) return exception is null ? "unknown error" : "unknown error (" + exception.GetType().Name + ")";
+            string type = ex.GetType().Name;
+            try
+            {
+                return type + ": " + ex.Message;
+            }
+            catch (Exception)
+            {
+                return type + " (its message could not be read)";
+            }
+        }
+
         // The text of the exception. This runs in the handler of last resort, where a throw is a trace lost: an exception whose own ToString,
         // Message or StackTrace throws is described by its type (and what can still be read of it) instead of breaking the entry.
         private static string Describe(object? exception)
