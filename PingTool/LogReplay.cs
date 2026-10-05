@@ -108,7 +108,8 @@ namespace PingTool
     }
 
     // What a replay gives back: one session per host (statistics, last 180 pings, state), the incidents, the period.
-    internal sealed record ReplayResult(Dictionary<string, HostSession> Sessions, IncidentLog Incidents, DateTimeOffset From, DateTimeOffset To);
+    // DuplicatesRemoved = identical pings that were present more than once in what was loaded and counted once.
+    internal sealed record ReplayResult(Dictionary<string, HostSession> Sessions, IncidentLog Incidents, DateTimeOffset From, DateTimeOffset To, int DuplicatesRemoved = 0);
 
     internal static class LogReplay
     {
@@ -116,7 +117,11 @@ namespace PingTool
         // of one instant keep the order of the file). The thresholds are the defaults: the log does not say which were used.
         public static ReplayResult Run(IReadOnlyCollection<LogEntry> entries)
         {
-            var ordered = entries.Select((e, i) => (e, i)).OrderBy(x => x.e.Time).ThenBy(x => x.i).Select(x => x.e).ToList();
+            var sorted = entries.Select((e, i) => (e, i)).OrderBy(x => x.e.Time).ThenBy(x => x.i).Select(x => x.e).ToList();
+            // The same ping twice (an export and the automatic log of the same night, the same file opened twice, files that overlap)
+            // is one ping: a LogEntry is a record, so "identical" is every field alike, the first kept. Counted, so it can be said.
+            var ordered = sorted.Distinct().ToList();
+            int duplicates = sorted.Count - ordered.Count;
             var sessions = new Dictionary<string, HostSession>(StringComparer.Ordinal);
             var incidents = new IncidentLog();
             var gapOf = GapLimits(ordered);
@@ -145,7 +150,7 @@ namespace PingTool
                 incidents.Observe(e.Time, e.Host, ping, session.LastFailure, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs);
             }
 
-            return new ReplayResult(sessions, incidents, ordered[0].Time, ordered[^1].Time);
+            return new ReplayResult(sessions, incidents, ordered[0].Time, ordered[^1].Time, duplicates);
         }
 
         // The silence after which two pings of one host are no longer consecutive: ten times its usual interval (the median of the
