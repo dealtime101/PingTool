@@ -251,8 +251,9 @@
          1.21.173 = the diagnosis reads each network card on its own: one whose properties cannot be read is left out and the real card next to it is still used (PIN472.113);
          1.21.174 = the diagnosis takes the gateway of the card the system routes the Internet through, found by asking the routing table, not simply the first card of the list (PIN472.114);
          1.21.175 = the diagnosis recognises virtual adapters (Hyper-V, VirtualBox, VMware, Docker, VPN tunnels) by their description and name, not only by their declared type (PIN472.115);
-         1.21.176 = when no real card has an IPv4 gateway, the diagnosis still tests the IPv4 DNS servers of the active real card, so a provider DNS fault can still be told from the rest (PIN472.116) -->
-    <Version>1.21.176</Version>
+         1.21.176 = when no real card has an IPv4 gateway, the diagnosis still tests the IPv4 DNS servers of the active real card, so a provider DNS fault can still be told from the rest (PIN472.116);
+         1.21.177 = the name-and-limits dialog says that the name changes at once and the limits apply from the next Start (PIN472.118) -->
+    <Version>1.21.177</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,7 +12,7 @@ namespace PingTool
         public TargetOptionsForm(string address, TargetOptions? current, int globalSlow, int globalLoss, int globalDown)
         {
             Text = "PingTool - Name and limits";
-            ClientSize = new Size(380, 232);
+            ClientSize = new Size(380, 264);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -36,8 +36,16 @@ namespace PingTool
                 Row(2, "Down after (failures)", Limits.DownAfter, current?.DownAfter, globalDown),
             };
 
-            var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(190, 192), Size = new Size(84, 28) };
-            var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(284, 192), Size = new Size(84, 28) };
+            // Said where the limits are, not only in the code: a limit changed during a run shows no change, and looks as if it was not saved.
+            Controls.Add(new Label
+            {
+                Text = "The name changes at once. The limits apply from the next Start: the run in progress keeps the ones it began with.",
+                ForeColor = Color.Silver, AutoSize = false, Location = new Point(12, 184), Size = new Size(356, 32),
+                AccessibleName = "When the limits apply",
+            });
+
+            var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, Location = new Point(190, 224), Size = new Size(84, 28) };
+            var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, Location = new Point(284, 224), Size = new Size(84, 28) };
             AcceptButton = ok;
             CancelButton = cancel;
             Controls.Add(ok);
