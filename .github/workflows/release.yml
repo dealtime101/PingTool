@@ -32,7 +32,8 @@ jobs:
     env:
       # The release is authored by whoever owns this token. With the secret
       # RELEASE_TOKEN (a fine-grained personal
-      # access token of the repository owner, "Contents: read and write", this repository only) it is that person;
+      # access token of the repository owner, "Contents: read and write", this
+      # repository only) it is that person;
       # without it, the built-in token is used and the author shown is github-actions[bot].
       GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
       RECREATE: ${{ inputs.recreate }}
