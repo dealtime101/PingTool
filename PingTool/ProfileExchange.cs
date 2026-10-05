@@ -144,8 +144,12 @@ namespace PingTool
             }
             catch (JsonException ex)
             {
-                // The file itself is not JSON: here the line and position are those of the file.
-                error = "This file is not valid JSON: " + ex.Message;
+                // The file itself is not JSON: here the line and position are those of the file. Said in our own words (the text of the
+                // exception is the library's, for a developer, and in the language of the runtime), with the place counted from 1 as an
+                // editor shows it (the library counts from 0, and the position in bytes: exact for plain text).
+                error = ex.LineNumber is long line && ex.BytePositionInLine is long position
+                    ? $"This file is not valid JSON: it breaks at line {(line + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}, position {(position + 1).ToString(System.Globalization.CultureInfo.InvariantCulture)}."
+                    : "This file is not valid JSON.";
                 return false;
             }
 
