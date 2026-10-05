@@ -33,9 +33,12 @@ namespace PingTool
         {
             if (!compare || count <= 1) return (height - 1, height - 1 - AlonePixels);
 
+            // The tick is as long as its band, so never less than one pixel: with 7 hosts or more the band is 1 and a tick from
+            // "bottom" to "bottom - 1 + 1" was a line from a point to itself, which the pen (flat ends) does not draw at all. The bands
+            // follow each other without a gap or an overlap (the top of one is the bottom of the next).
             int band = Math.Clamp(SharedPixels / count, 1, 4);
-            float bottom = height - 1 - index * band;
-            return (bottom, Math.Max(0, bottom - band + 1));
+            float bottom = Math.Max(0, height - 1 - index * band);
+            return (bottom, Math.Max(0, bottom - band));
         }
 
         // The newest ping is on the right edge; one ping = one column of width/(maxSamples-1).
