@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace PingTool
@@ -210,16 +211,22 @@ namespace PingTool
         }
 
         // "PingTool-8.8.8.8-2026-10-03.csv". The host is whatever the user typed (tcp://x:443,
-        // http://x/a?b): anything a file name cannot hold becomes "_".
+        // http://x/a?b): anything a file name cannot hold becomes "_", and a hash of the typed host ("-1a2b3c") is then added.
         public static string FileName(string host, DateTimeOffset time)
         {
             var name = new StringBuilder();
             foreach (char c in host.Trim())
                 name.Append(char.IsControl(c) || "\\/:*?\"<>|".Contains(c, StringComparison.Ordinal) ? '_' : c);
 
+            string typed = host.Trim();
             string safe = name.ToString().Trim('.', ' ');
             if (safe.Length > MaxNameLength) safe = safe[..MaxNameLength].TrimEnd('.', ' ');
             if (safe.Length == 0) safe = "host";
+
+            // A name that had to be changed (a character replaced, cut short) could be the same for another host ("x:1" and "x_1"):
+            // a short hash of what was typed keeps them apart. A name that is the host itself stays as it is, readable.
+            if (safe != typed)
+                safe += "-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(typed)), 0, 3).ToLowerInvariant();
 
             return "PingTool-" + safe + "-" + time.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".csv";
         }
@@ -379,8 +386,7 @@ namespace PingTool
             lock (queue) batch = pending.ToList();
             if (batch.Count == 0) return true;
 
-            // Distinct hosts differing only by what FileName replaces would share a file: that is
-            // fine, rows carry their host.
+            // Distinct hosts get distinct files (FileName adds a hash when it had to change the name); rows carry their host anyway.
             var written = new HashSet<LogEntry>(ReferenceEqualityComparer.Instance);
             // FileName once per host and day, not once per pending entry: with a stuck folder this runs every few seconds
             // over up to MaxPending entries.
