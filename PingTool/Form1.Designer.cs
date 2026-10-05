@@ -148,7 +148,7 @@
             //
             lblTimeout.AutoSize = true;
             lblTimeout.ForeColor = Color.White;
-            lblTimeout.Location = new Point(106, 367);
+            lblTimeout.Location = new Point(114, 367);
             lblTimeout.Name = "lblTimeout";
             lblTimeout.TabIndex = 10;
             lblTimeout.Text = "Timeout (ms)";
@@ -157,7 +157,7 @@
             //
             lblSize.AutoSize = true;
             lblSize.ForeColor = Color.White;
-            lblSize.Location = new Point(182, 367);
+            lblSize.Location = new Point(198, 367);
             lblSize.Name = "lblSize";
             lblSize.TabIndex = 12;
             lblSize.Text = "Size (bytes)";
@@ -179,7 +179,7 @@
             // numTimeout
             //
             numTimeout.Increment = new decimal(new int[] { 100, 0, 0, 0 });
-            numTimeout.Location = new Point(106, 385);
+            numTimeout.Location = new Point(114, 385);
             numTimeout.Maximum = new decimal(new int[] { 10000, 0, 0, 0 });
             numTimeout.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numTimeout.Name = "numTimeout";
@@ -190,7 +190,7 @@
             //
             // numSize
             //
-            numSize.Location = new Point(182, 385);
+            numSize.Location = new Point(198, 385);
             numSize.Maximum = new decimal(new int[] { 65500, 0, 0, 0 });
             numSize.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numSize.Name = "numSize";
