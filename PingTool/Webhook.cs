@@ -232,25 +232,39 @@ namespace PingTool
         {
             string label = WebhookPayload.Label(url);
             string last = "";
+            var wait = TimeSpan.Zero;
             for (int attempt = 0; attempt <= retryDelays.Length; attempt++)
             {
                 if (attempt > 0)
                 {
-                    try { await Task.Delay(retryDelays[attempt - 1], token); }
+                    // At least what the receiver asked for (Retry-After): a retry sent inside its restriction only uses up an attempt.
+                    try { await Task.Delay(retryDelays[attempt - 1] > wait ? retryDelays[attempt - 1] : wait, token); }
                     catch (OperationCanceledException) { return new WebhookResult(label, false, "cancelled"); }
                 }
 
-                var (ok, retry, detail) = await TryOnce(url, e, token);
+                var (ok, retry, detail, retryAfter) = await TryOnce(url, e, token);
                 if (ok) return new WebhookResult(label, true, detail);
                 last = detail;
+                wait = retryAfter ?? TimeSpan.Zero;
                 if (!retry || token.IsCancellationRequested) break;
             }
 
             return new WebhookResult(label, false, last);
         }
 
-        // ok, whether trying again could help, and what to tell.
-        private async Task<(bool Ok, bool Retry, string Detail)> TryOnce(Uri url, WebhookEvent e, CancellationToken token)
+        // The longest a Retry-After is obeyed: one webhook waits in its own worker, and a receiver that asks for an hour must not hold
+        // up (and fill) the queue behind it nor the closing of PingTool.
+        public static readonly TimeSpan MaxRetryAfter = TimeSpan.FromSeconds(60);
+
+        // Retry-After comes as a number of seconds or as a date; null when absent, unreadable or already past.
+        internal static TimeSpan? RetryAfterOf(System.Net.Http.Headers.RetryConditionHeaderValue? header, DateTimeOffset now)
+        {
+            var wait = header?.Delta ?? (header?.Date is { } at ? at - now : (TimeSpan?)null);
+            return wait is { } w && w > TimeSpan.Zero ? (w < MaxRetryAfter ? w : MaxRetryAfter) : null;
+        }
+
+        // ok, whether trying again could help, what to tell, and how long the receiver asked to wait.
+        private async Task<(bool Ok, bool Retry, string Detail, TimeSpan? RetryAfter)> TryOnce(Uri url, WebhookEvent e, CancellationToken token)
         {
             try
             {
@@ -259,31 +273,31 @@ namespace PingTool
                 limit.CancelAfter(timeout);
                 using var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, limit.Token);
                 int code = (int)response.StatusCode;
-                if (code is >= 200 and < 300) return (true, false, "HTTP " + code.ToString(CultureInfo.InvariantCulture));
+                if (code is >= 200 and < 300) return (true, false, "HTTP " + code.ToString(CultureInfo.InvariantCulture), null);
 
                 // A 4xx means the address or the request is wrong: trying again will not fix it (except too-many-requests
                 // and request-timeout); a 5xx is the receiver's trouble and may pass.
                 bool transient = code >= 500 || response.StatusCode is HttpStatusCode.TooManyRequests or HttpStatusCode.RequestTimeout;
-                return (false, transient, "HTTP " + code.ToString(CultureInfo.InvariantCulture));
+                return (false, transient, "HTTP " + code.ToString(CultureInfo.InvariantCulture), transient ? RetryAfterOf(response.Headers.RetryAfter, DateTimeOffset.UtcNow) : null);
             }
             catch (OperationCanceledException) when (!token.IsCancellationRequested)
             {
-                return (false, true, "no answer within " + timeout.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " s");
+                return (false, true, "no answer within " + timeout.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture) + " s", null);
             }
             catch (OperationCanceledException)
             {
-                return (false, false, "cancelled");
+                return (false, false, "cancelled", null);
             }
             catch (HttpRequestException ex)
             {
                 // The message of a connection error never contains the address' path, but keep it short anyway.
-                return (false, true, ex.InnerException?.Message ?? ex.Message);
+                return (false, true, ex.InnerException?.Message ?? ex.Message, null);
             }
             catch (Exception ex)
             {
                 // Whatever else goes wrong must end THIS delivery only: an exception escaping would silently end the
                 // worker, and every later alert to this webhook with it.
-                return (false, false, ex.GetType().Name + ": " + ex.Message);
+                return (false, false, ex.GetType().Name + ": " + ex.Message, null);
             }
         }
 

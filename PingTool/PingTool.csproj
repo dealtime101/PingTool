@@ -275,8 +275,9 @@
          1.21.197 = the report presents an outage that matches a change of the PC's network as a hint of a local cause, not as proof the provider is not at fault (PIN472.142);
          1.21.198 = the copy of a settings file that could not be read is tried without File.Exists as the condition (it says false when the permissions forbid the check): only "not found" means there is nothing to keep (PIN472.144);
          1.21.199 = a hop whose probes disagree is decided by a rule, not by the order of the answers: the destination answering wins, then unreachable, then the first time exceeded (PIN472.145);
-         1.21.200 = the path comparison calls a hop silent only when it timed out: an unreachable report without an address is said as such (PIN472.148) -->
-    <Version>1.21.200</Version>
+         1.21.200 = the path comparison calls a hop silent only when it timed out: an unreachable report without an address is said as such (PIN472.148);
+         1.21.201 = a webhook retry waits at least the Retry-After of the receiver (seconds or date, at most 60 s) instead of using up its attempts inside the restriction (PIN472.152) -->
+    <Version>1.21.201</Version>
   </PropertyGroup>
 
   <ItemGroup>
