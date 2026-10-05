@@ -20,6 +20,16 @@ namespace PingTool
     {
         public const int DiscordLimit = 2000;
 
+        // At most limit characters, "..." included. The cut never falls between the two halves of a character outside the basic plane
+        // (an emoji is a pair of UTF-16 units): a lone half would reach the receiver as an invalid character, or be refused.
+        internal static string Shorten(string text, int limit)
+        {
+            if (text.Length <= limit) return text;
+            int cut = Math.Max(0, limit - 3);
+            if (cut > 0 && char.IsHighSurrogate(text[cut - 1])) cut--;
+            return text[..cut] + "...";
+        }
+
         // Only http and https addresses with a host: nothing else is ever contacted.
         public static bool TryParseUrl(string? text, out Uri url)
         {
@@ -64,7 +74,7 @@ namespace PingTool
                     request.Content = Json(new { text = e.Text });
                     break;
                 case WebhookFormat.Discord:
-                    request.Content = Json(new { content = e.Text.Length <= DiscordLimit ? e.Text : e.Text[..(DiscordLimit - 3)] + "..." });
+                    request.Content = Json(new { content = Shorten(e.Text, DiscordLimit) });
                     break;
                 case WebhookFormat.Ntfy:
                     // ntfy takes the message as the body; its headers must be plain ASCII, so the host stays in the body.
