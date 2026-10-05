@@ -47,14 +47,23 @@ namespace PingTool
 
             // "Cause / detail" is the most informative column: it takes everything the others leave, now and whenever the list
             // is resized, instead of a width written for one window (a fixed 100 px cut every cause after a few letters).
+            bool fitting = false;
             void FitCause()
             {
-                int others = list.Columns.Cast<ColumnHeader>().Where(c => c != causeColumn).Sum(c => c.Width);
-                causeColumn.Width = ColumnFit.Fill(list.ClientSize.Width, SystemInformation.VerticalScrollBarWidth, others, W(120));
+                if (fitting) return;   // setting the width below raises ColumnWidthChanged again
+                fitting = true;
+                try
+                {
+                    int others = list.Columns.Cast<ColumnHeader>().Where(c => c != causeColumn).Sum(c => c.Width);
+                    causeColumn.Width = ColumnFit.Fill(list.ClientSize.Width, SystemInformation.VerticalScrollBarWidth, others, W(120));
+                }
+                finally { fitting = false; }
             }
 
             list.HandleCreated += (_, _) => FitCause();
             list.SizeChanged += (_, _) => FitCause();
+            // Another column dragged wider or narrower: what it takes or frees is the cause column's to take back (its own change is the one above).
+            list.ColumnWidthChanged += (_, e) => { if (e.ColumnIndex != causeColumn.Index) FitCause(); };
             FitCause();
 
             // A click on a header sorts by that column (again: the other way round), on the values and not on the text shown.

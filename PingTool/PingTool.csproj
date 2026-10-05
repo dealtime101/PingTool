@@ -283,8 +283,9 @@
          1.21.205 = the retired logs of earlier runs together hold at most 20 000 pings in memory: the oldest are given up, with a warning, instead of one more full log per run (PIN472.158);
          1.21.206 = the repair of a log cut by a crash follows the CSV quotes the first time a file is touched: a cut inside a field that holds a line feed goes back to the last complete row (PIN472.159);
          1.21.207 = closing the window waits for the log disk at most 3 s (AutoLog.FlushWithin), and starting a run no longer waits for it at all (PIN472.160);
-         1.21.208 = the webhook test (test-webhooks option) exits with 0 only when every webhook answered (and none was left out of settings.json), 2 otherwise (PIN472.163) -->
-    <Version>1.21.208</Version>
+         1.21.208 = the webhook test (test-webhooks option) exits with 0 only when every webhook answered (and none was left out of settings.json), 2 otherwise (PIN472.163);
+         1.21.209 = the Cause / detail column of the incident list refits when another column is resized, with a guard against its own change (PIN472.164) -->
+    <Version>1.21.209</Version>
   </PropertyGroup>
 
   <ItemGroup>
