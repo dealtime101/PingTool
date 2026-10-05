@@ -190,7 +190,8 @@ namespace PingTool
         private readonly IReadOnlyList<Incident> incidents;
         private readonly ComboBox hostBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(10, 10), Size = new Size(260, 23), AccessibleName = Loc.T("timeline.target") };
         private readonly TimelineChart chart = new() { Location = new Point(10, 42), Size = new Size(740, 246), AccessibleName = Loc.T("timeline.chart"), Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
-        // Room for six lines: the summary (up to four with the peak and the incidents), the network changes and, when the log let pings go, the note about it.
+        // The summary (up to four lines with the peak and the incidents, the network changes and, when the log let pings go, the note about it):
+        // this size is only where it starts, LayoutBottom gives it the height its text needs.
         private readonly Label summary = new() { ForeColor = Color.White, AutoSize = false, Location = new Point(10, 294), Size = new Size(740, 106), Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
 
         // droppedNote: what to say when the log has let its oldest pings go (null = nothing lost).
@@ -241,10 +242,19 @@ namespace PingTool
                 int width = Math.Max(100, close.Left - note.Left - Gap);   // from the left margin to the Close button
                 int noteHeight = note.GetPreferredSize(new Size(width, 0)).Height;
                 note.SetBounds(note.Left, ClientSize.Height - noteHeight - Gap, width, noteHeight);
-                summary.SetBounds(summary.Left, note.Top - summary.Height - Gap, ClientSize.Width - summary.Left - 10, summary.Height);
+
+                // The summary is as tall as its text needs at the width it has (up to six lines, more with a bigger font or a narrower
+                // window), but the chart keeps at least 60 px: a fixed 106 px cut the end off, or let the text run into the legend.
+                int summaryWidth = ClientSize.Width - summary.Left - 10;
+                int wanted = summary.GetPreferredSize(new Size(Math.Max(100, summaryWidth), 0)).Height;
+                int room = note.Top - chart.Top - 60 - 2 * Gap;
+                int summaryHeight = TimelineLayout.SummaryHeight(wanted, room, summary.Font.Height);
+                summary.SetBounds(summary.Left, note.Top - summaryHeight - Gap, summaryWidth, summaryHeight);
                 int chartHeight = Math.Max(60, summary.Top - chart.Top - Gap);
                 if (chart.Height != chartHeight) chart.Height = chartHeight;   // its SizeChanged redraws, once
             }
+
+            layoutBottom = LayoutBottom;   // Redraw puts a new text in the summary: its height follows
 
             note.Anchor = summary.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             chart.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -283,7 +293,10 @@ namespace PingTool
                 chart.Show(data, incidents, networkEvents);
                 string? network = data.IsEmpty ? null : Timeline.DescribeNetwork(networkEvents, data.From, data.To);
                 summary.Text = Timeline.Describe(data) + (network is null ? "" : "\n" + network) + (droppedNote is null ? "" : "\n" + droppedNote);
+                layoutBottom?.Invoke();
             }
         }
+
+        private Action? layoutBottom;
     }
 }

@@ -279,6 +279,11 @@ namespace PingTool
 
     internal static class TimelineLayout
     {
+        // The height of the summary under the chart: what its text needs (`wanted`), but no more than the room that leaves the chart its
+        // minimum (`room`), and never less than one line. A text that does not fit the room is the one case where it is cut: the chart
+        // is not squeezed away for it.
+        internal static int SummaryHeight(int wanted, int room, int lineHeight) => Math.Max(lineHeight, Math.Min(wanted, room));
+
         // Where a time label starts: centred under its mark, but held inside [leftEdge, rightEdge] so that the first and the last are
         // not cut by the edge of the control (the right margin is a few pixels, a label is tens). A label wider than the room starts at
         // the left edge.
