@@ -199,8 +199,9 @@
          1.21.121 = the title, the legend, the Close button and the accessible names of the timeline window follow the display language, as its axis and summary already did (PIN472.56);
          1.21.122 = the legend of the timeline also explains the dotted cyan line (network change of this PC) and the red-orange triangle (reply above the scale) (PIN472.57);
          1.21.123 = the legend of the timeline is as tall as its text needs at the width of the window, so a narrow window no longer cuts the end of it off (PIN472.58);
-         1.21.124 = resizing the timeline window goes through the log again only when the number of columns changes, not at every pixel of the drag (PIN472.59) -->
-    <Version>1.21.124</Version>
+         1.21.124 = resizing the timeline window goes through the log again only when the number of columns changes, not at every pixel of the drag (PIN472.59);
+         1.21.125 = the sizes drawn in the timeline (loss band, ticks, dots, triangles, line widths, label spacing) follow the screen scaling like its margins, instead of staying half as big at 200 % (PIN472.60) -->
+    <Version>1.21.125</Version>
   </PropertyGroup>
 
   <ItemGroup>

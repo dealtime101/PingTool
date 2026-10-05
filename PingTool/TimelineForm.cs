@@ -6,6 +6,8 @@ namespace PingTool
     {
         // Margins in pixels at 100 %, scaled to the screen like the text they hold.
         private int Px(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
+        // The same for the width of a line (1.5 at 100 %): a fraction of a pixel counts there.
+        private float PxF(float at100) => at100 * (DeviceDpi <= 0 ? DpiScale.BaseDpi : DeviceDpi) / DpiScale.BaseDpi;
         private int TopMargin => Px(6);
         private int BottomMargin => Px(24);
         private int RightMargin => Px(8);
@@ -71,7 +73,7 @@ namespace PingTool
             string? nothing = Timeline.NothingToDraw(data.IsEmpty, plotH);
             if (nothing is not null)
             {
-                g.DrawString(nothing, Font, grey, LeftMargin, TopMargin + 4);
+                g.DrawString(nothing, Font, grey, LeftMargin, TopMargin + Px(4));
                 return;
             }
 
@@ -93,7 +95,7 @@ namespace PingTool
             }
 
             // A change of this PC's own network (Wi-Fi, VPN, cable, wake from sleep): a cyan dotted line, to be read against the outages.
-            using var netPen = new Pen(Color.Cyan, 1.5f) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            using var netPen = new Pen(Color.Cyan, PxF(1.5f)) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
             foreach (float x in shapes.NetworkMarkers ?? Array.Empty<float>()) g.DrawLine(netPen, x, 0, x, plotH);
 
             using var barBrush = new SolidBrush(Color.FromArgb(90, 192, 192, 192));
@@ -104,40 +106,41 @@ namespace PingTool
             foreach (var (x, w, fraction) in shapes.LossCells)
             {
                 using var loss = new SolidBrush(Color.FromArgb((int)(70 + 185 * fraction), 255, 99, 71));
-                g.FillRectangle(loss, x, plotH - 8, w, 8);
+                g.FillRectangle(loss, x, plotH - Px(8), w, Px(8));
             }
 
-            using var avg = new Pen(Color.LimeGreen, 1.5f);
+            using var avg = new Pen(Color.LimeGreen, PxF(1.5f));
             using var dot = new SolidBrush(Color.LimeGreen);
+            float radius = PxF(2f);
             foreach (var run in shapes.AvgRuns)
             {
-                if (run.Count == 1) g.FillEllipse(dot, run[0].X - 2f, run[0].Y - 2f, 4f, 4f);
+                if (run.Count == 1) g.FillEllipse(dot, run[0].X - radius, run[0].Y - radius, 2 * radius, 2 * radius);
                 else g.DrawLines(avg, run.Select(p => new PointF(p.X, p.Y)).ToArray());
             }
 
             using var axis = new Pen(Color.FromArgb(120, 192, 192, 192));
             g.DrawLine(axis, 0, plotH, plotW, plotH);
             float labelsEnd = float.NegativeInfinity;   // where the last label drawn ends: the next one must start after it
-            foreach (var (time, label) in Timeline.Ticks(data.From, data.To, Math.Max(2, plotW / 90)))
+            foreach (var (time, label) in Timeline.Ticks(data.From, data.To, Math.Max(2, plotW / Px(90))))
             {
                 float x = (float)((time - data.From).Ticks / (double)data.Span.Ticks * plotW);
-                g.DrawLine(axis, x, plotH, x, plotH + 4);
+                g.DrawLine(axis, x, plotH, x, plotH + Px(4));
                 float w = g.MeasureString(label, Font).Width;
                 // Inside the control (the plot is drawn shifted by the left margin): a mark at the very end must not lose its label.
                 float start = TimelineLayout.LabelStart(x, w, 2 - LeftMargin, plotW + RightMargin - 1);
-                if (start < labelsEnd + 4) continue;   // held in by an edge it would print over its neighbour: the mark alone says it
-                g.DrawString(label, Font, grey, start, plotH + 5);
+                if (start < labelsEnd + Px(4)) continue;   // held in by an edge it would print over its neighbour: the mark alone says it
+                g.DrawString(label, Font, grey, start, plotH + Px(5));
                 labelsEnd = start + w;
             }
 
             // A column whose highest reply is above the scale is cut at the top: a small mark says so.
             using var cutBrush = new SolidBrush(Color.OrangeRed);
             foreach (float x in shapes.Clipped ?? Array.Empty<float>())
-                g.FillPolygon(cutBrush, new[] { new PointF(x - 3, 0), new PointF(x + 3, 0), new PointF(x, 5) });
+                g.FillPolygon(cutBrush, new[] { new PointF(x - Px(3), 0), new PointF(x + Px(3), 0), new PointF(x, Px(5)) });
 
             g.ResetTransform();
-            g.DrawString(TopLabel(data), Font, grey, 2, TopMargin);
-            g.DrawString("0", Font, grey, 2, TopMargin + plotH - Font.Height);
+            g.DrawString(TopLabel(data), Font, grey, Px(2), TopMargin);
+            g.DrawString("0", Font, grey, Px(2), TopMargin + plotH - Font.Height);
         }
     }
 
