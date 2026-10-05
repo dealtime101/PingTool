@@ -28,9 +28,12 @@ namespace PingTool
             hours.Clear();
         }
 
-        // Pings sent and lost per clock hour (for the pings that came with their time), oldest first.
-        private readonly SortedDictionary<DateTime, (long Sent, long Lost)> hours = new();
-        public IReadOnlyList<HourCell> Hours => hours.Select(kv => new HourCell(kv.Key, kv.Value.Sent, kv.Value.Lost)).ToList();
+        // Pings sent and lost per clock hour (for the pings that came with their time), oldest first. The key is the REAL hour (the instant
+        // it starts, with the offset of the clock then): the local hour that happens twice when the clocks go back is two keys, so a bad
+        // hour is never averaged with a good one in the data. The report grid, which has one column per clock hour, decides how to show them.
+        private readonly SortedDictionary<DateTimeOffset, (long Sent, long Lost)> hours = new();
+        public IReadOnlyList<HourCell> Hours => hours.Select(kv => new HourCell(
+            new DateTime(kv.Key.Year, kv.Key.Month, kv.Key.Day, kv.Key.Hour, 0, 0, DateTimeKind.Unspecified), kv.Value.Sent, kv.Value.Lost)).ToList();
 
         // ping < 0 means timeout / failure.
         // at = when the ping was made: it feeds the hour-by-day figures of the report (no time given = not counted there).
@@ -40,7 +43,7 @@ namespace PingTool
             if (at is DateTimeOffset when)
             {
                 var local = when.ToLocalTime();
-                var hour = new DateTime(local.Year, local.Month, local.Day, local.Hour, 0, 0, DateTimeKind.Unspecified);
+                var hour = new DateTimeOffset(local.Year, local.Month, local.Day, local.Hour, 0, 0, local.Offset);
                 hours.TryGetValue(hour, out var h);
                 hours[hour] = (h.Sent + 1, h.Lost + (ping < 0 ? 1 : 0));
             }

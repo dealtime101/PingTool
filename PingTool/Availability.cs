@@ -3,7 +3,9 @@ using System.Globalization;
 namespace PingTool
 {
     // One clock hour of one host: the pings sent and lost in it. Hour = the start of the hour on the PC's wall clock.
-    internal sealed record HourCell(DateTime Hour, long Sent, long Lost)
+    // Repeats = how many real hours this clock hour stands for: 2 for the hour that happens twice when the clocks go back (the grid has
+    // one column per clock hour, so it shows the worse of the two and says so).
+    internal sealed record HourCell(DateTime Hour, long Sent, long Lost, int Repeats = 1)
     {
         public double LossPercent => Sent == 0 ? 0 : 100.0 * Lost / Sent;
     }
@@ -74,8 +76,10 @@ namespace PingTool
                     foreach (var cell in present)
                     {
                         var previous = hours[cell.Hour.Hour];
-                        // The repeated hour of a clock change is one cell: its pings add up.
-                        hours[cell.Hour.Hour] = previous is null ? cell : new HourCell(cell.Hour, previous.Sent + cell.Sent, previous.Lost + cell.Lost);
+                        // The hour that happens twice when the clocks go back (two real hours, one column): the figures of ONE hour, the worse
+                        // one, so that a bad hour is not averaged away by the good one, and the cell says it stands for two (Title).
+                        hours[cell.Hour.Hour] = previous is null ? cell
+                            : (cell.LossPercent > previous.LossPercent ? cell : previous) with { Repeats = previous.Repeats + cell.Repeats };
                     }
 
                 rows.Add((day, hours));
@@ -87,6 +91,7 @@ namespace PingTool
         public static string Title(DateTime day, int hour, HourCell? cell) =>
             cell is null || cell.Sent == 0
                 ? string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - no ping")
-                : string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - {FormatLoss(cell.LossPercent, CultureInfo.InvariantCulture)}% lost ({cell.Lost} of {cell.Sent})");
+                : string.Create(CultureInfo.InvariantCulture, $"{day:yyyy-MM-dd} {hour:00}:00 - {FormatLoss(cell.LossPercent, CultureInfo.InvariantCulture)}% lost ({cell.Lost} of {cell.Sent})")
+                    + (cell.Repeats > 1 ? " - this clock hour happened twice (the clocks went back): the worse of the two is shown" : "");
     }
 }
