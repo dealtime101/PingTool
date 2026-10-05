@@ -193,8 +193,6 @@ namespace PingTool
             return lines;
         }
 
-        // Round times for the time axis (every 5 min, every hour...), in LOCAL time so that "10:00"
-        // is really 10 o'clock whatever the UTC offset. At most maxTicks marks.
         // "Network changes of this PC (cyan lines): 18:03 Wi-Fi: 192.168.0.12 -> 10.0.0.5; 18:40 ... (+2 more)". Null when none.
         public static string? DescribeNetwork(IReadOnlyList<NetworkEvent> events, DateTimeOffset from, DateTimeOffset to, int shown = 2)
         {
@@ -214,7 +212,8 @@ namespace PingTool
         private static readonly long[] TickSteps = { 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400,
             172800, 604800, 1209600, 2592000, 7776000, 31536000 };
 
-        // At most maxTicks marks (at least 1 is allowed: a zero or negative limit means 1).
+        // Round times for the time axis (every 5 min, every hour...), in LOCAL time so that "10:00"
+        // is really 10 o'clock whatever the UTC offset. At most maxTicks marks (at least 1 is allowed: a zero or negative limit means 1).
         public static IReadOnlyList<(DateTimeOffset Time, string Label)> Ticks(DateTimeOffset from, DateTimeOffset to, int maxTicks)
         {
             int max = Math.Max(1, maxTicks);
