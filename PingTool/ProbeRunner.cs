@@ -121,6 +121,14 @@ namespace PingTool
         // Where the certificate's end date of a request is kept while the request is in flight (see ValidateServerCertificate).
         private static readonly HttpRequestOptionsKey<DateTime> CertificateEnd = new("PingTool.CertificateEnd");
 
+        // "404 Not Found", and just "599" when the server gave no phrase (HTTP/2 has none on the wire, and a status the framework does not
+        // know has none to give): never "599 " with a space and nothing after it.
+        internal static string StatusText(int code, string? reasonPhrase)
+        {
+            string number = code.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return string.IsNullOrWhiteSpace(reasonPhrase) ? number : number + " " + reasonPhrase.Trim();
+        }
+
         // How much of a page is read when an expected text is looked for (see Search): the first 64 KiB.
         public const int MaxBodyBytes = 64 * 1024;
 
@@ -149,7 +157,7 @@ namespace PingTool
 
             int code = (int)response.StatusCode;
             if (code >= 400)
-                return new ProbeOutcome(-1, new PingFailure("HTTP " + code, "The server answered " + code + " " + response.ReasonPhrase), null);
+                return new ProbeOutcome(-1, new PingFailure("HTTP " + code, "The server answered " + StatusText(code, response.ReasonPhrase)), null);
 
             // The page must contain the expected text: a redirect (to a login page, as a captive portal does) or a maintenance
             // page that answers "200" is then a failure, not a success.
