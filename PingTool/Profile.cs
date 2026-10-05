@@ -47,36 +47,62 @@ namespace PingTool
         // the same on screen but would be two profiles. One exception: the zero width joiner INSIDE a character that is drawn as one
         // (an emoji family, a flag with a pride stripe): without it the emoji falls apart. Between two letters it joins nothing and
         // stays refused, so "Ho" + ZWJ + "me" cannot pass for "Home".
+        // Read by Unicode characters (runes), not by UTF-16 units: a format character outside the basic plane (U+E0001, the "tag" characters)
+        // is two units, and neither half is a format character by itself.
         private static bool HasInvisible(string name)
         {
-            for (int i = 0; i < name.Length; i++)
+            int i = 0;
+            foreach (var rune in name.EnumerateRunes())
             {
-                char c = name[i];
-                if (char.IsControl(c)) return true;
-                if (char.GetUnicodeCategory(c) == UnicodeCategory.Format && !IsJoiner(name, i)) return true;
+                if (Rune.IsControl(rune)) return true;
+                if (Rune.GetUnicodeCategory(rune) == UnicodeCategory.Format && !IsAllowedFormat(name, i, rune)) return true;
+                i += rune.Utf16SequenceLength;
             }
 
             return false;
         }
 
+        // The format characters that hold one drawn character together and are kept: the zero width joiner (see IsJoiner) and the tag
+        // characters of an emoji flag sequence (the flag of England, U+1F3F4 followed by tags), when they follow something in the same text
+        // element. A tag character on its own, or after a letter that is not a flag, is as invisible as a zero width space.
+        private static bool IsAllowedFormat(string text, int index, Rune rune) =>
+            rune.Value == 0x200D ? IsJoiner(text, index)
+            : rune.Value is >= 0xE0020 and <= 0xE007F && Holds(text, index, rune.Utf16SequenceLength, mayEnd: true) && ElementStartsWithBlackFlag(text, index);
+
+        // Tags are invisible after a letter too ("Home" + a tag is a second, look-alike name): they are kept only in a flag sequence,
+        // whose element begins with U+1F3F4.
+        private static bool ElementStartsWithBlackFlag(string text, int index)
+        {
+            var starts = StringInfo.ParseCombiningCharacters(text);
+            int start = starts[Array.FindLastIndex(starts, s => s <= index)];
+            return char.IsHighSurrogate(text[start]) && start + 1 < text.Length && char.ConvertToUtf32(text[start], text[start + 1]) == 0x1F3F4;
+        }
+
         // True for a zero width joiner that is inside one text element (neither the first nor the last char of it): the rules of the
         // Unicode text segmentation keep an emoji sequence together across it, and cut after it when it joins nothing.
-        internal static bool IsJoiner(string text, int index)
+        internal static bool IsJoiner(string text, int index) => text[index] == '‍' && Holds(text, index, 1, mayEnd: false);
+
+        // The character at `index` (`length` units) is inside a text element, after its first char (and before its last one unless mayEnd).
+        private static bool Holds(string text, int index, int length, bool mayEnd)
         {
-            if (text[index] != '‍') return false;
             var starts = StringInfo.ParseCombiningCharacters(text);
             int element = Array.FindLastIndex(starts, s => s <= index);
             int start = starts[element];
             int end = element + 1 < starts.Length ? starts[element + 1] : text.Length;
-            return index > start && index < end - 1;
+            return index > start && (mayEnd || index + length < end);
         }
 
-        // The name as it was written before the format characters were refused: they are taken out, except the joiners that hold an emoji together.
+        // The name as it was written before the format characters were refused: they are taken out, except those that hold an emoji together.
         internal static string WithoutInvisibleFormat(string text)
         {
             var kept = new StringBuilder(text.Length);
-            for (int i = 0; i < text.Length; i++)
-                if (char.GetUnicodeCategory(text[i]) != UnicodeCategory.Format || IsJoiner(text, i)) kept.Append(text[i]);
+            int i = 0;
+            foreach (var rune in text.EnumerateRunes())
+            {
+                if (Rune.GetUnicodeCategory(rune) != UnicodeCategory.Format || IsAllowedFormat(text, i, rune)) kept.Append(rune.ToString());
+                i += rune.Utf16SequenceLength;
+            }
+
             return kept.ToString();
         }
 

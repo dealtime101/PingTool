@@ -290,8 +290,9 @@
          1.21.212 = a refused connection says that nothing usually listens on the port, but that a rule rejecting actively gives the same answer (PIN472.169);
          1.21.213 = the diagnosis treats a target in the network of one of this PC's own cards as local, even with a global address (a LAN machine with a global IPv6 address is no longer an Internet target) (PIN472.172);
          1.21.214 = the local / Internet diagnosis says when the targets that answer are slow or losing packets, instead of blaming one side only (PIN472.173);
-         1.21.215 = the log reader refuses a file cut inside a quoted field and text after a closing quote, naming the line, instead of taking the row for a ping (PIN472.174) -->
-    <Version>1.21.215</Version>
+         1.21.215 = the log reader refuses a file cut inside a quoted field and text after a closing quote, naming the line, instead of taking the row for a ping (PIN472.174);
+         1.21.216 = a profile name is checked by Unicode characters: invisible format characters outside the basic plane (U+E0001, tags) are refused and cleaned, the flag sequences that use tags are kept (PIN472.176) -->
+    <Version>1.21.216</Version>
   </PropertyGroup>
 
   <ItemGroup>
