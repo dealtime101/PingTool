@@ -97,6 +97,8 @@ namespace PingTool
             var c = CultureInfo.CurrentCulture;
             int n = Math.Min(Math.Max(1, periods), d.Buckets.Count);
             var parts = new List<string>();
+            // "g" stops at the minute: periods less than a minute apart would all be announced at the same time, so the seconds are added.
+            string format = (d.To - d.From) / n < TimeSpan.FromMinutes(1) ? "G" : "g";
             for (int p = 0; p < n; p++)
             {
                 int from = p * d.Buckets.Count / n, to = (p + 1) * d.Buckets.Count / n;
@@ -106,7 +108,7 @@ namespace PingTool
 
                 long replies = sent - lost;
                 string avg = replies == 0 ? "-" : (group.Where(b => b.AvgMs is not null).Sum(b => b.AvgMs!.Value * (b.Sent - b.Lost)) / replies).ToString("0.#", c);
-                parts.Add(Loc.T("timeline.period", group[0].Start.ToLocalTime().ToString("g", c), avg, (100.0 * lost / sent).ToString("0.#", c)));
+                parts.Add(Loc.T("timeline.period", group[0].Start.ToLocalTime().ToString(format, c), avg, (100.0 * lost / sent).ToString("0.#", c)));
             }
 
             return parts.Count == 0 ? null : Loc.T("timeline.periods", string.Join("; ", parts));
