@@ -36,6 +36,7 @@ namespace PingTool
         // Changes of this PC's own network during the run (see NetworkWatch): cyan lines on the timeline, a table in the report.
         private readonly List<NetworkEvent> networkEvents = new();
         private List<NicState>? lastNetwork;   // the cards as last read; null = not read yet, or the last reading failed at the start
+        private bool networkReadFailureSaid;   // a failed reading has been written among the events: not again until one works
         private readonly System.Windows.Forms.Timer networkTimer = new() { Interval = 1500 };
         private WebhookSender? webhooks;
         private readonly HashSet<string> webhookWarned = new();
@@ -769,6 +770,7 @@ namespace PingTool
                 webhookWarned.Clear();
                 noticed.Clear();
                 networkEvents.Clear();
+                networkReadFailureSaid = false;
                 lastNetwork = NetworkWatch.Snapshot();
                 incidents.Clear();
                 UpdateIncidentButton();
@@ -1410,7 +1412,7 @@ namespace PingTool
         {
             networkTimer.Stop();
             // A reading that failed changes nothing: it is not "the network went away" (see NetworkWatch.Snapshot).
-            (lastNetwork, string? text) = NetworkWatch.Compare(lastNetwork, NetworkWatch.Snapshot());
+            (lastNetwork, string? text) = NetworkWatch.Compare(lastNetwork, NetworkWatch.Snapshot(), ref networkReadFailureSaid);
             if (text is not null && isRunning && !closing) networkEvents.Add(new NetworkEvent(DateTimeOffset.Now, text));
         }
 

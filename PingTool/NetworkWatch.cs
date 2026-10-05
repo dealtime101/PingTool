@@ -29,15 +29,29 @@ namespace PingTool
             catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or InvalidOperationException)
             {
                 System.Diagnostics.Debug.WriteLine("Network cards could not be read: " + ex.Message);
+                LastReadError = ex.Message;   // Debug output does not exist in a release build: the reason is kept for the window to say
                 return null;
             }
         }
 
+        // Why the last reading that failed did. Set by Snapshot (the reading runs on the window's thread).
+        public static string? LastReadError { get; private set; }
+
         // What changed between what the window knew (null = nothing yet) and this reading (null = could not be read): the new "last
-        // known" state and the sentence, if any. A failed reading changes nothing and says nothing; the first one only sets the base.
-        public static (List<NicState>? Last, string? Text) Compare(List<NicState>? last, List<NicState>? now)
+        // known" state and the sentence, if any. A failed reading changes nothing in what is known; it is SAID once per run of failures
+        // (failureSaid is kept by the caller), so that a person looking for the reason of a missing change finds it in the events.
+        // The first reading only sets the base.
+        public static (List<NicState>? Last, string? Text) Compare(List<NicState>? last, List<NicState>? now, ref bool failureSaid)
         {
-            if (now is null) return (last, null);
+            if (now is null)
+            {
+                if (failureSaid) return (last, null);
+                failureSaid = true;
+                string why = LastReadError is { Length: > 0 } reason ? reason.Length <= 80 ? reason : reason[..77] + "..." : "no reason given";
+                return (last, $"The network cards could not be read ({why}): changes of the network are not recorded until they can be.");
+            }
+
+            failureSaid = false;
             if (last is null) return (now, null);
             return (now, Describe(last, now));
         }
