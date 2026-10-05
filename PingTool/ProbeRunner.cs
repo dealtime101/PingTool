@@ -156,9 +156,11 @@ namespace PingTool
                 if (code is >= 300 and < 400)
                     return new ProbeOutcome(-1, new PingFailure("Redirect", $"The server redirected (HTTP {code}) instead of serving the page with the expected text: a login page of a captive portal does this"), null);
 
-                string body = await ReadStart(response, deadline.Token);
+                var (body, truncated) = await ReadStart(response, deadline.Token);
                 if (!body.Contains(expected, StringComparison.OrdinalIgnoreCase))
-                    return new ProbeOutcome(-1, new PingFailure("Content", "The page answered but does not contain the expected text (a maintenance page, an error page or a captive portal)"), null);
+                    return new ProbeOutcome(-1, new PingFailure("Content", truncated
+                        ? $"The text was not found in the first {MaxBodyBytes / 1024} KiB of the page, which is all that is searched; the page is longer, so the text may be further down"
+                        : "The page answered but does not contain the expected text (a maintenance page, an error page or a captive portal)"), null);
             }
 
             string? warning = request.Options.TryGetValue(CertificateEnd, out DateTime end)
@@ -166,14 +168,16 @@ namespace PingTool
             return new ProbeOutcome(rtt, null, null, Warning: warning);
         }
 
-        // The first MaxBodyBytes of the answer, read as UTF-8 (anything that is not text just does not match).
-        private static async Task<string> ReadStart(HttpResponseMessage response, CancellationToken token)
+        // The first MaxBodyBytes of the answer, read as UTF-8 (anything that is not text just does not match), and whether the page goes
+        // on beyond them: a text that is not found then may simply be further down, which the message must not call a maintenance page.
+        private static async Task<(string Text, bool Truncated)> ReadStart(HttpResponseMessage response, CancellationToken token)
         {
             await using var stream = await response.Content.ReadAsStreamAsync(token);
             var buffer = new byte[MaxBodyBytes];
             int total = 0, read;
             while (total < buffer.Length && (read = await stream.ReadAsync(buffer.AsMemory(total), token)) > 0) total += read;
-            return Encoding.UTF8.GetString(buffer, 0, total);
+            bool more = total == buffer.Length && await stream.ReadAsync(new byte[1], token) > 0;
+            return (Encoding.UTF8.GetString(buffer, 0, total), more);
         }
 
         // Through the operating system's resolver, so its cache applies: a name looked up a moment
