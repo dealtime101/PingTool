@@ -151,11 +151,21 @@ namespace PingTool
             if (allKnown && local.Count > 0 && remote.Count > 0)
             {
                 // The number follows the targets, as everywhere else in this file: one router is "the local target", not "the local ones".
+                // The ones that "answer" may be slow or losing packets: that is said too, or the sentence would blame one side only.
                 if (local.All(t => t.State != HostState.Down) && remote.All(t => t.State == HostState.Down))
-                    return $"{(local.Count == 1 ? "The local target answers" : "Local targets answer")} but {(remote.Count == 1 ? "the Internet target is" : "every Internet target is")} down: likely the router or the Internet link.";
+                {
+                    var slowLocal = local.Where(t => t.State == HostState.Degraded).ToList();
+                    return $"{(local.Count == 1 ? "The local target answers" : "Local targets answer")} but {(remote.Count == 1 ? "the Internet target is" : "every Internet target is")} down: likely the router or the Internet link."
+                        + (slowLocal.Count == 0 ? "" : $" {Names(slowLocal)} slow or losing packets, so the local network is not clean either.");
+                }
+
                 if (local.All(t => t.State == HostState.Down) && remote.All(t => t.State != HostState.Down))
+                {
+                    var slowRemote = remote.Where(t => t.State == HostState.Degraded).ToList();
                     return $"{(remote.Count == 1 ? "The Internet target answers" : "Internet targets answer")} but "
-                        + (local.Count == 1 ? "the local target is down: likely that local device." : "the local ones are down: likely those local devices.");
+                        + (local.Count == 1 ? "the local target is down: likely that local device." : "the local ones are down: likely those local devices.")
+                        + (slowRemote.Count == 0 ? "" : $" {Names(slowRemote)} slow or losing packets.");
+                }
             }
 
             // Slow ones among the rest are said, not counted as answering normally.
