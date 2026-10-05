@@ -127,5 +127,6 @@ jobs:
             echo "See the [README](https://github.com/$REPO#readme)" \
               "for what it does."
           } > notes.md
-          gh release create "v$ver" "PingTool-$ver-win-x64.zip" "PingTool-$ver-win-x64.zip.sha256" \
+          pkg="PingTool-$ver-win-x64.zip"
+          gh release create "v$ver" "$pkg" "$pkg.sha256" \
             --title "PingTool $ver" --notes-file notes.md --verify-tag
