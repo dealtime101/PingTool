@@ -40,28 +40,56 @@ namespace PingTool
         // Said wherever the diagnosis targets are built (the profile, --diagnose, --headless --diagnose): one wording.
         public const string NoGatewayMessage = "No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.";
 
-        public static List<string> Discover(out bool gatewayFound)
+        public static List<string> Discover(out bool gatewayFound) => Discover(CardReaders(), out gatewayFound);
+
+        // One reader per card, each run on its own: a card whose properties cannot be read (a virtual adapter, a faulty driver) is
+        // left out, and the real card next to it is still used. The list of cards itself failing leaves no card, as before.
+        internal static List<NicSnapshot> ReadCards(IEnumerable<Func<NicSnapshot>> readers)
         {
             var snapshots = new List<NicSnapshot>();
+            foreach (var read in readers)
+            {
+                try
+                {
+                    snapshots.Add(read());
+                }
+                catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or InvalidOperationException)
+                {
+                    System.Diagnostics.Debug.WriteLine("A network card could not be read: " + ex.Message);
+                }
+            }
+
+            return snapshots;
+        }
+
+        internal static List<string> Discover(IEnumerable<Func<NicSnapshot>> readers, out bool gatewayFound) => From(ReadCards(readers), out gatewayFound);
+
+        private static List<Func<NicSnapshot>> CardReaders()
+        {
+            var readers = new List<Func<NicSnapshot>>();
             try
             {
                 foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
                 {
-                    var props = nic.GetIPProperties();
-                    snapshots.Add(new NicSnapshot(
-                        nic.Name,
-                        nic.OperationalStatus == OperationalStatus.Up,
-                        nic.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel,
-                        props.GatewayAddresses.Select(g => g.Address).ToList(),
-                        props.DnsAddresses.ToList()));
+                    var card = nic;   // each reader keeps its own card
+                    readers.Add(() =>
+                    {
+                        var props = card.GetIPProperties();
+                        return new NicSnapshot(
+                            card.Name,
+                            card.OperationalStatus == OperationalStatus.Up,
+                            card.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel,
+                            props.GatewayAddresses.Select(g => g.Address).ToList(),
+                            props.DnsAddresses.ToList());
+                    });
                 }
             }
             catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or InvalidOperationException)
             {
-                System.Diagnostics.Debug.WriteLine("Network cards could not be read: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Network cards could not be listed: " + ex.Message);
             }
 
-            return From(snapshots, out gatewayFound);
+            return readers;
         }
 
         // 0.0.0.0 is "no gateway"; only IPv4 ones are used (the targets of the list are IPv4 addresses or names).
