@@ -233,14 +233,20 @@ namespace PingTool
         {
             if (hostBox.SelectedItem is not string host) return;
 
-            // About one column per 4 pixels.
-            int columns = Math.Max(10, chart.PlotWidth / 4);
-            if (built == (host, columns)) return;
-            built = (host, columns);
-            var data = Timeline.Build(entries, host, columns);
-            chart.Show(data, incidents, networkEvents);
-            string? network = data.IsEmpty ? null : Timeline.DescribeNetwork(networkEvents, data.From, data.To);
-            summary.Text = Timeline.Describe(data) + (network is null ? "" : "\n" + network) + (droppedNote is null ? "" : "\n" + droppedNote);
+            // About one column per 4 pixels. The width of the plot depends on the left margin, which is measured from the label of the
+            // top of the scale, which comes with the data (the scale is cut or not): so the first pass counts the columns with the
+            // margin of what was shown before, and a second one with the margin of what was just given, only when that changes the
+            // number. Two passes are enough: the label is at most a few characters wider or narrower.
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int columns = Math.Max(10, chart.PlotWidth / 4);
+                if (built == (host, columns)) break;
+                built = (host, columns);
+                var data = Timeline.Build(entries, host, columns);
+                chart.Show(data, incidents, networkEvents);
+                string? network = data.IsEmpty ? null : Timeline.DescribeNetwork(networkEvents, data.From, data.To);
+                summary.Text = Timeline.Describe(data) + (network is null ? "" : "\n" + network) + (droppedNote is null ? "" : "\n" + droppedNote);
+            }
         }
     }
 }

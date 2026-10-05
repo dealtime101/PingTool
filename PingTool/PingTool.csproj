@@ -200,8 +200,9 @@
          1.21.122 = the legend of the timeline also explains the dotted cyan line (network change of this PC) and the red-orange triangle (reply above the scale) (PIN472.57);
          1.21.123 = the legend of the timeline is as tall as its text needs at the width of the window, so a narrow window no longer cuts the end of it off (PIN472.58);
          1.21.124 = resizing the timeline window goes through the log again only when the number of columns changes, not at every pixel of the drag (PIN472.59);
-         1.21.125 = the sizes drawn in the timeline (loss band, ticks, dots, triangles, line widths, label spacing) follow the screen scaling like its margins, instead of staying half as big at 200 % (PIN472.60) -->
-    <Version>1.21.125</Version>
+         1.21.125 = the sizes drawn in the timeline (loss band, ticks, dots, triangles, line widths, label spacing) follow the screen scaling like its margins, instead of staying half as big at 200 % (PIN472.60);
+         1.21.126 = the number of columns of the timeline is counted again with the left margin of the new top label, so a host whose scale label has another width still gets columns of about 4 pixels (PIN472.61) -->
+    <Version>1.21.126</Version>
   </PropertyGroup>
 
   <ItemGroup>
