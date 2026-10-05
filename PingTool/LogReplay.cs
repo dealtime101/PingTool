@@ -28,7 +28,8 @@ namespace PingTool
             {
                 // `line` is the line of the FILE where the record starts, as an editor numbers it (a field with a line break in it
                 // makes the records after it come later than their rank).
-                var (r, line) = rows.Current;
+                var (r, line, problem) = rows.Current;
+                if (problem is not null) { error = $"Line {line}: {problem}"; return false; }
                 if (r.Count == 1 && r[0].Length == 0) continue;   // blank line
                 if (r.Count != 5) { error = $"Line {line}: expected 5 fields, found {r.Count}."; return false; }
                 if (!DateTimeOffset.TryParseExact(r[0], "yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
@@ -62,16 +63,20 @@ namespace PingTool
         // One row at a time, as the reader asks for it (a row is handed over as soon as its line ends).
         // Each record comes with the line of the FILE where it starts (from 1, a CRLF or a lone CR or LF is one line break, inside a
         // quoted field too): a record is not a line once a field holds a line break.
-        private static IEnumerable<(List<string> Fields, int Line)> Rows(string text)
+        // A record that is not well formed carries what is wrong with it (Problem, null otherwise): text after the closing quote of a field
+        // ("abc"def), or a quoted field still open when the file ends (the file was cut short, by a crash for one). Such a record is
+        // refused by the reader instead of being taken for a ping whose last field happens to look right.
+        private static IEnumerable<(List<string> Fields, int Line, string? Problem)> Rows(string text)
         {
             var row = new List<string>();
             var field = new StringBuilder();
             bool quoted = false, wasQuoted = false;
-            (List<string> Fields, int Line)? finished = null;
+            (List<string> Fields, int Line, string? Problem)? finished = null;
+            string? problem = null;
             int line = 1, rowStart = 1;
 
             void EndField() { row.Add(field.ToString()); field.Clear(); wasQuoted = false; }
-            void EndRow() { EndField(); finished = (row, rowStart); row = new List<string>(); }
+            void EndRow() { EndField(); finished = (row, rowStart, problem); row = new List<string>(); problem = null; }
 
             for (int i = 0; i < text.Length; i++)
             {
@@ -94,13 +99,18 @@ namespace PingTool
                 else if (c == ',') EndField();
                 else if (c == '\r') { if (i + 1 < text.Length && text[i + 1] == '\n') i++; EndRow(); line++; rowStart = line; }
                 else if (c == '\n') { EndRow(); line++; rowStart = line; }
-                else field.Append(c);
+                else
+                {
+                    if (wasQuoted) problem ??= "there is text after the closing quote of a field (the line is damaged).";
+                    field.Append(c);
+                }
 
                 if (finished is { } done) { yield return done; finished = null; }
             }
 
             if (field.Length > 0 || row.Count > 0 || wasQuoted)   // last line without a line break
             {
+                if (quoted) problem ??= "the file ends inside a quoted field: the log was cut short (a crash, a copy that did not finish). Delete this last line and open it again.";
                 EndRow();
                 yield return finished!.Value;
             }
