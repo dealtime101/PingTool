@@ -61,11 +61,14 @@ namespace PingTool
             base.Dispose(disposing);
         }
 
+        private int hopsSeen;   // how many hops the window has shown so far
+
         // A route can take tens of seconds (a second per silent hop): show the hops as they come, so the window is seen to work.
         // Called from the trace, which resumes on this window's thread.
         private void ShowProgress(HostSession session, IPAddress ip, IReadOnlyList<Hop> hops)
         {
             if (IsDisposed) return;
+            hopsSeen = hops.Count;
             var partial = new PathCapture { Host = session.Address, Target = ip, Time = DateTimeOffset.Now, Hops = hops.ToList() };
             output.Text = "Tracing the route to " + session.Address + " (" + ip + "), " + hops.Count + " hop(s) so far...\r\n"
                 + string.Join("\r\n", partial.HopLines());
@@ -97,7 +100,9 @@ namespace PingTool
                 // Tested inside the block, not in a filter: a failure that lands after the window is gone must be swallowed here,
                 // because nothing above this method (an async void handler) can catch it and PingTool would stop on it.
                 if (IsDisposed) return;
-                output.Text = "The trace failed: " + ex.Message;
+                output.Text = PathCapture.FailureText(output.Text, hopsSeen, ex.Message);   // the hops found so far stay on screen
+                output.SelectionStart = output.TextLength;
+                output.ScrollToCaret();
             }
         }
     }

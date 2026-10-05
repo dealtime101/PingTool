@@ -107,6 +107,14 @@ namespace PingTool
             return $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
         }
 
+        // What the trace window shows when the trace breaks off: the hops already found STAY (they say where the path stops, which is what the
+        // window is for), the failure goes under them with how far it got. A multi-line TextBox breaks lines on CR LF only.
+        public static string FailureText(string shown, int hopsSeen, string reason)
+        {
+            string tail = "The trace failed" + (hopsSeen > 0 ? " after " + hopsSeen.ToString(CultureInfo.InvariantCulture) + " hop(s)" : "") + ": " + reason;
+            return shown.Length == 0 ? tail : shown.TrimEnd('\r', '\n') + "\r\n\r\n" + tail;
+        }
+
         private static string Said(HopStatus s) => s switch
         {
             HopStatus.Reached => "answered as the destination",
