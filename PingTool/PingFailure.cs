@@ -71,10 +71,12 @@ namespace PingTool
                     => new("DNS fail", "The DNS server failed for the moment (temporary): the name may be right, try again"),
                 // The same two words as the ICMP statuses above, so one fault has one label whether it came as an
                 // exception or as a reply (the big label and the CSV can then be filtered on it).
+                // The text says the fault once, in English, with the system's error NUMBER (the same on every language of Windows): the
+                // message of the system is in the language of the machine, said the same fault twice, and made the CSV vary from PC to PC.
                 SocketError.NetworkUnreachable
-                    => new("No route", "Destination network unreachable: " + socket.Message),
+                    => new("No route", "Destination network unreachable (system error " + socket.ErrorCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")"),
                 SocketError.HostUnreachable
-                    => new("Unreach", "Destination host unreachable: " + socket.Message),
+                    => new("Unreach", "Destination host unreachable (system error " + socket.ErrorCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")"),
                 SocketError.ConnectionRefused
                     => new("Refused", "Connection refused: nothing is listening on that port"),
                 SocketError.TimedOut => Timeout,
