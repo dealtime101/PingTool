@@ -1468,6 +1468,7 @@ namespace PingTool
         {
             compare = false;
             series = history is null ? Array.Empty<GraphSeries>() : new[] { new GraphSeries("", Color.LimeGreen, history) };
+            legendRows = 0;   // the legend as drawn last belongs to the old series: no tooltip from it until the repaint
             Invalidate();
         }
 
@@ -1476,6 +1477,7 @@ namespace PingTool
         {
             compare = true;
             series = all;
+            legendRows = 0;   // see Show
             Invalidate();
         }
 
