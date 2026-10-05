@@ -51,7 +51,8 @@ jobs:
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
           if [ "$RECREATE" = "true" ] \
               && gh release view "v$ver" >/dev/null 2>&1; then
-            echo "Deleting the release v$ver (the tag stays) to publish it again."
+            echo "Deleting the release v$ver (the tag stays)" \
+              "to publish it again."
             gh release delete "v$ver" --yes
           fi
           if ! git rev-parse -q --verify "refs/tags/v$ver" >/dev/null; then
