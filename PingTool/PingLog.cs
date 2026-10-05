@@ -23,8 +23,9 @@ namespace PingTool
         // an export or a timeline pass for the whole session.
         public long Dropped { get; private set; }
 
-        public string? DroppedNote => Dropped == 0 ? null : string.Format(CultureInfo.CurrentCulture,
-            "The log keeps the latest {0:N0} pings: the {1:N0} older ones are no longer in it.", MaxEntries, Dropped);
+        // In the language of the window (Loc), the numbers in the regional format.
+        public string? DroppedNote => Dropped == 0 ? null : Loc.T("log.dropped",
+            MaxEntries.ToString("N0", CultureInfo.CurrentCulture), Dropped.ToString("N0", CultureInfo.CurrentCulture));
 
         public void Clear()
         {

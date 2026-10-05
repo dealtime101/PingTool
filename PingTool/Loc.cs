@@ -19,7 +19,8 @@ namespace PingTool
             ["timeline.empty"] = ("No data yet: start pinging this host.", "Aucune donnée pour l'instant : lancez les pings sur cet hôte."),
             // {3} and {4} are phrases made with the count.* keys, which agree with the number (1 ping, 2 pings; French: 0 or 1 perdu, 2 perdus).
             ["timeline.summary"] = ("{0} to {1} ({2}) | {3}, {4} ({5}%)", "De {0} à {1} ({2}) | {3}, {4} ({5} %)"),
-            ["count.ping.one"] = ("{0} ping", "{0} ping"),
+            ["log.dropped"] = ("The log keeps the latest {0} pings: the {1} older ones are no longer in it.", "Le journal garde les {0} derniers pings : les {1} plus anciens n'y sont plus."),
+            ["count.ping.one"] =("{0} ping", "{0} ping"),
             ["count.ping.many"] = ("{0} pings", "{0} pings"),
             ["count.lost.one"] = ("{0} lost", "{0} perdu"),
             ["count.lost.many"] = ("{0} lost", "{0} perdus"),

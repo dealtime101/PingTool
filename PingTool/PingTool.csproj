@@ -341,8 +341,9 @@
          1.21.263 = a log value that really starts with an apostrophe before a formula start is written with a second one, so it reads back as it was (PIN472.334);
          1.21.264 = a profile keeps the names and limits of the hosts it holds only: entries for other addresses, or for hosts cut by the limit, are dropped on loading (PIN472.337);
          1.21.265 = the report from a log says, under Incidents, that they were detected again with the default limits and may differ from what was shown at the time (PIN472.340);
-         1.21.266 = the timeline summary and the graph trend agree with the numbers in French (1 perdu, 2 perdus) and in English (1 ping), instead of "perdu(s)" (PIN472.343) -->
-    <Version>1.21.266</Version>
+         1.21.266 = the timeline summary and the graph trend agree with the numbers in French (1 perdu, 2 perdus) and in English (1 ping), instead of "perdu(s)" (PIN472.343);
+         1.21.267 = the note about pings the log let go is in the language of the window (PIN472.344) -->
+    <Version>1.21.267</Version>
   </PropertyGroup>
 
   <ItemGroup>
