@@ -217,8 +217,9 @@
          1.21.139 = the log files are written off the window's thread, one write at a time, so a network share that went away no longer freezes the window at every flush (PIN472.74);
          1.21.140 = the note about pings dropped from a blocked log folder names each gap separately, instead of one period that also covers what was written between two blockages (PIN472.75);
          1.21.141 = the webhook test says how many addresses of settings.json were left out as unusable, and says so when none is left, instead of "No webhook is set" (PIN472.76);
-         1.21.142 = the headless mode ends with exit code 2, "could not run", for any unexpected error, not only a bad argument, after writing it to the crash log and the error output (PIN472.78) -->
-    <Version>1.21.142</Version>
+         1.21.142 = the headless mode ends with exit code 2, "could not run", for any unexpected error, not only a bad argument, after writing it to the crash log and the error output (PIN472.78);
+         1.21.143 = Ctrl+C in the headless mode ends the monitoring properly: the final report is written, the summary printed and the exit code given, instead of the process being killed (PIN472.79) -->
+    <Version>1.21.143</Version>
   </PropertyGroup>
 
   <ItemGroup>

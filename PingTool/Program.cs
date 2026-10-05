@@ -133,8 +133,26 @@ namespace PingTool
                     return await ProbeRunner.RunAsync(target, timeoutMs, ping, new byte[settings.PacketSize], token);
                 }
 
-                var result = HeadlessRunner.RunAsync(hosts, settings, o.Duration!.Value, Probe, WriteReport, alert: webhooks is null ? null : webhooks.Send)
-                    .GetAwaiter().GetResult();
+                // Ctrl+C (or Ctrl+Break) ends the monitoring early instead of killing the process: the report is written with what was
+                // seen so far, the summary is printed, and the exit code says what was observed, as at the end of the duration.
+                using var interrupted = new CancellationTokenSource();
+                ConsoleCancelEventHandler onInterrupt = (_, e) =>
+                {
+                    e.Cancel = true;   // the process goes on to finish properly
+                    if (!interrupted.IsCancellationRequested) Console.Error.WriteLine("Interrupted: writing the report with what was seen so far.");
+                    interrupted.Cancel();
+                };
+                Console.CancelKeyPress += onInterrupt;
+                HeadlessResult result;
+                try
+                {
+                    result = HeadlessRunner.RunAsync(hosts, settings, o.Duration!.Value, Probe, WriteReport, alert: webhooks is null ? null : webhooks.Send,
+                        stop: interrupted.Token).GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    Console.CancelKeyPress -= onInterrupt;
+                }
                 Console.WriteLine(result.Summary + (reportPath is null ? "" : " Report: " + reportPath));
                 return reportFailed ? HeadlessRunner.ErrorCode : result.ExitCode;
             }
