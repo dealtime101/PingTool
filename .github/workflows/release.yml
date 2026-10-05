@@ -85,7 +85,8 @@ jobs:
           import sys, zipfile, datetime
           ver, stamp = sys.argv[1:3]
           t = datetime.datetime.fromisoformat(stamp)
-          dt = (max(t.year, 1980), t.month, t.day, t.hour, t.minute, t.second - t.second % 2)
+          dt = (max(t.year, 1980), t.month, t.day, t.hour, t.minute,
+                t.second - t.second % 2)
           files = [("LICENSE.txt", "LICENSE.txt")] + [(n, "out/" + n) for n in
                   ("PingTool.deps.json", "PingTool.dll", "PingTool.exe", "PingTool.runtimeconfig.json")]
           with zipfile.ZipFile(f"PingTool-{ver}-win-x64.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
