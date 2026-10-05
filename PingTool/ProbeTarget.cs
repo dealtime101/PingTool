@@ -24,7 +24,9 @@ namespace PingTool
         public const int MaxExpectLength = 200;
 
         public const string Help =
-            "No prefix = ping.  tcp://host:port = open a TCP connection.  http://url or https://url = web request.  dns://name = name lookup.";
+            "No prefix = ping.  tcp://host:port = open a TCP connection.  http://url or https://url = web request.  dns://name = name lookup.  " +
+            "Web options after #, joined by &: #contains=text (the page must hold it; spaces as %20) and #cert=days (https only: warn that many days before the certificate ends, 0 = never), " +
+            "for example https://example.com/#contains=Welcome&cert=30.";
 
         // The addresses a file or the command line gave, minus those the address box would refuse (a hand-edited
         // settings.json, a mistyped argument): the same rule as typing them, and the count says how many were left out.
