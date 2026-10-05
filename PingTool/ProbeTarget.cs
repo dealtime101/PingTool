@@ -101,7 +101,9 @@ namespace PingTool
 
                     if (!TryHttpOptions(url.Fragment, url.Scheme == Uri.UriSchemeHttps, out string? expect, out int certDays, out error)) return false;
 
-                    target = new ProbeTarget(ProbeKind.Http, url.Host, url.Port, url, expect, certDays);
+                    // The host as tcp:// gives it: an IPv6 literal without its URI brackets ("[2001:db8::1]" is how a URI writes it, the
+                    // resolver and the certificate check want the bare address).
+                    target = new ProbeTarget(ProbeKind.Http, url.HostNameType == UriHostNameType.IPv6 ? url.Host.Trim('[', ']') : url.Host, url.Port, url, expect, certDays);
                     return true;
 
                 case "dns":
