@@ -17,10 +17,11 @@ namespace PingTool
 
             var c = CultureInfo.CurrentCulture;
             // Every target, by its full name: a reader asks for this on purpose and cannot see which ones "and N more" would be.
-            return string.Join("; ", series.Select(s => One(s, c)));
+            bool alone = series.Count == 1;   // one target on screen, named or not: its curve is told too
+            return string.Join("; ", series.Select(s => One(s, c, alone)));
         }
 
-        private static string One(GraphSeries s, CultureInfo c)
+        private static string One(GraphSeries s, CultureInfo c, bool alone)
         {
             string who = s.Name.Length == 0 ? Loc.T("graph.selected") : s.Name;
             if (s.Samples.Count == 0) return Loc.T("graph.noping", who);
@@ -30,7 +31,7 @@ namespace PingTool
             string lastText = last < 0 ? Loc.T("graph.last.lost") : Loc.T("graph.last", last.ToString(c));
             string p95 = recent.P95 is double p ? Loc.T("graph.p95", p.ToString("0.#", c)) : "";
             // The one target on screen also gets its curve in words: the window in quarters, oldest first (a compared set would be too long).
-            string trend = s.Name.Length == 0 ? Trend(s.Samples, c) : "";
+            string trend = alone ? Trend(s.Samples, c) : "";
             // "ping" or "pings" with the count: a screen reader says this sentence aloud, and the first one it reads at the start of a run is "of the last 1 ping".
             // The words come from the language of the window (Loc), the numbers from the regional format.
             return Loc.T(recent.Samples == 1 ? "graph.line.one" : "graph.line.many", who, lastText, p95, recent.Lost.ToString(c), recent.Samples.ToString(c), trend);

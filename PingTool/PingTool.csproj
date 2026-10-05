@@ -300,8 +300,9 @@
          1.21.222 = the loss ticks of a comparison of more than twelve hosts stay inside the shared strip: the next hosts take the first places again (PIN472.186);
          1.21.223 = "Diagnose my connection" works on an IPv6-only connection: the IPv6 gateway and DNS servers (zone kept) and IPv6 literal references replace the IPv4 ones (PIN472.190);
          1.21.224 = unticking then re-ticking a limit of a host in its options dialog gives back the own value instead of the global one (PIN472.191);
-         1.21.225 = the sentences a screen reader says about the graph follow the language of the window (graph keys of the Loc table) (PIN472.194) -->
-    <Version>1.21.225</Version>
+         1.21.225 = the sentences a screen reader says about the graph follow the language of the window (graph keys of the Loc table) (PIN472.194);
+         1.21.226 = the curve in words is told for a single target on the graph, named or not: the criterion is the number of targets, not the name (PIN472.195) -->
+    <Version>1.21.226</Version>
   </PropertyGroup>
 
   <ItemGroup>
