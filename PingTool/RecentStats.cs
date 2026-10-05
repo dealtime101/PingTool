@@ -74,9 +74,11 @@ namespace PingTool
             return sorted[Math.Clamp(rank, 1, sorted.Count) - 1];
         }
 
-        // Two short lines (one line is wider than the window):
-        //   "Last 60: p50 12 / p95 40 / p99 55 ms"
-        //   "Recent jitter 3.1 ms | loss 5% (3/60)"   (numbers in the user's culture)
+        // Two short lines (one line is wider than the window), as the window of 60 pings produces them:
+        //   "Last 60: p50 12 / p95 40 ms"
+        //   "Recent jitter 3.1 ms | loss 5% (3/60) | voice good (4.3)"   (numbers in the user's culture)
+        // The p99 ("... / p99 55 ms") only shows with at least MinForP99 replies, which a window of 60 never holds: it appears when
+        // From is given a bigger window.
         public string Describe()
         {
             var c = CultureInfo.CurrentCulture;
