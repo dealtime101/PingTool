@@ -13,20 +13,20 @@ namespace PingTool
         {
             int c = column switch
             {
-                Host => string.Compare(a.Host, b.Host, StringComparison.CurrentCultureIgnoreCase),
+                Host => string.Compare(a.Host, b.Host, StringComparison.OrdinalIgnoreCase),   // an address or a host name: not prose, same order in every culture
                 Type => a.Kind.CompareTo(b.Kind),
                 Start => a.Start.CompareTo(b.Start),
                 End => (a.End ?? DateTimeOffset.MaxValue).CompareTo(b.End ?? DateTimeOffset.MaxValue),   // an ongoing incident ends "last"
                 Duration => a.Duration(now).CompareTo(b.Duration(now)),
                 Failed => FailedOf(a).CompareTo(FailedOf(b)),
-                Cause => string.Compare(CauseOf(a), CauseOf(b), StringComparison.CurrentCultureIgnoreCase),
+                Cause => string.Compare(CauseOf(a), CauseOf(b), StringComparison.OrdinalIgnoreCase),   // the program's own English words and figures
                 Number => a.Occurrence.CompareTo(b.Occurrence),
                 _ => 0,
             };
             if (c != 0) return c;
 
             c = b.Start.CompareTo(a.Start);
-            if (c == 0) c = string.Compare(a.Host, b.Host, StringComparison.CurrentCultureIgnoreCase);
+            if (c == 0) c = string.Compare(a.Host, b.Host, StringComparison.OrdinalIgnoreCase);
             // Same start on the same host (an outage and a slowdown noticed together, a host written in two cases): the kind, then the
             // number of the incident of that kind, which is never twice the same for one host: two different incidents are never equal,
             // so the sort (which does not keep the order it was given) puts them in the same order every time.
