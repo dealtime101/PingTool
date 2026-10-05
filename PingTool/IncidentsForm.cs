@@ -32,7 +32,7 @@ namespace PingTool
                 GridLines = true,
                 Dock = DockStyle.Fill,
                 AccessibleName = "Incidents",
-                AccessibleDescription = "The outages and slowdowns of this run, newest first. Select one to read the route captured when it began; click a column title to sort.",
+                AccessibleDescription = "The outages and slowdowns of this run, newest first. Select one to read the route captured when it began. To sort, click a column title or press Control and the number of the column, 1 to 8; the same again reverses the order.",
             };
             // Column widths are not scaled by the form: written for 96 DPI too, and scaled here.
             int W(int at100) => DpiScale.Scale(new Size(at100, 0), DeviceDpi).Width;
@@ -62,12 +62,25 @@ namespace PingTool
             string[] titles = list.Columns.Cast<ColumnHeader>().Select(c => c.Text).ToArray();
             int sortColumn = -1;
             bool ascending = true;
-            list.ColumnClick += (_, e) =>
+            void SortBy(int column)
             {
-                (sortColumn, ascending) = IncidentOrder.Click(sortColumn, ascending, e.Column);
+                (sortColumn, ascending) = IncidentOrder.Click(sortColumn, ascending, column);
                 list.ListViewItemSorter = new ItemSorter(sortColumn, ascending, now);
                 list.Sort();
                 for (int c = 0; c < titles.Length; c++) list.Columns[c].Text = titles[c] + (c == sortColumn ? (ascending ? " ▲" : " ▼") : "");
+            }
+
+            list.ColumnClick += (_, e) => SortBy(e.Column);
+
+            // The same without a mouse: Ctrl+1 to Ctrl+8 sort by the first to the eighth column (a header cannot be focused).
+            list.KeyDown += (_, e) =>
+            {
+                if (!e.Control || e.Alt || e.Shift) return;
+                int digit = e.KeyCode is >= Keys.D1 and <= Keys.D9 ? e.KeyCode - Keys.D1 + 1
+                    : e.KeyCode is >= Keys.NumPad1 and <= Keys.NumPad9 ? e.KeyCode - Keys.NumPad1 + 1 : 0;
+                if (IncidentOrder.ColumnOfDigit(digit, titles.Length) is not int column) return;
+                SortBy(column);
+                e.Handled = e.SuppressKeyPress = true;
             };
 
             // All the rows are made first and handed over at once (inside BeginUpdate/EndUpdate): one repaint, not one per incident.

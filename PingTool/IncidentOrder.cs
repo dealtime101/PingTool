@@ -35,6 +35,10 @@ namespace PingTool
         // What the "Cause / detail" column shows is the cause of an outage and the figures of a slowdown: sort on the same text.
         private static string CauseOf(Incident i) => i.Kind == IncidentKind.Outage ? i.Cause : "";
 
+        // The keyboard way to the same sort (a column header takes no focus, so a click is out of reach without a mouse): Ctrl+1 is the
+        // first column, Ctrl+2 the second... digit is the number on the key, 1 to 9. null when there is no such column.
+        public static int? ColumnOfDigit(int digit, int columnCount) => digit >= 1 && digit <= columnCount ? digit - 1 : null;
+
         // What a click on a header does: another column starts ascending; the same column reverses.
         public static (int Column, bool Ascending) Click(int currentColumn, bool currentAscending, int clicked) =>
             clicked == currentColumn ? (clicked, !currentAscending) : (clicked, true);
