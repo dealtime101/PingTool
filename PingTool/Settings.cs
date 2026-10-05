@@ -130,6 +130,10 @@ namespace PingTool
         [JsonIgnore]
         public string? LoadProblem { get; private set; }
 
+        // How many addresses of "Webhooks" were left out on loading (invalid, repeated or over the limit). Never saved.
+        [JsonIgnore]
+        public int WebhooksIgnored { get; private set; }
+
         // The file exists but was not read (locked, or damaged and not moved aside): what is in memory is the defaults, not the user's
         // settings, so the first save must not be the end of the file. See Save.
         private bool mustKeepCopy;
@@ -185,8 +189,9 @@ namespace PingTool
             // (without echoing the address): a webhook that silently vanished would mean alerts nobody receives.
             var raw = (Webhooks ?? new List<string>()).Where(w => !string.IsNullOrWhiteSpace(w)).Select(w => w.Trim()).ToList();
             var good = raw.Where(w => WebhookPayload.TryParseUrl(w, out _)).Distinct(StringComparer.Ordinal).Take(MaxWebhooks).ToList();
+            WebhooksIgnored = raw.Count - good.Count;
             if (good.Count < raw.Count)
-                LoadProblem = $"{raw.Count - good.Count} webhook address(es) in settings.json were ignored: only distinct http:// or https:// addresses are used (at most {MaxWebhooks}).";
+                LoadProblem =$"{raw.Count - good.Count} webhook address(es) in settings.json were ignored: only distinct http:// or https:// addresses are used (at most {MaxWebhooks}).";
             Webhooks = good;
             ActiveProfile ??= "";
             Recent = (Recent ?? new List<string>())

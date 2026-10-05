@@ -215,8 +215,9 @@
          1.21.137 = a complete last row of a log file that has no final line end (saved by an editor or a spreadsheet) is kept and given its line end, instead of being cut like a half row left by a crash (PIN472.72);
          1.21.138 = two PingTool windows logging the same host into the same file take turns, so neither cuts or overwrites the rows of the other (PIN472.73);
          1.21.139 = the log files are written off the window's thread, one write at a time, so a network share that went away no longer freezes the window at every flush (PIN472.74);
-         1.21.140 = the note about pings dropped from a blocked log folder names each gap separately, instead of one period that also covers what was written between two blockages (PIN472.75) -->
-    <Version>1.21.140</Version>
+         1.21.140 = the note about pings dropped from a blocked log folder names each gap separately, instead of one period that also covers what was written between two blockages (PIN472.75);
+         1.21.141 = the webhook test says how many addresses of settings.json were left out as unusable, and says so when none is left, instead of "No webhook is set" (PIN472.76) -->
+    <Version>1.21.141</Version>
   </PropertyGroup>
 
   <ItemGroup>

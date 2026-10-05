@@ -11,6 +11,22 @@ namespace PingTool
 
     internal sealed record WebhookResult(string Label, bool Ok, string Detail);
 
+    internal static class WebhookTest
+    {
+        // The text of the box "--test-webhooks" shows. A webhook that was left out of settings.json on loading (a mistyped address) is the
+        // very fault this check is for: the load problem says how many, and when none is left it is said so, instead of "No webhook is set".
+        public static string Summary(string? loadProblem, int ignored, int webhookCount, IReadOnlyList<WebhookResult> results, string settingsPath)
+        {
+            string left = loadProblem is null ? "" : loadProblem + "\r\n\r\n";
+            if (webhookCount == 0)
+                return left + (ignored > 0
+                    ? "No webhook can be tested: none of the addresses in \"Webhooks\" in " + settingsPath + " is usable."
+                    : "No webhook is set. Put the addresses in \"Webhooks\" in " + settingsPath + " (see the README).");
+
+            return left + string.Join("\r\n", results.Select(r => (r.Ok ? "OK      " : "FAILED  ") + r.Label + " (" + r.Detail + ")"));
+        }
+    }
+
     internal enum WebhookFormat { Json, Slack, Discord, Ntfy }
 
     // What each kind of service wants in the body. The format is read from the address (Slack, Discord and
