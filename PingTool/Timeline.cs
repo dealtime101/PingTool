@@ -122,7 +122,7 @@ namespace PingTool
             var c = CultureInfo.CurrentCulture;
             string? periods = DescribePeriods(d);
             if (periods is not null) text += "\n" + periods;
-            var mine = incidents.Where(i => i.Host == d.Host).OrderBy(i => i.Start).ToList();
+            var mine = TimelineLayout.Visible(d, incidents).OrderBy(i => i.Start).ToList();
             if (mine.Count == 0) text += "\n" + Loc.T("timeline.incidents.none");
             else
             {
@@ -283,6 +283,11 @@ namespace PingTool
         internal static float LabelStart(float tickX, float labelWidth, float leftEdge, float rightEdge) =>
             Math.Clamp(tickX - labelWidth / 2, leftEdge, Math.Max(leftEdge, rightEdge - labelWidth));
 
+        // The incidents of THIS host that touch the chart's time range: the one rule for what is drawn and what is said aloud
+        // (the accessible summary used to list incidents of earlier sessions that the stripes never show).
+        internal static IEnumerable<Incident> Visible(TimelineData d, IReadOnlyList<Incident> incidents) =>
+            incidents.Where(i => i.Host == d.Host && (i.End ?? d.To) >= d.From && i.Start <= d.To);
+
         public static TimelineShapes Build(TimelineData d, IReadOnlyList<Incident> incidents, int width, int plotHeight,
                                            IReadOnlyList<NetworkEvent>? networkEvents = null)
         {
@@ -315,11 +320,10 @@ namespace PingTool
                 run.Add(new GraphPoint(x + cell / 2, Y(b.AvgMs.Value)));
             }
 
-            foreach (var i in incidents.Where(i => i.Host == d.Host))
+            foreach (var i in Visible(d, incidents))
             {
                 var start = i.Start > d.From ? i.Start : d.From;
                 var end = (i.End ?? d.To) < d.To ? (i.End ?? d.To) : d.To;
-                if (end < start) continue;   // entirely outside this session's time range
 
                 float x0 = X(start);
                 float x1 = Math.Min(width, Math.Max(X(end), x0 + 2));   // a short incident must still be visible
