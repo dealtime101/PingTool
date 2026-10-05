@@ -59,7 +59,8 @@ jobs:
             echo "No tag v$ver yet: nothing to release."
             echo "go=no" >> "$GITHUB_OUTPUT"
           elif gh release view "v$ver" >/dev/null 2>&1; then
-            echo "Release v$ver already exists."; echo "go=no" >> "$GITHUB_OUTPUT"
+            echo "Release v$ver already exists."
+            echo "go=no" >> "$GITHUB_OUTPUT"
           else
             echo "go=yes" >> "$GITHUB_OUTPUT"
           fi
