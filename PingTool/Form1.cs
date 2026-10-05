@@ -71,6 +71,10 @@ namespace PingTool
             Icon = AppIcon.Load();   // the title bar, Alt+Tab and the taskbar
             Text = AppVersion.Title(null);
             toolTip.SetToolTip(cmbAddress, ProbeTarget.Help);
+            // The label before it (tab order) is only a hint to a screen reader, which names a box by what it is told: said outright, as for
+            // the other boxes of the window.
+            cmbAddress.AccessibleName = "Address of the target to monitor";
+            cmbAddress.AccessibleDescription = "A host name or an IP address to ping, or an address starting with tcp://, http://, https:// or dns:// to test a port, a web page or a name lookup.";
             // The label is short (the column is narrow): the unit and what happens are said here, and in the accessible name.
             const string downHelp = "Number of consecutive failed pings after which the host is reported down.";
             toolTip.SetToolTip(lblDownAfter, downHelp);
