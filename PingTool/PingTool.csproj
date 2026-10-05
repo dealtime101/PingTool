@@ -258,8 +258,9 @@
          1.21.180 = the availability of a period counts only the part of each outage that lies inside it, so an outage that began before the period no longer counts whole (PIN472.121);
          1.21.181 = the loss-per-hour grid of the report has a row for every calendar day, empty ones included, so a gap stays visible and "the last 31 days" are 31 days (PIN472.122);
          1.21.182 = a target name that is too long is cut between characters, never through an emoji or between a letter and its accent (PIN472.123);
-         1.21.183 = the own down limit of a target is written with its unit in the report, "down after 2 failed pings in a row", not "down after 2" (PIN472.125) -->
-    <Version>1.21.183</Version>
+         1.21.183 = the own down limit of a target is written with its unit in the report, "down after 2 failed pings in a row", not "down after 2" (PIN472.125);
+         1.21.184 = the sentence a screen reader says about the graph agrees in number: "of the last 1 ping lost", not "of the last 1 pings lost" (PIN472.126) -->
+    <Version>1.21.184</Version>
   </PropertyGroup>
 
   <ItemGroup>

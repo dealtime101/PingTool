@@ -30,7 +30,8 @@ namespace PingTool
             string p95 = recent.P95 is double p ? ", 95th percentile " + p.ToString("0.#", c) + " ms" : "";
             // The one target on screen also gets its curve in words: the window in quarters, oldest first (a compared set would be too long).
             string trend = s.Name.Length == 0 ? Trend(s.Samples, c) : "";
-            return $"{who}: {lastText}{p95}, {recent.Lost.ToString(c)} of the last {recent.Samples.ToString(c)} pings lost{trend}";
+            // "ping" or "pings" with the count: a screen reader says this sentence aloud, and the first one it reads at the start of a run is "of the last 1 ping".
+            return $"{who}: {lastText}{p95}, {recent.Lost.ToString(c)} of the last {recent.Samples.ToString(c)} ping{(recent.Samples == 1 ? "" : "s")} lost{trend}";
         }
 
         public const int TrendParts = 4;
