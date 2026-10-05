@@ -174,8 +174,9 @@
          1.21.96 = PingTool runs on .NET 10 and asks the system for dark controls: lists, combo boxes, buttons and scroll bars follow the dark windows (PIN461.67, with .21, .53 and .96);
          1.21.97 = one rule for "the same target" everywhere: scheme and host ignore the case, the path and query of a URL do not, so https://site/Status and https://site/status are two targets (PIN461.153, with .89 and .180);
          1.21.98 = the recent figures of a target end with a voice quality (MOS, ITU-T G.107 E-model) from the mean latency, the jitter and the loss, so a bad video call can be told to a non-specialist (PIN472.1);
-         1.21.99 = the targets read from settings.json and the command line go through the same check as an address typed in the box: an invalid one is left out and said once, instead of being added and failing at every probe (PIN472.24). -->
-    <Version>1.21.99</Version>
+         1.21.99 = the targets read from settings.json and the command line go through the same check as an address typed in the box: an invalid one is left out and said once, instead of being added and failing at every probe (PIN472.24);
+         1.21.100 = the diagnose option says it when no gateway is found, as the diagnosis profile does: in a message once the window is up, in a balloon when it starts minimized, on the error output when headless (PIN472.25). -->
+    <Version>1.21.100</Version>
   </PropertyGroup>
 
   <ItemGroup>

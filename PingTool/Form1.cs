@@ -256,6 +256,9 @@ namespace PingTool
         // True until the first time the window is asked to show itself, when it was started with --minimized.
         private bool startHidden;
 
+        // What this launch has to say that a hidden window cannot (--minimized): shown as a balloon by SetVisibleCore.
+        private string? launchWarning;
+
         // Application.Run shows the main window once: with --minimized that one request is turned down, so the window never
         // appears (not even for a frame) and the notification icon is the only trace; double-clicking it shows the window for real.
         // The handle is created anyway, so that the message loop can run what the window would have started from Shown.
@@ -267,6 +270,7 @@ namespace PingTool
                 value = false;
                 if (!IsHandleCreated) CreateHandle();
                 notifyIcon.Visible = true;
+                if (launchWarning is string warning) BeginInvoke(() => ShowBalloon(warning, ToolTipIcon.Warning));
                 if (startup.Start) BeginInvoke(() => { if (!isRunning) btnStartStop_Click(this, EventArgs.Empty); });
             }
 
@@ -314,8 +318,25 @@ namespace PingTool
             if (startup.IntervalMs is int ms)
                 numInterval.Value = Math.Clamp(ms, (int)numInterval.Minimum, (int)numInterval.Maximum);
             IEnumerable<string> hostsOfThisLaunch = settings.Hosts;
+            bool gatewayMissing = false;
             if (startup.OverridesHosts)
-                hostsOfThisLaunch = (startup.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(startup.Hosts);
+            {
+                var discovered = new List<string>();
+                if (startup.Diagnose)
+                {
+                    discovered = DiagnosticTargets.Discover(out bool gatewayFound);
+                    gatewayMissing = !gatewayFound;
+                }
+
+                hostsOfThisLaunch = discovered.Concat(startup.Hosts);
+            }
+
+            // Started minimized, no window is shown (see SetVisibleCore): the balloon is what can say it then.
+            if (gatewayMissing)
+            {
+                launchWarning = DiagnosticTargets.NoGatewayMessage;
+                Shown += (_, _) => MessageBox.Show(DiagnosticTargets.NoGatewayMessage, "PingTool");
+            }
             // Same rule as typing an address: what the address box would refuse is left out, and said once the window is up.
             var validHosts = ProbeTarget.KeepValid(hostsOfThisLaunch.Distinct(TargetKey.Comparer), out int refused);
             foreach (var host in validHosts) AddHost(host);
@@ -557,7 +578,7 @@ namespace PingTool
             });
 
             if (!gatewayFound)
-                MessageBox.Show("No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.", "PingTool");
+                MessageBox.Show(DiagnosticTargets.NoGatewayMessage, "PingTool");
         }
 
         private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)

@@ -92,7 +92,14 @@ namespace PingTool
                 if (o.IntervalMs is int ms) settings.IntervalMs = Limits.Clamp(ms, Limits.IntervalMs);
                 if (settings.LoadProblem is { } loadProblem) Console.Error.WriteLine(loadProblem);
 
-                var hosts = (o.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(o.Hosts).ToList();
+                var found = new List<string>();
+                if (o.Diagnose)
+                {
+                    found = DiagnosticTargets.Discover(out bool gatewayFound);
+                    if (!gatewayFound) Console.Error.WriteLine(DiagnosticTargets.NoGatewayMessage);
+                }
+
+                var hosts = found.Concat(o.Hosts).ToList();
                 if (hosts.Count == 0) hosts = settings.Hosts;
 
                 using var webhooks = settings.Webhooks.Count == 0 ? null

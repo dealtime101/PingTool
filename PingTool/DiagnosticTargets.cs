@@ -37,6 +37,9 @@ namespace PingTool
             return targets.Distinct(TargetKey.Comparer).ToList();
         }
 
+        // Said wherever the diagnosis targets are built (the profile, --diagnose, --headless --diagnose): one wording.
+        public const string NoGatewayMessage = "No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.";
+
         public static List<string> Discover(out bool gatewayFound)
         {
             var snapshots = new List<NicSnapshot>();
