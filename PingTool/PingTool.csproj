@@ -296,8 +296,9 @@
          1.21.218 = the measure window of a host keeps counting the failures that make it Down and those that follow, instead of staying frozen on what came before the outage (PIN472.180);
          1.21.219 = the French label of the timeline's worst loss period reads "Le plus de pertes", the superlative like its neighbours, not the comparative (PIN472.182);
          1.21.220 = a CSV export of a log that let its oldest pings go says so in the file itself (a remark line under the header, skipped by the reader) (PIN472.183);
-         1.21.221 = the README and the code say what the network watch does not see: a move between two access points that keeps the address and the gateway (PIN472.185) -->
-    <Version>1.21.221</Version>
+         1.21.221 = the README and the code say what the network watch does not see: a move between two access points that keeps the address and the gateway (PIN472.185);
+         1.21.222 = the loss ticks of a comparison of more than twelve hosts stay inside the shared strip: the next hosts take the first places again (PIN472.186) -->
+    <Version>1.21.222</Version>
   </PropertyGroup>
 
   <ItemGroup>
