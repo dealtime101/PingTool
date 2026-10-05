@@ -71,6 +71,12 @@ namespace PingTool
             window.Clear();
         }
 
+        private void Push(long ping)
+        {
+            window.Enqueue(ping);
+            while (window.Count > WindowSize) window.Dequeue();
+        }
+
         // ping < 0 means failure.
         public HostChange Update(long ping)
         {
@@ -88,16 +94,18 @@ namespace PingTool
             else
             {
                 failures++;
-                if (state == HostState.Down) return HostChange.None;
+                // The failures of a host that is down are in the window too (it was left frozen on what came before the outage, so the
+                // loss read "0 %" for a host that answers nothing): the first reply after the outage starts it again (above).
+                if (state == HostState.Down) { Push(ping); return HostChange.None; }
                 if (failures >= downAfter)
                 {
+                    Push(ping);
                     state = HostState.Down;
                     return HostChange.Down;
                 }
             }
 
-            window.Enqueue(ping);
-            while (window.Count > WindowSize) window.Dequeue();
+            Push(ping);
             if (window.Count < WindowSize) return HostChange.None;
 
             double loss = WindowLossPercent;

@@ -292,8 +292,9 @@
          1.21.214 = the local / Internet diagnosis says when the targets that answer are slow or losing packets, instead of blaming one side only (PIN472.173);
          1.21.215 = the log reader refuses a file cut inside a quoted field and text after a closing quote, naming the line, instead of taking the row for a ping (PIN472.174);
          1.21.216 = a profile name is checked by Unicode characters: invisible format characters outside the basic plane (U+E0001, tags) are refused and cleaned, the flag sequences that use tags are kept (PIN472.176);
-         1.21.217 = the route window follows the new hops only when the reader is at the end with nothing selected; otherwise the selection and the scroll position stay (PIN472.177) -->
-    <Version>1.21.217</Version>
+         1.21.217 = the route window follows the new hops only when the reader is at the end with nothing selected; otherwise the selection and the scroll position stay (PIN472.177);
+         1.21.218 = the measure window of a host keeps counting the failures that make it Down and those that follow, instead of staying frozen on what came before the outage (PIN472.180) -->
+    <Version>1.21.218</Version>
   </PropertyGroup>
 
   <ItemGroup>
