@@ -98,7 +98,8 @@ jobs:
                   info.external_attr = 0o644 << 16
                   z.writestr(info, open(path, "rb").read())
           EOF
-          sha256sum "PingTool-$ver-win-x64.zip" > "PingTool-$ver-win-x64.zip.sha256"
+          pkg="PingTool-$ver-win-x64.zip"
+          sha256sum "$pkg" > "$pkg.sha256"
           cat "PingTool-$ver-win-x64.zip.sha256"
 
       - name: Publish the release
