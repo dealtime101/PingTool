@@ -581,8 +581,30 @@ namespace PingTool
                 MessageBox.Show(DiagnosticTargets.NoGatewayMessage, "PingTool");
         }
 
+        // Picking a profile replaces the target list and clears the figures. Nothing to ask when nothing would be lost; else the
+        // user is told what, and "No" puts the box back on the profile that is really applied.
+        private bool ConfirmReplace()
+        {
+            // The built-in diagnosis is not saved (its targets are read from the network again), so it never counts as lost work.
+            bool diagnosisActive = string.Equals(settings.ActiveProfile, DiagnosticTargets.ProfileName, StringComparison.Ordinal);
+            bool unsavedList = !diagnosisActive
+                && !ProfileBook.SameTargets(sessions.Select(s => s.Address), ProfileBook.Find(settings.Profiles, settings.ActiveProfile));
+            bool figures = log.Count > 0;
+            if (!unsavedList && !figures) return true;
+
+            string lost = unsavedList && figures ? "the current target list (not saved as a profile) and the figures of this run"
+                : unsavedList ? "the current target list, which is not saved as a profile"
+                : "the figures of this run";
+            if (MessageBox.Show($"Applying this profile replaces {lost}. Continue?", "PingTool",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes) return true;
+
+            cboProfile.Text = settings.ActiveProfile;
+            return false;
+        }
+
         private void cboProfile_SelectionChangeCommitted(object? sender, EventArgs e)
         {
+            if (!isRunning && !ConfirmReplace()) return;
             if (string.Equals(cboProfile.SelectedItem?.ToString(), DiagnosticTargets.ProfileName, StringComparison.Ordinal))
             {
                 ApplyDiagnosis();

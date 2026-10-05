@@ -45,6 +45,11 @@ namespace PingTool
         // the same on screen but would be two profiles.
         private static bool IsInvisible(char c) => char.IsControl(c) || char.GetUnicodeCategory(c) == UnicodeCategory.Format;
 
+        // True when the list on screen is what the saved profile holds (same targets, any order, same rule as "the same
+        // target" everywhere). No saved profile means the list has not been saved: it is only "the same" when it is empty.
+        public static bool SameTargets(IEnumerable<string> current, Profile? saved) =>
+            new HashSet<string>(current, TargetKey.Comparer).SetEquals(saved?.Hosts ?? new List<string>());
+
         public static Profile? Find(IEnumerable<Profile> book, string? name) =>
             book.FirstOrDefault(p => string.Equals(p.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase));
 
