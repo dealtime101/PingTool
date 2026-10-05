@@ -17,7 +17,7 @@ namespace PingTool
         internal static readonly IReadOnlyDictionary<string, (string En, string Fr)> Table = new Dictionary<string, (string, string)>
         {
             ["timeline.empty"] = ("No data yet: start pinging this host.", "Aucune donnée pour l'instant : lancez les pings sur cet hôte."),
-            ["timeline.summary"] = ("{0} to {1} ({2}) | {3} pings, {4} lost ({5}%)", "{0} au {1} ({2}) | {3} pings, {4} perdu(s) ({5} %)"),
+            ["timeline.summary"] = ("{0} to {1} ({2}) | {3} pings, {4} lost ({5}%)", "De {0} à {1} ({2}) | {3} pings, {4} perdu(s) ({5} %)"),
             ["timeline.slowest"] = ("Highest average: {0} ms around {1}", "Moyenne la plus haute : {0} ms vers {1}"),
             ["timeline.lossiest"] = ("Most losses: {0}% of the pings ({1} of {2}) around {3}", "Plus de pertes : {0} % des pings ({1} sur {2}) vers {3}"),
             ["timeline.peak"] = ("Highest reply: {0} ms, above the scale of the chart ({1} ms): those columns are cut at the top and marked.", "Réponse la plus haute : {0} ms, au-dessus de l'échelle du graphique ({1} ms) : ces colonnes sont coupées en haut et marquées."),
