@@ -280,8 +280,9 @@
          1.21.202 = the expected-text check of a web target reads the page in its own encoding (byte order mark, then the Content-Type charset, then UTF-8) (PIN472.154);
          1.21.203 = the expected text is searched as the page arrives and the probe ends at the first read that brings it, instead of waiting for the end of a slow body (PIN472.155);
          1.21.204 = a log write that failed after part of its rows reached the disk and could not be cut back is remembered: the next write to that file takes the rows back first (or waits), so the retry no longer duplicates them (PIN472.157);
-         1.21.205 = the retired logs of earlier runs together hold at most 20 000 pings in memory: the oldest are given up, with a warning, instead of one more full log per run (PIN472.158) -->
-    <Version>1.21.205</Version>
+         1.21.205 = the retired logs of earlier runs together hold at most 20 000 pings in memory: the oldest are given up, with a warning, instead of one more full log per run (PIN472.158);
+         1.21.206 = the repair of a log cut by a crash follows the CSV quotes the first time a file is touched: a cut inside a field that holds a line feed goes back to the last complete row (PIN472.159) -->
+    <Version>1.21.206</Version>
   </PropertyGroup>
 
   <ItemGroup>

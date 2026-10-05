@@ -36,6 +36,9 @@ namespace PingTool
         // retry would append them a second time. Only touched under `flushing`.
         private readonly Dictionary<string, (long Start, byte[] Written)> unrecovered = new();
 
+        // The files this run has already written to: the first time, CutPartialLine reads the whole file (see `deep`). Under `flushing`.
+        private readonly HashSet<string> touched = new(StringComparer.OrdinalIgnoreCase);
+
         public AutoLog(string folder, Action<string>? beforeDiskAccess = null, Action<FileStream>? afterWrite = null, Action<FileStream, long>? cutBack = null)
         {
             this.folder = folder;
@@ -214,8 +217,11 @@ namespace PingTool
         // next rows would continue that line and spoil two rows at once, so what follows the last complete line is cut off before
         // appending: it was a half row that nothing can read, and the rows it belonged to were lost with that crash anyway. The check
         // reads the end of the file only; the append itself keeps FileMode.Append (two windows can log the same host at once).
-        // ponytail: a half row cut INSIDE a quoted field that holds a line feed (rare) leaves a partial row; a line feed always ends the check.
-        internal static void CutPartialLine(string path)
+        // A line feed INSIDE a quoted field (a detail that holds one) is not the end of a row: `deep` reads the whole file once, following
+        // the quotes, to find the last line end that is outside them, so that a crash in the middle of such a field is cut back to the
+        // row before it. It is done the first time a file is touched by this run (a crash is what it recovers from, and a crash ends the
+        // run); the other flushes only look at the end of the file.
+        internal static void CutPartialLine(string path, bool deep = true)
         {
             if (!File.Exists(path)) return;
 
@@ -227,14 +233,18 @@ namespace PingTool
                 if (length == 0) return;
 
                 keep = 0;
-                var block = new byte[4096];
-                for (long end = length; end > 0 && keep == 0; end -= block.Length)
+                if (deep) keep = LastRecordEnd(read);
+                else
                 {
-                    long from = Math.Max(0, end - block.Length);
-                    read.Position = from;
-                    int n = read.Read(block, 0, (int)(end - from));
-                    int at = Array.LastIndexOf(block, (byte)'\n', n - 1, n);
-                    if (at >= 0) keep = from + at + 1;
+                    var block = new byte[4096];
+                    for (long end = length; end > 0 && keep == 0; end -= block.Length)
+                    {
+                        long from = Math.Max(0, end - block.Length);
+                        read.Position = from;
+                        int n = read.Read(block, 0, (int)(end - from));
+                        int at = Array.LastIndexOf(block, (byte)'\n', n - 1, n);
+                        if (at >= 0) keep = from + at + 1;
+                    }
                 }
 
                 if (keep == length) return;   // ends on a line end: nothing partial
@@ -262,12 +272,36 @@ namespace PingTool
             write.SetLength(keep);
         }
 
+        // The position after the last line feed that is outside a quoted field (RFC 4180: a quote opens or closes, a doubled one does both
+        // and changes nothing); 0 when there is none.
+        private static long LastRecordEnd(FileStream read)
+        {
+            read.Position = 0;
+            var buffer = new byte[64 * 1024];
+            bool inQuotes = false;
+            long position = 0, boundary = 0;
+            int n;
+            while ((n = read.Read(buffer, 0, buffer.Length)) > 0)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    if (buffer[i] == (byte)'"') inQuotes = !inQuotes;
+                    else if (buffer[i] == (byte)'\n' && !inQuotes) boundary = position + i + 1;
+                }
+
+                position += n;
+            }
+
+            return boundary;
+        }
+
         // More than this after the last line end is not a row of ours (a row is a timestamp, a host, a status, a time and a short detail).
         private const int MaxRowBytes = 64 * 1024;
 
         // The text reads as exactly one row of a PingTool log (the five fields, a date, a number or nothing, a host and a status).
         private static bool IsWholeRow(byte[] text) =>
             text.Length > 0
+            && text.Count(b => b == (byte)'"') % 2 == 0   // a quote left open is a field cut short, which the reader would still accept
             && PingLogReader.TryParse(PingLog.CsvHeader + "\r\n" + new UTF8Encoding(false).GetString(text), out var entries, out _)
             && entries.Count == 1;
 
@@ -370,7 +404,7 @@ namespace PingTool
                         if (why is not null) lastError = why;
                     }
 
-                    CutPartialLine(path);
+                    CutPartialLine(path, deep: touched.Add(path));
                     // ReadWrite sharing lets a spreadsheet that does not lock the file read it meanwhile.
                     using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
                     long start = stream.Length;
