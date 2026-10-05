@@ -5,7 +5,9 @@ using System.Net.Sockets;
 namespace PingTool
 {
     // What the network card says about itself, as far as the diagnosis needs it.
-    internal sealed record NicSnapshot(string Name, bool IsUp, bool IsVirtualOrLoopback, IReadOnlyList<IPAddress> Gateways, IReadOnlyList<IPAddress> DnsServers);
+    // Addresses = the card's own IPv4 addresses: what tells which card the system routes the Internet traffic through.
+    internal sealed record NicSnapshot(string Name, bool IsUp, bool IsVirtualOrLoopback, IReadOnlyList<IPAddress> Gateways, IReadOnlyList<IPAddress> DnsServers,
+        IReadOnlyList<IPAddress>? Addresses = null);
 
     // "Diagnose my connection": the targets that let the report say WHERE the fault is (this PC, the router, the provider, the
     // Internet) for someone who does not know their gateway or DNS server addresses: the default gateway and the DNS servers read
@@ -19,13 +21,18 @@ namespace PingTool
         public static readonly string[] InternetReferences = { "1.1.1.1", "8.8.8.8", "dns://www.cloudflare.com", "https://www.cloudflare.com/" };
 
         // The list of targets, local ones first, no duplicates. gatewayFound says whether the first one is a real gateway.
-        public static List<string> From(IEnumerable<NicSnapshot> nics, out bool gatewayFound)
+        public static List<string> From(IEnumerable<NicSnapshot> nics, out bool gatewayFound, IPAddress? routedFrom = null)
         {
             var targets = new List<string>();
             gatewayFound = false;
 
-            // The first card that is up, is a real one, and has an IPv4 gateway: the one the traffic leaves by.
-            var nic = nics.FirstOrDefault(n => n.IsUp && !n.IsVirtualOrLoopback && n.Gateways.Any(IsUsableGateway));
+            // The card the traffic leaves by: among the cards that are up, real, and have an IPv4 gateway, the one that holds the address
+            // the system routes the Internet from (routedFrom: the system has weighed the routes and their metrics, the list of cards is
+            // in no such order: a Wi-Fi and an Ethernet card up together, or a VPN adapter, would otherwise give the gateway of the wrong one).
+            // Without that address (no route, or not asked) it is the first of them, as it always was.
+            var usable = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.Gateways.Any(IsUsableGateway)).ToList();
+            var nic = (routedFrom is null ? null : usable.FirstOrDefault(n => n.Addresses is not null && n.Addresses.Any(a => a.Equals(routedFrom))))
+                ?? usable.FirstOrDefault();
             if (nic is not null)
             {
                 gatewayFound = true;
@@ -40,7 +47,23 @@ namespace PingTool
         // Said wherever the diagnosis targets are built (the profile, --diagnose, --headless --diagnose): one wording.
         public const string NoGatewayMessage = "No network gateway was found (is the PC connected?). Only the Internet references are in the list: without the router in it, the report cannot say whether the fault is on your side.";
 
-        public static List<string> Discover(out bool gatewayFound) => Discover(CardReaders(), out gatewayFound);
+        public static List<string> Discover(out bool gatewayFound) => Discover(CardReaders(), out gatewayFound, LocalAddressToInternet());
+
+        // The address the system would send from to reach the Internet: a UDP socket "connected" to a public address only asks the
+        // routing table (nothing is sent), and tells the local address it chose. null when there is no route.
+        internal static IPAddress? LocalAddressToInternet()
+        {
+            try
+            {
+                using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socket.Connect(IPAddress.Parse("1.1.1.1"), 53);
+                return (socket.LocalEndPoint as IPEndPoint)?.Address;
+            }
+            catch (SocketException)
+            {
+                return null;
+            }
+        }
 
         // One reader per card, each run on its own: a card whose properties cannot be read (a virtual adapter, a faulty driver) is
         // left out, and the real card next to it is still used. The list of cards itself failing leaves no card, as before.
@@ -62,7 +85,8 @@ namespace PingTool
             return snapshots;
         }
 
-        internal static List<string> Discover(IEnumerable<Func<NicSnapshot>> readers, out bool gatewayFound) => From(ReadCards(readers), out gatewayFound);
+        internal static List<string> Discover(IEnumerable<Func<NicSnapshot>> readers, out bool gatewayFound, IPAddress? routedFrom = null) =>
+            From(ReadCards(readers), out gatewayFound, routedFrom);
 
         private static List<Func<NicSnapshot>> CardReaders()
         {
@@ -80,7 +104,8 @@ namespace PingTool
                             card.OperationalStatus == OperationalStatus.Up,
                             card.NetworkInterfaceType is NetworkInterfaceType.Loopback or NetworkInterfaceType.Tunnel,
                             props.GatewayAddresses.Select(g => g.Address).ToList(),
-                            props.DnsAddresses.ToList());
+                            props.DnsAddresses.ToList(),
+                            props.UnicastAddresses.Select(u => u.Address).Where(a => a.AddressFamily == AddressFamily.InterNetwork).ToList());
                     });
                 }
             }
