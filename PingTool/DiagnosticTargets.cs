@@ -39,6 +39,17 @@ namespace PingTool
                 targets.Add(nic.Gateways.First(IsUsableGateway).ToString());
                 foreach (var dns in nic.DnsServers.Where(IsUsableDns).Take(MaxDnsServers)) targets.Add(dns.ToString());
             }
+            else
+            {
+                // No IPv4 gateway on a real card (an IPv6-only gateway, or none seen): the DNS servers of the active real card are
+                // still worth testing, or the report can no longer tell a fault of the provider's DNS from the rest. gatewayFound stays
+                // false: there is no router in the list, and the caller says so.
+                var realUp = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.DnsServers.Any(IsUsableDns)).ToList();
+                var dnsCard = (routedFrom is null ? null : realUp.FirstOrDefault(n => n.Addresses is not null && n.Addresses.Any(a => a.Equals(routedFrom))))
+                    ?? realUp.FirstOrDefault();
+                if (dnsCard is not null)
+                    foreach (var dns in dnsCard.DnsServers.Where(IsUsableDns).Take(MaxDnsServers)) targets.Add(dns.ToString());
+            }
 
             targets.AddRange(InternetReferences);
             return targets.Distinct(TargetKey.Comparer).ToList();
