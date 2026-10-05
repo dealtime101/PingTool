@@ -187,8 +187,9 @@
          1.21.109 = the box that sets the number of failed pings after which a host is down is labelled "Down after", not the incorrect English "Fails to down" (PIN472.38);
          1.21.110 = the comment on tab order and accessible names lives in Form1.cs, where the designer cannot erase it, not in the generated file (PIN472.39);
          1.21.111 = the network changes of a session that crosses midnight are dated with the day as well as the time (PIN472.41);
-         1.21.112 = a report rebuilt from log files says "not recorded" in the limits column of a host, since a log does not keep them, instead of "global limits" (PIN472.42). -->
-    <Version>1.21.112</Version>
+         1.21.112 = a report rebuilt from log files says "not recorded" in the limits column of a host, since a log does not keep them, instead of "global limits" (PIN472.42);
+         1.21.113 = each square of the loss-per-hour grid of the report also holds its figures as text, hidden on screen and read by a screen reader, not only a colour and a hover text (PIN472.43). -->
+    <Version>1.21.113</Version>
   </PropertyGroup>
 
   <ItemGroup>

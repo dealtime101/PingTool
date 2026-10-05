@@ -62,7 +62,7 @@ namespace PingTool
                 + ".down{color:#b00020;font-weight:600}.deg{color:#9a6700;font-weight:600}svg{border:1px solid #ccc;background:#fafafa;max-width:100%;height:auto}.w{overflow-x:auto}"
                 + "small{color:#555}h3{font-size:14px;margin-top:18px}"
                 + "table.grid{width:auto;font-size:10px}table.grid th,table.grid td{padding:0;text-align:center}table.grid th{background:none;border:none;padding:0 2px;font-weight:400}"
-                + "table.grid td{width:18px;height:14px}.hn{background:#e6e6e6}.h0{background:#9ed89e}.h1{background:#f2e394}.h2{background:#f0a95a}.h3{background:#d9534f}"
+                + "table.grid td{width:18px;height:14px;position:relative}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.hn{background:#e6e6e6}.h0{background:#9ed89e}.h1{background:#f2e394}.h2{background:#f0a95a}.h3{background:#d9534f}"
                 + ".gl{display:inline-block;width:12px;height:12px;border:1px solid #bbb;vertical-align:middle}"
                 + "pre{background:#f6f6f6;border:1px solid #ccc;padding:8px;font-size:12px;overflow-x:auto}</style></head><body>");
 
@@ -150,7 +150,12 @@ namespace PingTool
                     {
                         h.Append(c, $"<tr><th>{day:yyyy-MM-dd}</th>");
                         for (int hour = 0; hour < 24; hour++)
-                            h.Append(c, $"<td class=\"{Availability.LossClass(hours[hour])}\" title=\"{E(Availability.Title(day, hour, hours[hour]))}\"></td>");
+                        {
+                            // The figures are in the cell as text too (hidden on screen, read by a screen reader, kept when the colours
+                            // are not shown): the colour and the hover text alone say nothing to everyone who cannot use them.
+                            string figures = E(Availability.Title(day, hour, hours[hour]));
+                            h.Append(c, $"<td class=\"{Availability.LossClass(hours[hour])}\" title=\"{figures}\"><span class=\"sr\">{figures}</span></td>");
+                        }
                         h.AppendLine("</tr>");
                     }
 
