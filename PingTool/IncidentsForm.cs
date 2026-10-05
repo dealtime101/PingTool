@@ -29,6 +29,7 @@ namespace PingTool
             {
                 View = View.Details,
                 FullRowSelect = true,
+                HideSelection = false,   // the chosen incident stays marked while the route below has the focus (it is what the route belongs to)
                 GridLines = true,
                 Dock = DockStyle.Fill,
                 AccessibleName = "Incidents",
