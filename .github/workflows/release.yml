@@ -13,7 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       recreate:
-        description: "Delete the release of the current version (the tag stays) and publish it again"
+        description: >-
+          Delete the release of the current version (the tag stays) and publish
+          it again
         type: boolean
         default: false
 
