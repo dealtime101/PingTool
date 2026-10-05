@@ -90,7 +90,8 @@ jobs:
           files = [("LICENSE.txt", "LICENSE.txt")] + [(n, "out/" + n) for n in
                   ("PingTool.deps.json", "PingTool.dll", "PingTool.exe",
                    "PingTool.runtimeconfig.json")]
-          with zipfile.ZipFile(f"PingTool-{ver}-win-x64.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+          with zipfile.ZipFile(f"PingTool-{ver}-win-x64.zip", "w",
+                               zipfile.ZIP_DEFLATED, compresslevel=9) as z:
               for name, path in files:
                   info = zipfile.ZipInfo(name, dt)
                   info.compress_type = zipfile.ZIP_DEFLATED
