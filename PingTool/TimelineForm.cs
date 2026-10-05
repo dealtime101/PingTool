@@ -221,12 +221,20 @@ namespace PingTool
             }
         }
 
+        // What the chart was last given: the host and the number of columns. The data only depends on these (the shapes are laid out
+        // again at every paint, from the size the chart has then), so a resize that does not change the number of columns, which is
+        // most of the pixels of a drag, does not go through the whole log again.
+        private (string Host, int Columns)? built;
+
         private void Redraw()
         {
             if (hostBox.SelectedItem is not string host) return;
 
             // About one column per 4 pixels.
-            var data = Timeline.Build(entries, host, Math.Max(10, chart.PlotWidth / 4));
+            int columns = Math.Max(10, chart.PlotWidth / 4);
+            if (built == (host, columns)) return;
+            built = (host, columns);
+            var data = Timeline.Build(entries, host, columns);
             chart.Show(data, incidents, networkEvents);
             string? network = data.IsEmpty ? null : Timeline.DescribeNetwork(networkEvents, data.From, data.To);
             summary.Text = Timeline.Describe(data) + (network is null ? "" : "\n" + network) + (droppedNote is null ? "" : "\n" + droppedNote);
