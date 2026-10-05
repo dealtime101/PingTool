@@ -192,6 +192,25 @@ namespace PingTool
             chart.SizeChanged += (_, _) => Redraw();   // a wider chart gets more columns
             Controls.AddRange(new Control[] { hostBox, chart, summary, note, close });
 
+            // The legend is as tall as its text needs at the width it has (a narrow window wraps it onto more lines, and a fixed height
+            // cut the end off); the summary sits right above it and the chart takes what is left. Written in the pixels of the screen
+            // (the form has been scaled by then), so the text, which grows with the scaling, has its room at any DPI.
+            const int Gap = 6;
+            void LayoutBottom()
+            {
+                int width = Math.Max(100, close.Left - note.Left - Gap);   // from the left margin to the Close button
+                int noteHeight = note.GetPreferredSize(new Size(width, 0)).Height;
+                note.SetBounds(note.Left, ClientSize.Height - noteHeight - Gap, width, noteHeight);
+                summary.SetBounds(summary.Left, note.Top - summary.Height - Gap, ClientSize.Width - summary.Left - 10, summary.Height);
+                int chartHeight = Math.Max(60, summary.Top - chart.Top - Gap);
+                if (chart.Height != chartHeight) chart.Height = chartHeight;   // its SizeChanged redraws, once
+            }
+
+            note.Anchor = summary.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            chart.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            SizeChanged += (_, _) => LayoutBottom();
+            LayoutBottom();
+
             int first = Timeline.InitialHost(list, selected);
             if (first >= 0) hostBox.SelectedIndex = first;
             else
