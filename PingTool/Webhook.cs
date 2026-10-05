@@ -25,6 +25,11 @@ namespace PingTool
 
             return left + string.Join("\r\n", results.Select(r => (r.Ok ? "OK      " : "FAILED  ") + r.Label + " (" + r.Detail + ")"));
         }
+
+        // The exit code of "--test-webhooks", for a script or a deployment that checks it: 0 only when there is at least one webhook,
+        // none was left out of settings.json (a mistyped address is a fault of the configuration) and every one answered; 2 otherwise.
+        public static int ExitCode(int ignored, int webhookCount, IReadOnlyList<WebhookResult> results) =>
+            webhookCount > 0 && ignored == 0 && results.Count == webhookCount && results.All(r => r.Ok) ? HeadlessRunner.OkCode : HeadlessRunner.ErrorCode;
     }
 
     internal enum WebhookFormat { Json, Slack, Discord, Ntfy }

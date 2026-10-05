@@ -78,7 +78,7 @@ The format follows the address: **Slack** (`{"text": …}`), **Discord** (`{"con
 - **A webhook address is a secret** (whoever has it can post to your channel). PingTool never shows it: messages name the host only. It is stored as plain text in `settings.json`, like the rest of the settings.
 - When an alert cannot be delivered after the retries, one balloon says so for that webhook, once per run.
 - It follows the **Alert on outage / slowdown / recovery** box: unticked, nothing is sent either.
-- **`PingTool.exe --test-webhooks`** sends a test message to every webhook, shows the result of each and exits (up to about 20 s if a receiver does not answer).
+- **`PingTool.exe --test-webhooks`** sends a test message to every webhook, shows the result of each and exits (up to about 20 s if a receiver does not answer). The exit code is `0` only when at least one webhook is set, none was left out of `settings.json` for being malformed, and every one answered; `2` otherwise, so a script or a deployment can rely on it.
 
 ## Settings
 

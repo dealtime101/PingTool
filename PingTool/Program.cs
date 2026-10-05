@@ -49,8 +49,9 @@ namespace PingTool
 
             if (startup.TestWebhooks)
             {
-                MessageBox.Show(TestWebhooks(), "PingTool");
-                return 0;
+                var (text, code) = TestWebhooks();
+                MessageBox.Show(text, "PingTool");
+                return code;   // 0 only when every webhook answered (a script can rely on it)
             }
 
             Application.Run(new MainForm(startup));
@@ -168,18 +169,19 @@ namespace PingTool
         // in a box. The alert goes out exactly as a real one does (same body, same retries), so a typo in an
         // address or a refused request shows up here and not in the middle of the night. Up to ~20 s when a
         // receiver does not answer (time limit and retries); the addresses themselves are never shown.
-        private static string TestWebhooks()
+        private static (string Text, int Code) TestWebhooks()
         {
             var settings = Settings.Load(Settings.DefaultPath);
             if (settings.Webhooks.Count == 0)
-                return WebhookTest.Summary(settings.LoadProblem, settings.WebhooksIgnored, 0, Array.Empty<WebhookResult>(), Settings.DefaultPath);
+                return (WebhookTest.Summary(settings.LoadProblem, settings.WebhooksIgnored, 0, Array.Empty<WebhookResult>(), Settings.DefaultPath), HeadlessRunner.ErrorCode);
 
             var urls = settings.Webhooks.Select(w => WebhookPayload.TryParseUrl(w, out var url) ? url : null).OfType<Uri>();
             using var sender = new WebhookSender(urls, AppVersion.Number);
             var test = new WebhookEvent("webhook-test", HostChange.None,
                 "PingTool webhook test: if you read this, alerts will reach this channel.", null, DateTimeOffset.Now);
             var results = sender.SendNowAsync(test).GetAwaiter().GetResult();
-            return WebhookTest.Summary(settings.LoadProblem, settings.WebhooksIgnored, settings.Webhooks.Count, results, Settings.DefaultPath);
+            return (WebhookTest.Summary(settings.LoadProblem, settings.WebhooksIgnored, settings.Webhooks.Count, results, Settings.DefaultPath),
+                WebhookTest.ExitCode(settings.WebhooksIgnored, settings.Webhooks.Count, results));
         }
     }
 }
