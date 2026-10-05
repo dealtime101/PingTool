@@ -2,7 +2,8 @@ name: Release
 
 # One GitHub Release per version: when the version in PingTool.csproj has a
 # tag (vX.Y.Z) and no release yet,
-# the program is built from that tag, zipped, and published as a Release with its SHA-256.
+# the program is built from that tag, zipped, and published as a Release with
+# its SHA-256.
 # Runs on every push to master (the version script pushes the commit and the tag together) and by hand.
 
 on:
