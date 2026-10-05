@@ -286,8 +286,9 @@
          1.21.208 = the webhook test (test-webhooks option) exits with 0 only when every webhook answered (and none was left out of settings.json), 2 otherwise (PIN472.163);
          1.21.209 = the Cause / detail column of the incident list refits when another column is resized, with a guard against its own change (PIN472.164);
          1.21.210 = the selected incident stays marked in the list when the route below has the focus (PIN472.165);
-         1.21.211 = a protocol-unreachable / prohibited reply whose address family is unknown keeps both causes (no support for the protocol on IPv4, a filtering rule on IPv6) instead of advising a firewall search (PIN472.168) -->
-    <Version>1.21.211</Version>
+         1.21.211 = a protocol-unreachable / prohibited reply whose address family is unknown keeps both causes (no support for the protocol on IPv4, a filtering rule on IPv6) instead of advising a firewall search (PIN472.168);
+         1.21.212 = a refused connection says that nothing usually listens on the port, but that a rule rejecting actively gives the same answer (PIN472.169) -->
+    <Version>1.21.212</Version>
   </PropertyGroup>
 
   <ItemGroup>

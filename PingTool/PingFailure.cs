@@ -78,7 +78,7 @@ namespace PingTool
                 SocketError.HostUnreachable
                     => new("Unreach", "Destination host unreachable (system error " + socket.ErrorCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ")"),
                 SocketError.ConnectionRefused
-                    => new("Refused", "Connection refused: nothing is listening on that port"),
+                    => new("Refused", "Connection refused: usually nothing is listening on that port, but a firewall or another rule that rejects the connection actively gives the same answer"),
                 SocketError.TimedOut => Timeout,
                 SocketError.ConnectionReset
                     => new("Reset", "The connection was closed by the other side"),
