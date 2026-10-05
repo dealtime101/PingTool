@@ -344,8 +344,9 @@
          1.21.266 = the timeline summary and the graph trend agree with the numbers in French (1 perdu, 2 perdus) and in English (1 ping), instead of "perdu(s)" (PIN472.343);
          1.21.267 = the note about pings the log let go is in the language of the window (PIN472.344);
          1.21.268 = the public lists of Internet references of the diagnosis are read-only views: no code can replace or empty their elements (PIN472.351);
-         1.21.269 = the name given to a target loses its invisible format characters (right-to-left override, zero width space...) as the name of a profile does (PIN472.355) -->
-    <Version>1.21.269</Version>
+         1.21.269 = the name given to a target loses its invisible format characters (right-to-left override, zero width space...) as the name of a profile does (PIN472.355);
+         1.21.270 = the crash log is moved aside before the entry that would take it over its limit, not after (PIN472.360) -->
+    <Version>1.21.270</Version>
   </PropertyGroup>
 
   <ItemGroup>

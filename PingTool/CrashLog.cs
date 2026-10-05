@@ -7,7 +7,12 @@ namespace PingTool
     // or misbehaved in the night can be explained in the morning. Writing it must never throw (it runs inside the handler of last resort).
     internal static class CrashLog
     {
-        public const long MaxBytes = 1_000_000;   // past this the file is moved aside (one generation kept): it cannot grow for ever
+        public const long MaxBytes = 1_000_000;   // the file never goes past this once it holds an entry (one generation kept): it cannot grow for ever
+
+        // The file is moved aside BEFORE the entry that would take it over MaxBytes (the size it has now plus the entry), not after: an
+        // entry written on top of a file that was exactly at the limit, or a large one, went over it. An entry bigger than MaxBytes on its
+        // own is the one case where the file is larger: it holds only that entry.
+        internal static bool NeedsRotation(long currentBytes, long entryBytes) => currentBytes > 0 && currentBytes + entryBytes > MaxBytes;
 
         private static readonly object gate = new();
 
@@ -117,7 +122,7 @@ namespace PingTool
                     // all the same, the file just goes over MaxBytes this once. The entry is the one thing this method is for.
                     try
                     {
-                        if (File.Exists(path) && new FileInfo(path).Length > MaxBytes) File.Move(path, path + ".1", overwrite: true);
+                        if (File.Exists(path) && NeedsRotation(new FileInfo(path).Length, Encoding.UTF8.GetByteCount(entry))) File.Move(path, path + ".1", overwrite: true);
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
                     {
