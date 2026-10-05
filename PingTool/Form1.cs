@@ -112,10 +112,7 @@ namespace PingTool
                     settings.Webhooks.Select(w => WebhookPayload.TryParseUrl(w, out var url) ? url : null).OfType<Uri>(),
                     AppVersion.Number);
                 // The sender reports from a background thread: the window is touched on its own thread only.
-                webhooks.Failed += (label, reason) =>
-                {
-                    if (!closing && IsHandleCreated) BeginInvoke(() => WebhookFailed(label, reason));
-                };
+                webhooks.Failed += (label, reason) => PostToWindow(() => WebhookFailed(label, reason));
             }
 
             // A settings file that could not be read is said once the window is up, with where it went.
@@ -1392,20 +1389,28 @@ namespace PingTool
         private void OnNetworkAddressChanged(object? sender, EventArgs e) => NetworkSignal();
         private void OnNetworkAvailabilityChanged(object? sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e) => NetworkSignal();
 
-        private void NetworkSignal()
+        private void NetworkSignal() => PostToWindow(() =>
+        {
+            networkTimer.Stop();
+            networkTimer.Start();
+        });
+
+        // From any other thread (the webhook sender's, the system's): run `action` on the window's thread, unless the window is on its way out.
+        // The handle can be destroyed between the check and BeginInvoke (the other thread cannot know), so BeginInvoke is guarded too, and
+        // `closing` is read again where the action runs, which may be after the form began to close.
+        private void PostToWindow(Action action)
         {
             if (closing || !IsHandleCreated) return;
             try
             {
                 BeginInvoke(() =>
                 {
-                    networkTimer.Stop();
-                    networkTimer.Start();
+                    if (!closing && !IsDisposed) action();
                 });
             }
             catch (Exception ex) when (ex is InvalidOperationException or ObjectDisposedException)
             {
-                // The window is closing.
+                // The window is closing: what this was about no longer has anyone to be told.
             }
         }
 
