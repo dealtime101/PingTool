@@ -222,8 +222,9 @@
          1.21.144 = the help option exits with 0 and, in the headless mode, writes its text to the standard output where a script can redirect it; a bad command line still exits with 2 on the error output (PIN472.80);
          1.21.145 = the incident list can be sorted from the keyboard, Control and the number of the column, and its accessible description says so (PIN472.81);
          1.21.146 = the monospace font of the route boxes of the incident and trace windows is released with the box instead of waiting for the finalizer, so opening them often no longer piles up GDI handles (PIN472.82);
-         1.21.147 = a certificate option on an http:// address, where there is no certificate, is refused with a message that says so, instead of being accepted and never checking anything (PIN472.83) -->
-    <Version>1.21.147</Version>
+         1.21.147 = a certificate option on an http:// address, where there is no certificate, is refused with a message that says so, instead of being accepted and never checking anything (PIN472.83);
+         1.21.148 = a name lookup target written with an IP address is refused with a message that says to use a name, since an address is not looked up and the target would always answer (PIN472.84) -->
+    <Version>1.21.148</Version>
   </PropertyGroup>
 
   <ItemGroup>
