@@ -61,6 +61,14 @@ namespace PingTool
                     return false;
                 }
 
+                // Just a name, as for tcp:// and dns://: what is not one (a ?query, a user@, a #fragment, a leading dash, an empty label)
+                // would only come back from the ping as a name that does not resolve, without saying it was never a name.
+                if (!IPAddress.TryParse(text, out _) && Uri.CheckHostName(text) == UriHostNameType.Unknown)
+                {
+                    error = "That is not a valid host name or IP address. Without a prefix the address is pinged, so it must be just a name such as example.com or an address such as 8.8.8.8 (no ?, @ or # parts).";
+                    return false;
+                }
+
                 target = new ProbeTarget(ProbeKind.Icmp, text, 0, null);
                 return true;
             }
