@@ -187,8 +187,8 @@ namespace PingTool
         }
 
         public static async Task<PathCapture> RunAsync(string host, IPAddress target, HopProbe probe, DateTimeOffset time,
-            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, CancellationToken token = default, int probesPerHop = ProbesPerHop,
-            Action<IReadOnlyList<Hop>>? progress = null)
+            int maxHops = MaxHops, int giveUpAfter = GiveUpAfter, int probesPerHop = ProbesPerHop,
+            Action<IReadOnlyList<Hop>>? progress = null, CancellationToken token = default)   // the token last (CA1068); callers name it
         {
             var hops = new List<Hop>();
             int silent = 0;

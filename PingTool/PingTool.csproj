@@ -351,8 +351,9 @@
          1.21.273 = the key of a target looks for the end of its host with a search set built once, not a new array at each comparison (PIN472.363);
          1.21.274 = the TCP probe takes its cancellation token as its last parameter (CA1068) (PIN472.365);
          1.21.275 = the line-break separators of the trace error text are a static field, not an array built at each call (CA1861) (PIN472.366);
-         1.21.276 = the HTTP probe takes its cancellation token as its last parameter (CA1068) (PIN472.367) -->
-    <Version>1.21.276</Version>
+         1.21.276 = the HTTP probe takes its cancellation token as its last parameter (CA1068) (PIN472.367);
+         1.21.277 = the route trace takes its cancellation token as its last parameter (CA1068), no CA1068 warning left (PIN472.368) -->
+    <Version>1.21.277</Version>
   </PropertyGroup>
 
   <ItemGroup>
