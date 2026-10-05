@@ -18,6 +18,9 @@ namespace PingTool
         private static readonly JsonSerializerOptions ReadOptions = new()
         {
             PropertyNameCaseInsensitive = true,
+            // A profile is read again from its text in the file, with its commas and comments: the same tolerance as for the document.
+            AllowTrailingCommas = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
             Converters = { new LenientInt() },
         };
 
@@ -73,7 +76,9 @@ namespace PingTool
             string? firstProblem = null;
             try
             {
-                using var doc = JsonDocument.Parse(json);
+                // A file edited by hand: a comma after the last item and // or /* */ comments are what a person leaves in, and not worth
+                // refusing the whole file for (the same tolerance as for the case of the keys and the numbers between quotes).
+                using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
                 var root = doc.RootElement;
                 JsonElement list;
 

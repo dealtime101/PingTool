@@ -210,8 +210,9 @@
          1.21.132 = a web probe whose expected text is not found says so when only the first 64 KiB of a longer page were searched, instead of blaming a maintenance page or a captive portal (PIN472.67);
          1.21.133 = a second down report without a recovery in between no longer leaves the first outage ongoing for ever: the same run of failures is one outage, a new run closes the previous one (PIN472.68);
          1.21.134 = importing profiles reads the version number of the file like the other numbers: 1.0 and "1" are version 1 instead of an unreadable file (PIN472.69);
-         1.21.135 = a profiles file that is not JSON is refused with the line and position where it breaks, in PingTool's words, not the library's technical message (PIN472.70) -->
-    <Version>1.21.135</Version>
+         1.21.135 = a profiles file that is not JSON is refused with the line and position where it breaks, in PingTool's words, not the library's technical message (PIN472.70);
+         1.21.136 = a profiles file edited by hand is no longer refused for a comma after its last item or for comments (PIN472.71) -->
+    <Version>1.21.136</Version>
   </PropertyGroup>
 
   <ItemGroup>
