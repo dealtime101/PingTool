@@ -70,10 +70,36 @@ namespace PingTool
             if (IsDisposed) return;
             hopsSeen = hops.Count;
             var partial = new PathCapture { Host = session.Address, Target = ip, Time = DateTimeOffset.Now, Hops = hops.ToList() };
-            output.Text = "Tracing the route to " + session.Address + " (" + ip + "), " + hops.Count + " hop(s) so far...\r\n"
-                + string.Join("\r\n", partial.HopLines());
-            output.SelectionStart = output.TextLength;
-            output.ScrollToCaret();
+            ReplaceKeepingView("Tracing the route to " + session.Address + " (" + ip + "), " + hops.Count + " hop(s) so far...\r\n"
+                + string.Join("\r\n", partial.HopLines()));
+        }
+
+        private const int EM_LINESCROLL = 0x00B6;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr window, int message, IntPtr wParam, IntPtr lParam);
+
+        // Puts new text in the box. A reader who is at the end follows it down; one who scrolled up to look at the first hops, or selected
+        // something to copy, keeps the selection and the line at the top of the view (setting Text alone sends both to the start).
+        private void ReplaceKeepingView(string text)
+        {
+            int lastLine = output.GetLineFromCharIndex(Math.Max(0, output.TextLength - 1));
+            int bottom = output.GetLineFromCharIndex(output.GetCharIndexFromPosition(new Point(2, Math.Max(2, output.ClientSize.Height - 2))));
+            int top = output.GetLineFromCharIndex(output.GetCharIndexFromPosition(new Point(2, 2)));
+            int selStart = output.SelectionStart, selLength = output.SelectionLength;
+            bool follow = LiveTextRule.Follows(selLength, bottom, lastLine);
+
+            output.Text = text;
+            if (follow)
+            {
+                output.SelectionStart = output.TextLength;
+                output.ScrollToCaret();
+            }
+            else
+            {
+                output.Select(Math.Min(selStart, output.TextLength), selLength);
+                if (output.IsHandleCreated) SendMessage(output.Handle, EM_LINESCROLL, IntPtr.Zero, (IntPtr)top);
+            }
         }
 
         private async Task TraceAsync(HostSession session, IPAddress ip)
@@ -100,6 +126,7 @@ namespace PingTool
                 // Tested inside the block, not in a filter: a failure that lands after the window is gone must be swallowed here,
                 // because nothing above this method (an async void handler) can catch it and PingTool would stop on it.
                 if (IsDisposed) return;
+                // The trace is over and failed: the reason is shown whatever the reader was looking at (it is the one line they need).
                 output.Text = PathCapture.FailureText(output.Text, hopsSeen, ex.Message);   // the hops found so far stay on screen
                 output.SelectionStart = output.TextLength;
                 output.ScrollToCaret();
