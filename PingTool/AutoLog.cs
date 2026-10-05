@@ -3,7 +3,10 @@ using System.Text;
 
 namespace PingTool
 {
-    // Writes every ping to disk as it happens, so a night of monitoring or a crash loses nothing.
+    // Writes every ping to disk within a few seconds, so that a night of monitoring is on disk even if the program is killed: a crash
+    // loses at most what was waiting for the next Flush (the last ~5 seconds, the timer's period), and, while the folder cannot be
+    // written, the pings that waited longer than the queue holds (MaxPending: they are counted and said, see DropNote). Not "nothing":
+    // the entries are in memory until they are written.
     // One CSV per host per day (a new file at midnight), same columns as the manual export.
     //
     // Entries wait in memory and are written by Flush (the form calls it every few seconds, at Stop

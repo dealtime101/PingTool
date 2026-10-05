@@ -303,8 +303,9 @@
          1.21.225 = the sentences a screen reader says about the graph follow the language of the window (graph keys of the Loc table) (PIN472.194);
          1.21.226 = the curve in words is told for a single target on the graph, named or not: the criterion is the number of targets, not the name (PIN472.195);
          1.21.227 = an unexpected error that ends the ping run is no longer written to the debugger only: it reaches the window-thread handler (crash log and one box); a Stop stays silent (PIN472.199);
-         1.21.228 = the left margin of the session timeline is measured again when the font or the DPI changes, not only at Show (PIN472.205) -->
-    <Version>1.21.228</Version>
+         1.21.228 = the left margin of the session timeline is measured again when the font or the DPI changes, not only at Show (PIN472.205);
+         1.21.229 = the README and the code say what the automatic log really promises: a crash loses at most the last few seconds still in memory, not nothing (PIN472.209) -->
+    <Version>1.21.229</Version>
   </PropertyGroup>
 
   <ItemGroup>
