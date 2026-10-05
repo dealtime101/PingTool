@@ -79,7 +79,7 @@ namespace PingTool
             const string downHelp = "Number of consecutive failed pings after which the host is reported down.";
             toolTip.SetToolTip(lblDownAfter, downHelp);
             toolTip.SetToolTip(numDownAfter, downHelp);
-            toolTip.SetToolTip(cboProfile, "Profile = the target list and all settings, under a name. Pick one to load it; type a name and press Save to keep the current setup.");
+            toolTip.SetToolTip(cboProfile, "Profile = the target list and the monitoring settings (interval, timeout, size, limits, alerts, the names and limits of the targets), under a name. Pick one to load it; type a name and press Save to keep the current setup. The window mode and \"Save the log to disk\" are not part of it.");
             FormClosed += (_, _) =>
             {
                 notifyIcon.Dispose();
@@ -413,7 +413,8 @@ namespace PingTool
             cboProfile.Text = typed;
         }
 
-        // Keeps the current setup (targets and every setting) under the name typed in the box.
+        // Keeps the current setup (the targets and the settings that shape the probing: see Profile) under the name typed in the box.
+        // Not the window mode (compact) nor "Save the log to disk": those belong to the person's way of working, not to what is monitored.
         private void btnSaveProfile_Click(object? sender, EventArgs e)
         {
             if (!ProfileBook.TryName(cboProfile.Text, out string name, out string error))

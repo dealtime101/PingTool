@@ -354,8 +354,9 @@
          1.21.276 = the HTTP probe takes its cancellation token as its last parameter (CA1068) (PIN472.367);
          1.21.277 = the route trace takes its cancellation token as its last parameter (CA1068), no CA1068 warning left (PIN472.368);
          1.21.278 = the incident list sorts host names and causes without the rules of the PC's language (ordinal, case ignored): the same order everywhere (CA1309) (PIN472.369);
-         1.21.279 = the comment on the lenient number reading of imported profiles says what the code does: decimals are cut toward zero, not rounded (PIN472.10) -->
-    <Version>1.21.279</Version>
+         1.21.279 = the comment on the lenient number reading of imported profiles says what the code does: decimals are cut toward zero, not rounded (PIN472.10);
+         1.21.280 = the tooltip, the comment and the README say what a profile keeps (the monitoring settings) and what it does not (window mode, saving the log) (PIN472.13) -->
+    <Version>1.21.280</Version>
   </PropertyGroup>
 
   <ItemGroup>
