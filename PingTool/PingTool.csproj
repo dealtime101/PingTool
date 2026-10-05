@@ -191,8 +191,9 @@
          1.21.113 = each square of the loss-per-hour grid of the report also holds its figures as text, hidden on screen and read by a screen reader, not only a colour and a hover text (PIN472.43);
          1.21.114 = a loss percentage in the report and the incident texts never reads 0 when pings were lost nor 100 when some were answered: "<0.1" and ">99.9" (PIN472.44);
          1.21.115 = the incident table of the report names a target as the other tables do, with the name the user gave it and its address (PIN472.46);
-         1.21.116 = a damaged settings file is still kept aside when its backup name is taken between the check and the move: the next name is tried instead of giving up (PIN472.50). -->
-    <Version>1.21.116</Version>
+         1.21.116 = a damaged settings file is still kept aside when its backup name is taken between the check and the move: the next name is tried instead of giving up (PIN472.50);
+         1.21.117 = a route trace that ends at its hop limit says so, and that the hops beyond were not probed, instead of claiming they do not answer (PIN472.51). -->
+    <Version>1.21.117</Version>
   </PropertyGroup>
 
   <ItemGroup>

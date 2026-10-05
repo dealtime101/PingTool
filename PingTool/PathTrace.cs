@@ -33,6 +33,10 @@ namespace PingTool
         // is not an answer. Null when it ran to the destination, to the hop limit, or was never meant to give up.
         public int? GaveUpAfter { get; init; }
 
+        // Set when the trace ran out of hops (this limit) without reaching the destination or giving up: the hops beyond the limit were
+        // NOT probed either. Null otherwise.
+        public int? HopLimit { get; init; }
+
         public bool Reached => Hops.Count > 0 && Hops[^1].Status == HopStatus.Reached;
 
         // The farthest hop that said anything: where the answers stop.
@@ -94,6 +98,11 @@ namespace PingTool
             if (GaveUpAfter is int silent)
                 return $"No reply after hop {farthest.Ttl} ({farthest.Address}); the trace stopped there after {silent} silent hops in a row and did not try the hops beyond. "
                     + "Routers and firewalls that do not answer these probes are common, so this does not show that the path ends there.";
+
+            // The trace used all its hops: what is beyond the limit was never tried, so the path may well go on.
+            if (HopLimit is int limit)
+                return $"The trace ended at its limit of {limit} hops without reaching the destination; the last reply came from hop {farthest.Ttl} ({farthest.Address}). "
+                    + "The hops beyond the limit were not probed, so this does not show where the path ends.";
 
             return $"Replies stop after hop {farthest.Ttl} ({farthest.Address}): the hops beyond it do not answer.";
         }
@@ -203,7 +212,9 @@ namespace PingTool
                 if (silent >= giveUpAfter) { gaveUp = true; break; }
             }
 
-            return new PathCapture { Host = host, Target = target, Time = time, Hops = hops, GaveUpAfter = gaveUp ? giveUpAfter : null };
+            bool hitLimit = !gaveUp && hops.Count > 0 && hops.Count == maxHops
+                && hops[^1].Status is not (HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed);
+            return new PathCapture { Host = host, Target = target, Time = time, Hops = hops, GaveUpAfter = gaveUp ? giveUpAfter : null, HopLimit = hitLimit ? maxHops : null };
         }
     }
 
