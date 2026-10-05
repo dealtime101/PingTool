@@ -67,7 +67,8 @@ namespace PingTool
         public static (int SlowMs, int LossPercent, int DownAfter) Effective(TargetOptions? o, int slowMs, int lossPercent, int downAfter) =>
             (o?.SlowMs ?? slowMs, o?.LossPercent ?? lossPercent, o?.DownAfter ?? downAfter);
 
-        // "slow 20 ms, loss 10 %, down after 2" for the report; "global limits" when it has none of its own.
+        // "slow above 20 ms, loss at least 10 %, down after 2" for the report (only the limits the target has of its own, in that order);
+        // "global limits" when it has none.
         public static string DescribeLimits(TargetOptions? o)
         {
             var parts = new List<string>();
