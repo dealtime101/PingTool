@@ -97,7 +97,7 @@ namespace PingTool
                 normalClientSize = DpiScale.Scale(saved, DeviceDpi);
             }
             else ApplyCompact(false);   // the checkbox did not change, so nothing applied the resizable full window yet
-            autoLogTimer.Tick += (_, _) => FlushAutoLog();
+            autoLogTimer.Tick += (_, _) => FlushAutoLogInBackground();
 
             // The system says "something changed" several times for one real change (address, then availability, then
             // the gateway): a short wait lets them settle, and only then the cards are compared with what they were.
@@ -862,6 +862,7 @@ namespace PingTool
 
         // A file that cannot be written (open in a spreadsheet, disk full) never stops the monitoring:
         // one balloon says so, the entries wait and go out at the next tick that works.
+        // On the window's thread and waiting for the disk: at Start, Stop and exit, where what is queued must be written NOW.
         private void FlushAutoLog()
         {
             AutoLog.FlushRetired(retiredLogs);
@@ -871,21 +872,65 @@ namespace PingTool
                 return;
             }
 
-            bool written = autoLog.Flush();
+            ReportFlush(autoLog, autoLog.Flush());
+        }
+
+        // The timer's flush: the disk work (a share that went away can hold a write for tens of seconds, once per file) runs off the
+        // window's thread, one flush at a time, so the window never freezes on it; the result is read back here.
+        private async void FlushAutoLogInBackground()
+        {
+            var log = autoLog;
+            var retired = retiredLogs.ToList();
+            try
+            {
+                Task<bool?> own = log?.FlushInBackground() ?? Task.FromResult<bool?>(null);
+                Task<List<AutoLog>> others = retired.Count == 0
+                    ? Task.FromResult(new List<AutoLog>())
+                    : Task.Run(() => retired.Where(r => r.Flush()).ToList());
+                bool? written = await own;
+                var emptied = await others;
+                if (closing || IsDisposed) return;
+
+                retiredLogs.RemoveAll(emptied.Contains);
+                if (log is null)
+                {
+                    if (retiredLogs.Count == 0) autoLogTimer.Stop();
+                    return;
+                }
+
+                // null: the flush of an earlier tick is still on the disk and reports for itself when it ends.
+                // Not the current log any more (a new run changed the folder meanwhile): its state is not the window's.
+                if (written is bool done && ReferenceEquals(log, autoLog)) ReportFlush(log, done);
+            }
+            catch (Exception ex)
+            {
+                // Anything the flush did not expect is said once, like a file that cannot be written: monitoring goes on.
+                System.Diagnostics.Debug.WriteLine($"Log flush failed: {ex}");
+                if (!closing && !IsDisposed && !autoLogWarned)
+                {
+                    autoLogWarned = true;
+                    ShowBalloon("Log file not written, will retry: " + ex.Message, ToolTipIcon.Warning);
+                }
+            }
+        }
+
+        // What a flush says to the user. One balloon for a failure, not one per tick.
+        private void ReportFlush(AutoLog log, bool written)
+        {
             if (written) autoLogWarned = false;
             else if (!autoLogWarned && !closing)
             {
                 autoLogWarned = true;
-                ShowBalloon("Log file not written, will retry: " + autoLog.LastError + (autoLog.DropNote is { } lost ? " " + lost : ""), ToolTipIcon.Warning);
+                ShowBalloon("Log file not written, will retry: " + log.LastError + (log.DropNote is { } lost ? " " + lost : ""), ToolTipIcon.Warning);
             }
 
             // Pings that were thrown away because the folder stayed unwritable too long, never silently: said when it first happens,
             // and again with the final figures when the folder works again (not at every tick of a long failure).
-            if (autoLog.Dropped > droppedReported && !closing && (written || !dropWarned))
+            if (log.Dropped > droppedReported && !closing && (written || !dropWarned))
             {
-                droppedReported = autoLog.Dropped;
+                droppedReported = log.Dropped;
                 dropWarned = !written;
-                ShowBalloon(autoLog.DropNote!, ToolTipIcon.Warning);
+                ShowBalloon(log.DropNote!, ToolTipIcon.Warning);
             }
 
             if (written) dropWarned = false;

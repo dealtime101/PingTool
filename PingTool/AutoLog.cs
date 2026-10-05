@@ -21,12 +21,24 @@ namespace PingTool
         private readonly string folder;
         private readonly List<LogEntry> pending = new();
 
-        public AutoLog(string folder) => this.folder = folder;
+        // The queue is touched by the window (Add, on its thread) and by a flush running in the background: this lock covers every
+        // use of `pending`, and only that, never the disk. Flushes take turns on the other lock, so two of them never write the same rows.
+        private readonly object queue = new();
+        private readonly object flushing = new();
+        private int running;   // 1 while a background flush is in flight
+
+        private readonly Action<string>? beforeDiskAccess;   // called before each file is touched: a seam to make the disk slow in a test
+
+        public AutoLog(string folder, Action<string>? beforeDiskAccess = null)
+        {
+            this.folder = folder;
+            this.beforeDiskAccess = beforeDiskAccess;
+        }
 
         public static string DefaultFolder => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PingTool", "logs");
 
-        public int Pending => pending.Count;
+        public int Pending { get { lock (queue) return pending.Count; } }
 
         public string Folder => folder;
 
@@ -44,8 +56,9 @@ namespace PingTool
         // One try for each retired log; the ones that got everything out are forgotten.
         public static void FlushRetired(List<AutoLog> retired) => retired.RemoveAll(r => r.Flush());
 
-        // Why the last Flush could not write everything; null when it did.
-        public string? LastError { get; private set; }
+        // Why the last Flush could not write everything; null when it did. Written by a flush that may run in the background.
+        private volatile string? lastError;
+        public string? LastError => lastError;
 
         // The pings that were thrown away because the folder stayed unwritable too long: how many, and the time they span. The log
         // would otherwise look complete with hours missing.
@@ -57,16 +70,20 @@ namespace PingTool
         public string? DropNote => Dropped == 0 ? null : string.Create(CultureInfo.CurrentCulture,
             $"{Dropped} ping(s) from {DroppedFrom?.ToLocalTime():G} to {DroppedTo?.ToLocalTime():G} could not be saved to the log files: the log folder was not writable for too long. The log has a gap there.");
 
+        // On the window's thread: it is also the only one that writes Dropped, DroppedFrom and DroppedTo.
         public void Add(LogEntry entry)
         {
-            pending.Add(entry);
-            int over = pending.Count - MaxPending;
-            if (over <= 0) return;
+            lock (queue)
+            {
+                pending.Add(entry);
+                int over = pending.Count - MaxPending;
+                if (over <= 0) return;
 
-            DroppedFrom ??= pending[0].Time;
-            DroppedTo = pending[over - 1].Time;
-            Dropped += over;
-            pending.RemoveRange(0, over);
+                DroppedFrom ??= pending[0].Time;
+                DroppedTo = pending[over - 1].Time;
+                Dropped += over;
+                pending.RemoveRange(0, over);
+            }
         }
 
         // "PingTool-8.8.8.8-2026-10-03.csv". The host is whatever the user typed (tcp://x:443,
@@ -181,19 +198,40 @@ namespace PingTool
             }
         }
 
-        // True when everything pending is on disk.
+        // A flush that does not hold the window up: the disk work (which a share that went away makes last tens of seconds, once per
+        // file) runs on a pool thread, one at a time. Null = one is already running, nothing was started; else whether everything pending
+        // is on disk when it ends. The caller reads the result back on its own thread (await).
+        public Task<bool?> FlushInBackground()
+        {
+            if (Interlocked.CompareExchange(ref running, 1, 0) != 0) return Task.FromResult<bool?>(null);
+            return Task.Run<bool?>(() =>
+            {
+                try { return Flush(); }
+                finally { Volatile.Write(ref running, 0); }
+            });
+        }
+
+        // True when everything pending is on disk. Waits for a flush in progress (Stop and exit want what is queued written NOW).
         public bool Flush()
         {
-            LastError = null;
-            if (pending.Count == 0) return true;
+            lock (flushing) return FlushOnce();
+        }
+
+        private bool FlushOnce()
+        {
+            lastError = null;
+            // What is queued now; what arrives while the disk is being written waits for the next flush.
+            List<LogEntry> batch;
+            lock (queue) batch = pending.ToList();
+            if (batch.Count == 0) return true;
 
             // Distinct hosts differing only by what FileName replaces would share a file: that is
             // fine, rows carry their host.
             var written = new HashSet<LogEntry>(ReferenceEqualityComparer.Instance);
             // FileName once per host and day, not once per pending entry: with a stuck folder this runs every few seconds
-            // over up to MaxPending entries, on the UI thread.
+            // over up to MaxPending entries.
             var names = new Dictionary<(string, DateOnly), string>();
-            foreach (var group in pending.GroupBy(e =>
+            foreach (var group in batch.GroupBy(e =>
             {
                 var key = (e.Host, DateOnly.FromDateTime(e.Time.DateTime));
                 if (!names.TryGetValue(key, out var name)) names[key] = name = FileName(e.Host, e.Time);
@@ -202,6 +240,7 @@ namespace PingTool
             {
                 try
                 {
+                    beforeDiskAccess?.Invoke(group.Key);
                     Directory.CreateDirectory(folder);
                     string path = Path.Combine(folder, group.Key);
                     // Two windows can log the same host into the same file: what one does (cut a half row, append, take its batch back
@@ -210,7 +249,7 @@ namespace PingTool
                     using var gate = FileGate.TryEnter(path, TimeSpan.FromMilliseconds(250));
                     if (gate is null)
                     {
-                        LastError = "Another PingTool window is writing this file; these rows wait for the next flush.";
+                        lastError = "Another PingTool window is writing this file; these rows wait for the next flush.";
                         continue;
                     }
 
@@ -242,12 +281,15 @@ namespace PingTool
                 }
                 catch (Exception ex) when (IsFileFailure(ex))
                 {
-                    LastError = ex.Message;
+                    lastError = ex.Message;
                 }
             }
 
-            pending.RemoveAll(written.Contains);
-            return pending.Count == 0;
+            lock (queue)
+            {
+                pending.RemoveAll(written.Contains);
+                return pending.Count == 0;
+            }
         }
     }
 }
