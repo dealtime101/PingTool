@@ -32,7 +32,17 @@ namespace PingTool
                 lock (gate)
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                    if (File.Exists(path) && new FileInfo(path).Length > MaxBytes) File.Move(path, path + ".1", overwrite: true);
+                    // Moving the old file aside is housekeeping: if it fails (crash.log.1 held by an editor or an antivirus), the entry is written
+                    // all the same, the file just goes over MaxBytes this once. The entry is the one thing this method is for.
+                    try
+                    {
+                        if (File.Exists(path) && new FileInfo(path).Length > MaxBytes) File.Move(path, path + ".1", overwrite: true);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException or ArgumentException)
+                    {
+                        System.Diagnostics.Debug.WriteLine("crash.log could not be rotated: " + ex.Message);
+                    }
+
                     File.AppendAllText(path, entry, new UTF8Encoding(false));
                 }
 
