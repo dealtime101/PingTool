@@ -706,7 +706,7 @@ namespace PingTool
                 if (log.DroppedNote is string dropped)
                     MessageBox.Show("Exported, but incomplete.\n\n" + dropped + "\nThe file starts at "
                         + log.Entries.First().Time.ToLocalTime().ToString("G", CultureInfo.CurrentCulture)
-                        + ".\n\nTick \"Save the log to disk\" before Start to keep everything.", "PingTool");
+                        + $".\n\nTick \"{chkSaveLog.Text}\" before Start to keep everything.", "PingTool");   // the label as it is on screen
             }
             catch (IOException ex)
             {
