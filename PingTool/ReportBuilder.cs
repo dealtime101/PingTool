@@ -47,9 +47,9 @@ namespace PingTool
             string E(string s) => WebUtility.HtmlEncode(s);
             string N(double? v) => v is null ? "-" : v.Value.ToString("0.#", c);
             string T(DateTimeOffset t) => t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz", c);
-            // Cut, never rounded up, to two decimals: 99.997 % with a real outage must not read "100 %" in a claim to a provider.
             // "Box (192.168.1.1)" when the target has a name, its address otherwise; the address is what the pings went to.
             string Who(HostReport x) => x.Label is null ? E(x.Address) : E(x.Label) + " <small>(" + E(x.Address) + ")</small>";
+            // Cut, never rounded up, to two decimals: 99.997 % with a real outage must not read "100 %" in a claim to a provider.
             string Pct(double v) => (Math.Floor(v * 100 + 1e-9) / 100).ToString("0.##", c);
 
             h.AppendLine("<!DOCTYPE html>");
