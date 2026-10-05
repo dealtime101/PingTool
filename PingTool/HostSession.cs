@@ -58,12 +58,25 @@ namespace PingTool
             Ip = null;
             BaselinePath = null;
             BaselineRequested = false;
+            baselineFailures = 0;
         }
 
         // The route to this host while it was healthy, to compare with the one at an outage.
         // Captured once per run, at the first reply.
         public PathCapture? BaselinePath { get; set; }
         public bool BaselineRequested { get; set; }
+
+        public const int MaxBaselineTries = 3;
+        private int baselineFailures;
+
+        // The trace of the baseline failed: ask again at the next reply, but not for ever (a refused permission would
+        // start a trace at every ping). False when the tries are used up and the baseline stays missing for this run.
+        public bool BaselineFailed()
+        {
+            if (++baselineFailures >= MaxBaselineTries) return false;
+            BaselineRequested = false;
+            return true;
+        }
 
         public void SetIp(System.Net.IPAddress ip)
         {

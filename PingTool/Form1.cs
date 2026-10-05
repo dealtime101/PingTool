@@ -1134,6 +1134,7 @@ namespace PingTool
             catch (Exception ex)
             {
                 Debug.WriteLine($"Path capture for {session.Address} failed: {ex}");
+                if (outage is null) session.BaselineFailed();   // the baseline is asked again at a next reply (a few times)
             }
         }
 
