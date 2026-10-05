@@ -155,9 +155,10 @@ namespace PingTool
                 if (key == "contains" && !sawContains)
                 {
                     sawContains = true;
-                    string decoded;
-                    try { decoded = Uri.UnescapeDataString(value); }
-                    catch (UriFormatException) { decoded = ""; }
+                    // UnescapeDataString never throws for a bad sequence: "%zz", a lone "%" ("100%") and bytes that are not UTF-8 stay as
+                    // typed, which is what someone looking for a text with a percent sign in it means. A decoded control character (%00,
+                    // %0A) is refused below.
+                    string decoded = Uri.UnescapeDataString(value);
                     if (decoded.Length == 0 || decoded.Length > MaxExpectLength || decoded.Any(char.IsControl))
                     {
                         error = $"#contains= needs a text of 1 to {MaxExpectLength} characters (write spaces as %20), for example https://example.com/#contains=Welcome";
