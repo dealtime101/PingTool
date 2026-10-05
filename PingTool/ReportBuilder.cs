@@ -62,7 +62,12 @@ namespace PingTool
                 + ".down{color:#b00020;font-weight:600}.deg{color:#9a6700;font-weight:600}svg{border:1px solid #ccc;background:#fafafa;max-width:100%;height:auto}.w{overflow-x:auto}"
                 + "small{color:#555}h3{font-size:14px;margin-top:18px}"
                 + "table.grid{width:auto;font-size:10px}table.grid th,table.grid td{padding:0;text-align:center}table.grid th{background:none;border:none;padding:0 2px;font-weight:400}"
-                + "table.grid td{width:18px;height:14px;position:relative}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.hn{background:#e6e6e6}.h0{background:#9ed89e}.h1{background:#f2e394}.h2{background:#f0a95a}.h3{background:#d9534f}"
+                + "table.grid td{width:18px;height:14px;position:relative}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.hn{background:#e6e6e6}.h0{background:#9ed89e}"
+                // The classes are told apart by a pattern as well as by the colour (red-green colour blindness, a black and white print):
+                // up to 5 % = stripes one way, up to 30 % = stripes the other way, more = both ways (a mesh). The legend squares are the same classes.
+                + ".h1{background:#f2e394 repeating-linear-gradient(45deg,transparent 0 3px,rgba(0,0,0,.35) 3px 4px)}"
+                + ".h2{background:#f0a95a repeating-linear-gradient(-45deg,transparent 0 3px,rgba(0,0,0,.4) 3px 4px)}"
+                + ".h3{background:#d9534f repeating-linear-gradient(45deg,transparent 0 3px,rgba(0,0,0,.45) 3px 4px),repeating-linear-gradient(-45deg,transparent 0 3px,rgba(0,0,0,.45) 3px 4px)}"
                 + ".gl{display:inline-block;width:12px;height:12px;border:1px solid #bbb;vertical-align:middle}"
                 + "pre{background:#f6f6f6;border:1px solid #ccc;padding:8px;font-size:12px;overflow-x:auto}</style></head><body>");
 
@@ -139,7 +144,8 @@ namespace PingTool
                 h.AppendLine("<h2>Loss by hour</h2>");
                 h.AppendLine("<p><small>Each square is one clock hour: <span class=\"hn gl\"></span> no ping, <span class=\"h0 gl\"></span> no loss, "
                     + "<span class=\"h1 gl\"></span> up to 5 %, <span class=\"h2 gl\"></span> up to 30 %, <span class=\"h3 gl\"></span> more than 30 %. "
-                    + $"The {Availability.MaxGridDays.ToString(c)} most recent days are shown. Hover a square for its figures.</small></p>");
+                    + "The stripes say it without the colours: one way, the other way, both ways. "
+                    + $"The {Availability.MaxGridDays.ToString(c)} most recent days are shown. Hover a square for its figures (they are also in the text of each square).</small></p>");
                 foreach (var x in grids)
                 {
                     h.AppendLine(c, $"<p><b>{Who(x)}</b></p>");
