@@ -14,17 +14,19 @@ namespace PingTool
         {
             entries = new List<LogEntry>();
             error = "";
-            var rows = Rows(csv.TrimStart('﻿'));
+            // Row by row: a file that is far too big (or that is not a log at all) is refused at the limit, not after every row of it has
+            // been turned into a list of strings.
+            using var rows = Rows(csv.TrimStart('﻿')).GetEnumerator();
 
-            if (rows.Count == 0 || string.Join(",", rows[0]) != PingLog.CsvHeader)
+            if (!rows.MoveNext() || string.Join(",", rows.Current) != PingLog.CsvHeader)
             {
                 error = "This is not a PingTool log: the first line should be \"" + PingLog.CsvHeader + "\".";
                 return false;
             }
 
-            for (int i = 1; i < rows.Count; i++)
+            for (int i = 1; rows.MoveNext(); i++)
             {
-                var r = rows[i];
+                var r = rows.Current;
                 if (r.Count == 1 && r[0].Length == 0) continue;   // blank line
                 if (r.Count != 5) { error = $"Line {i + 1}: expected 5 fields, found {r.Count}."; return false; }
                 if (!DateTimeOffset.TryParseExact(r[0], "yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
@@ -55,15 +57,16 @@ namespace PingTool
         private static string Clip(string s) => s.Length <= 30 ? s : s[..30] + "...";
 
         // RFC 4180: quoted fields may hold commas, quotes ("") and line breaks.
-        private static List<List<string>> Rows(string text)
+        // One row at a time, as the reader asks for it (a row is handed over as soon as its line ends).
+        private static IEnumerable<List<string>> Rows(string text)
         {
-            var rows = new List<List<string>>();
             var row = new List<string>();
             var field = new StringBuilder();
             bool quoted = false, wasQuoted = false;
+            List<string>? finished = null;
 
             void EndField() { row.Add(field.ToString()); field.Clear(); wasQuoted = false; }
-            void EndRow() { EndField(); rows.Add(row); row = new List<string>(); }
+            void EndRow() { EndField(); finished = row; row = new List<string>(); }
 
             for (int i = 0; i < text.Length; i++)
             {
@@ -82,10 +85,15 @@ namespace PingTool
                 else if (c == '\r') { if (i + 1 < text.Length && text[i + 1] == '\n') i++; EndRow(); }
                 else if (c == '\n') EndRow();
                 else field.Append(c);
+
+                if (finished is not null) { yield return finished; finished = null; }
             }
 
-            if (field.Length > 0 || row.Count > 0 || wasQuoted) EndRow();   // last line without a line break
-            return rows;
+            if (field.Length > 0 || row.Count > 0 || wasQuoted)   // last line without a line break
+            {
+                EndRow();
+                yield return finished!;
+            }
         }
     }
 
