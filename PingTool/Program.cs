@@ -84,7 +84,10 @@ namespace PingTool
 
         // "PingTool.exe --headless --duration 8h --report night.html [targets]": see HeadlessRunner. Everything it has to say goes to
         // the standard output (the summary) or the error output (problems); the exit code is 0 / 1 / 2 as documented.
-        private static int RunHeadless(StartupOptions o)
+        private static int RunHeadless(StartupOptions o) => HeadlessRunner.Guarded(() => RunHeadlessCore(o), ex =>
+            CrashLog.TryAppend(CrashLog.DefaultPath, CrashLog.Entry(ex, DateTimeOffset.Now, AppVersion.Display, fatal: true)));
+
+        private static int RunHeadlessCore(StartupOptions o)
         {
             try
             {

@@ -13,6 +13,24 @@ namespace PingTool
         public const int OkCode = 0, IncidentCode = 1, ErrorCode = 2;
         public static readonly TimeSpan CheckpointEvery = TimeSpan.FromMinutes(10);
 
+        // The three exit codes are what a script or a scheduled task reads: an error nobody foresaw (a settings file that cannot be opened,
+        // a failing disk, a bug) must end as "could not run" (2) too, not as the code of a crashed runtime. It is written to the error
+        // output and handed to `record` (the crash log) first. Cancellation of the whole process is not an error of the run and passes.
+        public static int Guarded(Func<int> run, Action<Exception> record)
+        {
+            try
+            {
+                return run();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                try { record(ex); }
+                catch (Exception) { /* the report of the error must not become another one */ }
+                Console.Error.WriteLine("Unexpected error, the monitoring could not run: " + ex.GetType().Name + ": " + ex.Message);
+                return ErrorCode;
+            }
+        }
+
         public delegate Task<ProbeOutcome> ProbeFunc(ProbeTarget target, int timeoutMs, CancellationToken token);
 
         // addresses: what to probe. Limits, interval, timeout and names come from `settings`. probe: the probe itself (injected: tests do not
