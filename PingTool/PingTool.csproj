@@ -314,8 +314,9 @@
          1.21.236 = the comment of the webhooks field is back above that field in the main window (PIN472.230);
          1.21.237 = going compact while the window is maximized remembers the size it will have when restored, so the full window comes back to it (PIN472.232);
          1.21.238 = the hour-by-day grid of the report tells its loss classes apart by stripes as well as by colour (PIN472.240);
-         1.21.239 = the margin labels of the session timeline are drawn by the same text engine that measured the margin (PIN472.248) -->
-    <Version>1.21.239</Version>
+         1.21.239 = the margin labels of the session timeline are drawn by the same text engine that measured the margin (PIN472.248);
+         1.21.240 = the session timeline takes the colours of the system in a high-contrast theme (TimelinePalette), as the latency graph already did (PIN472.249) -->
+    <Version>1.21.240</Version>
   </PropertyGroup>
 
   <ItemGroup>

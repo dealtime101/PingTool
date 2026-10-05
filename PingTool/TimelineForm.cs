@@ -19,10 +19,21 @@ namespace PingTool
         private IReadOnlyList<Incident> incidents = Array.Empty<Incident>();
         private IReadOnlyList<NetworkEvent> networkEvents = Array.Empty<NetworkEvent>();
 
+        // The colours: the dark palette, or the system's in a high-contrast theme (looked at again when the theme changes).
+        private TimelinePalette palette = TimelinePalette.For(SystemInformation.HighContrast);
+
+        protected override void OnSystemColorsChanged(EventArgs e)
+        {
+            base.OnSystemColorsChanged(e);
+            palette = TimelinePalette.For(SystemInformation.HighContrast);
+            BackColor = palette.Back;
+            Invalidate();
+        }
+
         public TimelineChart()
         {
             DoubleBuffered = true;
-            BackColor = Color.FromArgb(40, 40, 40);
+            BackColor = palette.Back;
             // Reachable with Tab, so that a screen reader can land on it and read what it shows (see TimelineAccessibleObject).
             TabStop = true;
             AccessibleRole = AccessibleRole.Chart;
@@ -89,7 +100,7 @@ namespace PingTool
         private void PaintChart(Graphics g)
         {
             int plotW = PlotWidth, plotH = Height - TopMargin - BottomMargin;
-            using var grey = new SolidBrush(Color.Silver);
+            using var grey = new SolidBrush(palette.Text);
 
             string? nothing = Timeline.NothingToDraw(data.IsEmpty, plotH);
             if (nothing is not null)
@@ -109,29 +120,32 @@ namespace PingTool
             {
                 // Two codings, not one: an outage is HATCHED red, a slowdown is a plain orange tint. Red against orange at this opacity
                 // is almost the same for a red-green colour-blind eye; a stripe pattern is not.
+                var (hatchFore, hatchBack) = palette.OutageHatch;
                 using Brush band = kind == IncidentKind.Outage
-                    ? new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.WideUpwardDiagonal, Color.FromArgb(170, 255, 99, 71), Color.FromArgb(50, 255, 99, 71))
-                    : new SolidBrush(Color.FromArgb(60, 255, 165, 0));
+                    ? new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.WideUpwardDiagonal, hatchFore, hatchBack)
+                    : palette.SlowdownIsHatched
+                        ? new System.Drawing.Drawing2D.HatchBrush(System.Drawing.Drawing2D.HatchStyle.Percent25, palette.SlowdownColor, palette.Back)   // dots, not the stripes of an outage
+                        : new SolidBrush(palette.SlowdownColor);
                 g.FillRectangle(band, x0, 0, x1 - x0, plotH);
             }
 
             // A change of this PC's own network (Wi-Fi, VPN, cable, wake from sleep): a cyan dotted line, to be read against the outages.
-            using var netPen = new Pen(Color.Cyan, PxF(1.5f)) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
+            using var netPen = new Pen(palette.Network, PxF(1.5f)) { DashStyle = System.Drawing.Drawing2D.DashStyle.Dot };
             foreach (float x in shapes.NetworkMarkers ?? Array.Empty<float>()) g.DrawLine(netPen, x, 0, x, plotH);
 
-            using var barBrush = new SolidBrush(Color.FromArgb(90, 192, 192, 192));
+            using var barBrush = new SolidBrush(palette.Bars);
             foreach (var (x, yMin, yMax) in shapes.Bars)
                 g.FillRectangle(barBrush, x, yMax, Math.Max(1f, cell - 1), Math.Max(1f, yMin - yMax + 1));
 
             // The stronger the red, the larger the share of lost pings in that column.
             foreach (var (x, w, fraction) in shapes.LossCells)
             {
-                using var loss = new SolidBrush(Color.FromArgb((int)(70 + 185 * fraction), 255, 99, 71));
+                using var loss = new SolidBrush(palette.Loss(fraction));
                 g.FillRectangle(loss, x, plotH - Px(8), w, Px(8));
             }
 
-            using var avg = new Pen(Color.LimeGreen, PxF(1.5f));
-            using var dot = new SolidBrush(Color.LimeGreen);
+            using var avg = new Pen(palette.Average, PxF(1.5f));
+            using var dot = new SolidBrush(palette.Average);
             float radius = PxF(2f);
             foreach (var run in shapes.AvgRuns)
             {
@@ -139,7 +153,7 @@ namespace PingTool
                 else g.DrawLines(avg, run.Select(p => new PointF(p.X, p.Y)).ToArray());
             }
 
-            using var axis = new Pen(Color.FromArgb(120, 192, 192, 192));
+            using var axis = new Pen(palette.Axis);
             g.DrawLine(axis, 0, plotH, plotW, plotH);
             float labelsEnd = float.NegativeInfinity;   // where the last label drawn ends: the next one must start after it
             foreach (var (time, label) in Timeline.Ticks(data.From, data.To, Math.Max(2, plotW / Px(90))))
@@ -155,15 +169,15 @@ namespace PingTool
             }
 
             // A column whose highest reply is above the scale is cut at the top: a small mark says so.
-            using var cutBrush = new SolidBrush(Color.OrangeRed);
+            using var cutBrush = new SolidBrush(palette.CutMark);
             foreach (float x in shapes.Clipped ?? Array.Empty<float>())
                 g.FillPolygon(cutBrush, new[] { new PointF(x - Px(3), 0), new PointF(x + Px(3), 0), new PointF(x, Px(5)) });
 
             // The labels of the margin are drawn by the engine that measured them (TextRenderer, see Remeasure): GDI+ and GDI do not give the
             // same width for the same text, and the margin is that width plus a little room. (Not under the shifted transform: GDI ignores it.)
             g.ResetTransform();
-            TextRenderer.DrawText(g, TopLabel(data), Font, new Point(Px(2), TopMargin), Color.Silver, MarginLabelFlags);
-            TextRenderer.DrawText(g, "0", Font, new Point(Px(2), TopMargin + plotH - Font.Height), Color.Silver, MarginLabelFlags);
+            TextRenderer.DrawText(g, TopLabel(data), Font, new Point(Px(2), TopMargin), palette.Text, MarginLabelFlags);
+            TextRenderer.DrawText(g, "0", Font, new Point(Px(2), TopMargin + plotH - Font.Height), palette.Text, MarginLabelFlags);
         }
     }
 
