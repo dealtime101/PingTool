@@ -48,7 +48,25 @@ namespace PingTool
             data = d;
             incidents = inc;
             networkEvents = network ?? Array.Empty<NetworkEvent>();
-            measuredLeft = TextRenderer.MeasureText(TopLabel(d), Font).Width + Px(10);
+            Remeasure();
+            Invalidate();
+        }
+
+        // The margin is the width of the top label in the font and at the scale of NOW: measured again when either changes (the window
+        // dragged to a screen of another density, the font changed), from the data on show, or the label would run into the plot.
+        private void Remeasure() => measuredLeft = TextRenderer.MeasureText(TopLabel(data), Font).Width + Px(10);
+
+        protected override void OnFontChanged(EventArgs e)
+        {
+            base.OnFontChanged(e);
+            Remeasure();
+            Invalidate();
+        }
+
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            Remeasure();
             Invalidate();
         }
 
