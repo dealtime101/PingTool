@@ -311,8 +311,9 @@
          1.21.233 = the order of the graph samples (oldest first) is written where the series type is defined (PIN472.227);
          1.21.234 = the incident list sort breaks every tie (kind, then the number of the incident), so two different incidents are never equal (PIN472.228);
          1.21.235 = the crash log writer, the last-resort handler, lets no exception out whatever its type (a SecurityException included) (PIN472.229);
-         1.21.236 = the comment of the webhooks field is back above that field in the main window (PIN472.230) -->
-    <Version>1.21.236</Version>
+         1.21.236 = the comment of the webhooks field is back above that field in the main window (PIN472.230);
+         1.21.237 = going compact while the window is maximized remembers the size it will have when restored, so the full window comes back to it (PIN472.232) -->
+    <Version>1.21.237</Version>
   </PropertyGroup>
 
   <ItemGroup>
