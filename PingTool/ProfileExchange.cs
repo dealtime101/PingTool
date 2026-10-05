@@ -93,7 +93,7 @@ namespace PingTool
 
                     if (Find(root, "Version") is { } v)
                     {
-                        if (!(v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int version) && version >= 1))
+                        if (!TryReadVersion(v, out int version))
                         {
                             error = "This file has a version number that PingTool cannot read.";
                             return false;
@@ -192,6 +192,21 @@ namespace PingTool
             foreach (var profile in incoming)
                 if (!ProfileBook.Upsert(book, profile)) notFitting++;
             return notFitting;
+        }
+
+        // The version of a file made by hand is read as leniently as every other number of a profile (see LenientInt): 1, 1.0, "1" and
+        // "1.0" are version 1; a decimal part is cut. Anything that is not a number, or that is under 1, is not a version.
+        internal static bool TryReadVersion(JsonElement v, out int version)
+        {
+            version = 0;
+            double value;
+            if (v.ValueKind == JsonValueKind.Number) value = v.GetDouble();
+            else if (v.ValueKind == JsonValueKind.String
+                     && double.TryParse(v.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value)) { }
+            else return false;
+            if (double.IsNaN(value)) return false;
+            version = (int)Math.Clamp(Math.Truncate(value), int.MinValue, int.MaxValue);
+            return version >= 1;
         }
 
         private static JsonElement? Find(JsonElement obj, string name)
