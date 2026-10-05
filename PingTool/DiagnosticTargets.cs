@@ -168,8 +168,10 @@ namespace PingTool
         }
 
         // The one rule for a gateway AND for a DNS server (they were two copies of the same line): an IPv4 address that is not 0.0.0.0
-        // ("no gateway") and not the PC itself (the 127.0.0.53 stub resolver of Linux, ::1, say nothing about the network). IPv6 and
-        // link-local (fe80::) addresses are left out: the targets of the list are IPv4 addresses or names.
+        // ("no gateway") and not the PC itself (the 127.0.0.53 stub resolver of Linux says nothing about the network). IPv6 addresses are
+        // not taken here (IsUsableIPv6 does, for a connection with no IPv4). The link-local range 169.254.0.0/16 is NOT left out, on
+        // purpose: a router never has such an address from DHCP, but resolvers do (the one of an AWS instance, 169.254.169.253, the
+        // node-local DNS of a Kubernetes node, 169.254.20.10), and leaving them out would drop a DNS server that really answers.
         private static bool IsUsableIPv4(IPAddress a) =>
             a.AddressFamily == AddressFamily.InterNetwork && !a.Equals(IPAddress.Any) && !IPAddress.IsLoopback(a);
 
