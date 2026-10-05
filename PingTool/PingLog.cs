@@ -52,8 +52,17 @@ namespace PingTool
         {
             // CR LF written explicitly: the writer belongs to the caller, whose own line ending is none of our business.
             writer.Write(CsvHeader + "\r\n");
+            // A log that let its oldest pings go says so IN the file (the window said it once, to whoever exported): whoever receives
+            // the file cannot tell a whole session from the end of one. A single-field row under the header, which the reader skips
+            // (PingLogReader.CommentMark) and a spreadsheet shows as a line of text; the columns stay the same.
+            if (Dropped > 0)
+                writer.Write(Field(CommentMark + " Incomplete: only the latest " + MaxEntries.ToString("N0", CultureInfo.InvariantCulture)
+                    + " pings are in this file, the " + Dropped.ToString("N0", CultureInfo.InvariantCulture) + " older ones were no longer kept.") + "\r\n");
             foreach (var e in entries) writer.Write(CsvLine(e) + "\r\n");
         }
+
+        // The mark of a row that is a remark and not a ping.
+        public const string CommentMark = "#";
 
         // One row, shared by the export and the automatic log so the two files read the same.
         public static string CsvLine(LogEntry e) => string.Join(",",

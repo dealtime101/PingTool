@@ -31,6 +31,7 @@ namespace PingTool
                 var (r, line, problem) = rows.Current;
                 if (problem is not null) { error = $"Line {line}: {problem}"; return false; }
                 if (r.Count == 1 && r[0].Length == 0) continue;   // blank line
+                if (r.Count == 1 && r[0].StartsWith(PingLog.CommentMark, StringComparison.Ordinal)) continue;   // a remark of the export (the log was incomplete)
                 if (r.Count != 5) { error = $"Line {line}: expected 5 fields, found {r.Count}."; return false; }
                 if (!DateTimeOffset.TryParseExact(r[0], "yyyy-MM-dd'T'HH:mm:ss.fffzzz", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time))
                 { error = $"Line {line}: the date \"{Clip(r[0])}\" is not in the log format."; return false; }
