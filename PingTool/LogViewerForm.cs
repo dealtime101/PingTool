@@ -14,6 +14,11 @@ namespace PingTool
             this.replay = replay;
             this.entries = entries;
 
+            // Positions and sizes below are written for 96 DPI: the form scales them to the screen (like the main window and the timeline
+            // do), so that the text, which does grow with the scaling, keeps its room at 125 %, 150 % or 200 %.
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Log";
             ClientSize = new Size(560, 250);
             StartPosition = FormStartPosition.CenterParent;
@@ -36,7 +41,21 @@ namespace PingTool
                     + HostMonitor.DefaultLatencyMs.ToString(c) + " ms, loss at least " + HostMonitor.DefaultLossPercent.ToString(c) + " %, down after "
                     + HostMonitor.DefaultDownAfter.ToString(c) + " failures): the log does not record the ones used at the time.",
             });
-            var info = new Label { Text = text, ForeColor = Color.White, AutoSize = false, Location = new Point(12, 12), Size = new Size(536, 150) };
+            // A read-only box that scrolls, not a label of a fixed height: the sources can be several long paths, and the sentence on the
+            // limits comes last, so a label cut the end off with no way to read it. (A TextBox breaks lines on CR LF only.)
+            var info = new TextBox
+            {
+                Text = text.Replace("\n", "\r\n", StringComparison.Ordinal),
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.FromArgb(64, 64, 64),
+                ForeColor = Color.White,
+                Location = new Point(12, 12),
+                Size = new Size(536, 150),
+                AccessibleName = "The log that was opened",
+            };
 
             var timeline = new Button { Text = "Session timeline...", Location = new Point(12, 176), Size = new Size(170, 28) };
             var incidents = new Button { Text = "Incidents...", Location = new Point(190, 176), Size = new Size(170, 28) };

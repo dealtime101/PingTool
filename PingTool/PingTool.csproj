@@ -239,8 +239,9 @@
          1.21.161 = replaying logs counts an identical ping once when files overlap or the same file is loaded twice, and says how many were removed (PIN472.97);
          1.21.162 = a profile of settings.json that is left out on loading, for its name, as a repeat or past the limit of 20, is said in the start-up message with the reason, not dropped in silence (PIN472.98);
          1.21.163 = a profile name may hold emoji that are built with a zero width joiner (a family, a pride flag), and its length is counted in characters as shown, not in UTF-16 units; a joiner between two letters is still refused (PIN472.99);
-         1.21.164 = when a route trace breaks off, the hops already found stay on screen and the failure is added under them with how far it got (PIN472.100) -->
-    <Version>1.21.164</Version>
+         1.21.164 = when a route trace breaks off, the hops already found stay on screen and the failure is added under them with how far it got (PIN472.100);
+         1.21.165 = the log window follows the screen scaling and shows what it says in a box that scrolls, instead of a label of a fixed height that cut the end off (PIN472.102) -->
+    <Version>1.21.165</Version>
   </PropertyGroup>
 
   <ItemGroup>
