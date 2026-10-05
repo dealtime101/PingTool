@@ -287,8 +287,9 @@
          1.21.209 = the Cause / detail column of the incident list refits when another column is resized, with a guard against its own change (PIN472.164);
          1.21.210 = the selected incident stays marked in the list when the route below has the focus (PIN472.165);
          1.21.211 = a protocol-unreachable / prohibited reply whose address family is unknown keeps both causes (no support for the protocol on IPv4, a filtering rule on IPv6) instead of advising a firewall search (PIN472.168);
-         1.21.212 = a refused connection says that nothing usually listens on the port, but that a rule rejecting actively gives the same answer (PIN472.169) -->
-    <Version>1.21.212</Version>
+         1.21.212 = a refused connection says that nothing usually listens on the port, but that a rule rejecting actively gives the same answer (PIN472.169);
+         1.21.213 = the diagnosis treats a target in the network of one of this PC's own cards as local, even with a global address (a LAN machine with a global IPv6 address is no longer an Internet target) (PIN472.172) -->
+    <Version>1.21.213</Version>
   </PropertyGroup>
 
   <ItemGroup>

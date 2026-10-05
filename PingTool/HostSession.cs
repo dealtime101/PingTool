@@ -112,7 +112,7 @@ namespace PingTool
         }
 
         // What the comparison reads: only a host that has been pinged this run has data.
-        public Target ToTarget() => new(Address, Ip, Monitor.State, Last is not null);
+        public Target ToTarget() => new(Address, Ip, Monitor.State, Last is not null, Ip is not null && LocalNetworks.IsOnLink(Ip));
 
         public static string Describe(System.Net.IPAddress ip)
         {

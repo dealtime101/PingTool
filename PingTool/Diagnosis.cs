@@ -5,7 +5,83 @@ using System.Net.Sockets;
 namespace PingTool
 {
     // What the comparison needs to know about one monitored host.
-    internal sealed record Target(string Name, IPAddress? Ip, HostState State, bool HasData);
+    // OnLink: the address is in the network of one of this PC's own cards (same prefix): it is reached without the Internet even when
+    // its address is a global one (a LAN machine with a global IPv6 address, a public IPv4 range handed out on the LAN).
+    internal sealed record Target(string Name, IPAddress? Ip, HostState State, bool HasData, bool OnLink = false);
+
+    // The networks this PC is directly attached to, read from its cards (address and prefix length), kept for a while: the diagnosis is
+    // asked for at every refresh and the cards do not change that often.
+    internal static class LocalNetworks
+    {
+        public static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(60);
+
+        // A seam for the tests: what the cards say.
+        internal static Func<IReadOnlyList<(IPAddress Address, int Prefix)>> Read = ReadCards;
+        private static IReadOnlyList<(IPAddress Address, int Prefix)>? cached;
+        private static DateTime cachedAt;
+        private static readonly object gate = new();
+
+        private static IReadOnlyList<(IPAddress Address, int Prefix)> ReadCards()
+        {
+            var found = new List<(IPAddress, int)>();
+            try
+            {
+                foreach (var nic in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (nic.OperationalStatus != System.Net.NetworkInformation.OperationalStatus.Up
+                        || nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Loopback) continue;
+                    foreach (var u in nic.GetIPProperties().UnicastAddresses)
+                        if (u.PrefixLength > 0) found.Add((u.Address, u.PrefixLength));
+                }
+            }
+            catch (Exception ex) when (ex is System.Net.NetworkInformation.NetworkInformationException or InvalidOperationException or PlatformNotSupportedException)
+            {
+                // Cards that cannot be read: nothing is known to be on the link, the address ranges alone decide (as before).
+            }
+
+            return found;
+        }
+
+        // True when `ip` is in the same network as one of the (address, prefix) pairs: same family and the same first `prefix` bits.
+        internal static bool Contains(IPAddress ip, IEnumerable<(IPAddress Address, int Prefix)> networks)
+        {
+            if (ip.IsIPv4MappedToIPv6) ip = ip.MapToIPv4();
+            byte[] target = ip.GetAddressBytes();
+            foreach (var (address, prefix) in networks)
+            {
+                var a = address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
+                byte[] mine = a.GetAddressBytes();
+                // A prefix shorter than 8 bits would take in a large part of the Internet (a tunnel's odd mask): not a local network.
+                if (a.AddressFamily != ip.AddressFamily || prefix < 8 || prefix > mine.Length * 8) continue;
+
+                int whole = prefix / 8, rest = prefix % 8;
+                bool same = target.AsSpan(0, whole).SequenceEqual(mine.AsSpan(0, whole));
+                if (same && rest > 0)
+                {
+                    int mask = 0xFF << (8 - rest) & 0xFF;
+                    same = (target[whole] & mask) == (mine[whole] & mask);
+                }
+
+                if (same) return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsOnLink(IPAddress ip)
+        {
+            IReadOnlyList<(IPAddress Address, int Prefix)> networks;
+            lock (gate)
+            {
+                if (cached is null || DateTime.UtcNow - cachedAt > Lifetime) { cached = Read(); cachedAt = DateTime.UtcNow; }
+                networks = cached;
+            }
+
+            return Contains(ip, networks);
+        }
+
+        internal static void Forget() { lock (gate) cached = null; }
+    }
 
     // Reads the states of SEVERAL targets side by side and says where the fault
     // most likely is. It is a hint from the pattern, not a proof: pinging cannot
@@ -64,8 +140,9 @@ namespace PingTool
             if (slow.Count > 0 && down.Count + slow.Count == n)
                 return $"{down.Count} of {n} targets {(down.Count == 1 ? "is" : "are")} down and the other {(slow.Count == 1 ? "one is" : slow.Count + " are")} slow or losing packets: likely this PC's link or the path they share.";
 
-            var local = targets.Where(t => t.Ip is not null && IsLocal(t.Ip)).ToList();
-            var remote = targets.Where(t => t.Ip is not null && !IsLocal(t.Ip)).ToList();
+            // Local: a private or link-local address, or one in the network of this PC's own cards (a global address on the LAN).
+            var local = targets.Where(t => t.Ip is not null && (t.OnLink || IsLocal(t.Ip))).ToList();
+            var remote = targets.Where(t => t.Ip is not null && !(t.OnLink || IsLocal(t.Ip))).ToList();
 
             // A target whose address is not known (a local name that does not resolve, "nas.local") is neither local nor Internet:
             // counting it as Internet would blame the router or the link for a device that may be off. Without an address for
