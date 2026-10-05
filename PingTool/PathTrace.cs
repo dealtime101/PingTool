@@ -141,7 +141,13 @@ namespace PingTool
                 if (before.Count > 0 && now.Count > 0 && !before.Intersect(now).Any())
                     notes.Add($"Hop {ttl} changed: {string.Join(" / ", before)} when healthy, {string.Join(" / ", now)} now (the route changed).");
                 else if (before.Count > 0 && now.Count == 0 && i < during.Hops.Count && during.Hops[i].Status != HopStatus.Failed)
-                    notes.Add($"Hop {ttl} ({string.Join(" / ", before)}) answered when healthy and is silent now.");
+                {
+                    // "Silent" only for a hop that really was: an answer without an address (an unreachable report) is an answer.
+                    var is_ = during.Hops[i].Status;
+                    notes.Add(is_ == HopStatus.Timeout
+                        ? $"Hop {ttl} ({string.Join(" / ", before)}) answered when healthy and is silent now."
+                        : $"Hop {ttl} ({string.Join(" / ", before)}) answered when healthy; now a router {Said(is_)} (without giving its address).");
+                }
                 else if (before.Count > 0 && now.Count > 0 && i < healthy.Hops.Count && i < during.Hops.Count)
                 {
                     // Same router, but not the same answer: the destination that answered now reports itself unreachable (or the
