@@ -13,6 +13,10 @@ namespace PingTool
         public const int OkCode = 0, IncidentCode = 1, ErrorCode = 2;
         public static readonly TimeSpan CheckpointEvery = TimeSpan.FromMinutes(10);
 
+        // What the command line ends with when it did not start the program: the usage text asked for with --help was answered (0), anything
+        // else is a command line that could not be understood (2).
+        public static int ExitCodeForStartupMessage(string message) => message == StartupOptions.Usage ? OkCode : ErrorCode;
+
         // The three exit codes are what a script or a scheduled task reads: an error nobody foresaw (a settings file that cannot be opened,
         // a failing disk, a bug) must end as "could not run" (2) too, not as the code of a crashed runtime. It is written to the error
         // output and handed to `record` (the crash log) first. Cancellation of the whole process is not an error of the run and passes.

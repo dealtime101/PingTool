@@ -17,16 +17,17 @@ namespace PingTool
             bool headlessAsked = args.Any(a => string.Equals(a, "--headless", StringComparison.OrdinalIgnoreCase));
             if (!StartupOptions.TryParse(args, out var startup, out string message))
             {
-                if (headlessAsked) Console.Error.WriteLine(message);
+                // --help comes back here too, with the usage text: that is not an error and must not wear the error icon, the error
+                // output or the error exit code. A script that asks for the help redirects the standard output and reads a 0.
+                bool help = message == StartupOptions.Usage;
+                if (headlessAsked) (help ? Console.Out : Console.Error).WriteLine(message);
                 else
                 {
-                    // --help comes back here too, with the usage text: that is not an error and must not wear the error icon.
-                    bool help = message == StartupOptions.Usage;
                     MessageBox.Show(message, help ? "PingTool - help" : "PingTool - invalid command line", MessageBoxButtons.OK,
                         help ? MessageBoxIcon.Information : MessageBoxIcon.Error);
                 }
 
-                return HeadlessRunner.ErrorCode;
+                return HeadlessRunner.ExitCodeForStartupMessage(message);
             }
 
             // No window at all: not even the WinForms initialisation.
