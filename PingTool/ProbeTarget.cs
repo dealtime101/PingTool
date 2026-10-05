@@ -26,6 +26,21 @@ namespace PingTool
         public const string Help =
             "No prefix = ping.  tcp://host:port = open a TCP connection.  http://url or https://url = web request.  dns://name = name lookup.";
 
+        // The addresses a file or the command line gave, minus those the address box would refuse (a hand-edited
+        // settings.json, a mistyped argument): the same rule as typing them, and the count says how many were left out.
+        public static List<string> KeepValid(IEnumerable<string> addresses, out int skipped)
+        {
+            var kept = new List<string>();
+            skipped = 0;
+            foreach (var address in addresses)
+            {
+                if (TryParse(address, out _, out _)) kept.Add(address);
+                else skipped++;
+            }
+
+            return kept;
+        }
+
         public static bool TryParse(string? input, [NotNullWhen(true)] out ProbeTarget? target, out string error)
         {
             target = null;

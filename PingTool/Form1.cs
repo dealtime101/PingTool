@@ -316,7 +316,11 @@ namespace PingTool
             IEnumerable<string> hostsOfThisLaunch = settings.Hosts;
             if (startup.OverridesHosts)
                 hostsOfThisLaunch = (startup.Diagnose ? DiagnosticTargets.Discover(out _) : new List<string>()).Concat(startup.Hosts);
-            foreach (var host in hostsOfThisLaunch.Distinct(TargetKey.Comparer)) AddHost(host);
+            // Same rule as typing an address: what the address box would refuse is left out, and said once the window is up.
+            var validHosts = ProbeTarget.KeepValid(hostsOfThisLaunch.Distinct(TargetKey.Comparer), out int refused);
+            foreach (var host in validHosts) AddHost(host);
+            if (refused > 0)
+                Shown += (_, _) => MessageBox.Show($"{refused} address(es) from the settings file or the command line are not valid targets and were left out.", "PingTool");
         }
 
         private void SaveSettings()
