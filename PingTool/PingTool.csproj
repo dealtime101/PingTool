@@ -256,8 +256,9 @@
          1.21.178 = a long address in the name-and-limits dialog is cut with an ellipsis and shown whole as a tooltip, instead of being cut off flat (PIN472.119);
          1.21.179 = the name-and-limits dialog has access keys: Alt+N for the name, Alt+S, Alt+L and Alt+D for the three limits (PIN472.120);
          1.21.180 = the availability of a period counts only the part of each outage that lies inside it, so an outage that began before the period no longer counts whole (PIN472.121);
-         1.21.181 = the loss-per-hour grid of the report has a row for every calendar day, empty ones included, so a gap stays visible and "the last 31 days" are 31 days (PIN472.122) -->
-    <Version>1.21.181</Version>
+         1.21.181 = the loss-per-hour grid of the report has a row for every calendar day, empty ones included, so a gap stays visible and "the last 31 days" are 31 days (PIN472.122);
+         1.21.182 = a target name that is too long is cut between characters, never through an emoji or between a letter and its accent (PIN472.123) -->
+    <Version>1.21.182</Version>
   </PropertyGroup>
 
   <ItemGroup>

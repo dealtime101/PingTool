@@ -17,13 +17,32 @@ namespace PingTool
 
             string? label = o.Label?.Trim();
             if (string.IsNullOrEmpty(label) || label.Any(char.IsControl)) label = null;
-            else if (label.Length > MaxLabelLength) label = label[..MaxLabelLength].TrimEnd();
+            else if (label.Length > MaxLabelLength) label = CutToUnits(label, MaxLabelLength).TrimEnd();
 
             var clean = new TargetOptions(label,
                 o.SlowMs is int s ? Limits.Clamp(s, Limits.DegradedLatencyMs) : null,
                 o.LossPercent is int l ? Limits.Clamp(l, Limits.DegradedLossPercent) : null,
                 o.DownAfter is int d ? Limits.Clamp(d, Limits.DownAfter) : null);
             return clean.IsEmpty ? null : clean;
+        }
+
+        // At most maxUnits UTF-16 units (what the name box allows), cut BETWEEN characters as they are shown: a cut through the two halves
+        // of an emoji (a surrogate pair), or between a letter and its accent, would leave a lone half that displays as a lozenge or a "?",
+        // and that a JSON or UTF-8 writer may refuse or replace.
+        internal static string CutToUnits(string text, int maxUnits)
+        {
+            if (text.Length <= maxUnits) return text;
+            var starts = System.Globalization.StringInfo.ParseCombiningCharacters(text);
+            int cut = 0;
+            foreach (int s in starts) if (s <= maxUnits) cut = s;   // the last character boundary that does not go over
+            if (cut == 0)
+            {
+                // A single character longer than the limit (a long sequence of marks): no boundary to use, but never inside a pair.
+                cut = maxUnits;
+                if (cut > 0 && char.IsHighSurrogate(text[cut - 1])) cut--;
+            }
+
+            return text[..cut];
         }
 
         // What a file may hold: keys that are valid targets, values that say something, at most MaxEntries, one per target (TargetKey: the case of a URL path counts).
