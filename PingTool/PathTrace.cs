@@ -176,12 +176,14 @@ namespace PingTool
         // answers, because a load-balanced path may answer from a different router each time and the set of routers is what is compared.
         public const int ProbesPerHop = 3;
 
+        private static readonly char[] LineBreaks = { '\r', '\n' };
+
         // "PingException: An exception occurred during a Ping request. (SocketException: ...)" on one line.
         internal static string Why(Exception ex)
         {
             string text = ex.GetType().Name + ": " + ex.Message;
             if (ex.InnerException is { } inner) text += " (" + inner.GetType().Name + ": " + inner.Message + ")";
-            return string.Join(" ", text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim();
+            return string.Join(" ", text.Split(LineBreaks, StringSplitOptions.RemoveEmptyEntries)).Trim();
         }
 
         public static async Task<PathCapture> RunAsync(string host, IPAddress target, HopProbe probe, DateTimeOffset time,
