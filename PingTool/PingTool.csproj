@@ -271,8 +271,9 @@
          1.21.193 = the pages of the comparison graph legend can be turned from the keyboard (Page Down, Page Up on the focused graph), the focus is shown, and a screen reader is told the page and the keys (PIN472.135);
          1.21.194 = the accessible summary of the timeline lists only the incidents the chart draws: one rule (TimelineLayout.Visible) for both (PIN472.138);
          1.21.195 = an ongoing incident is announced with the length observed up to the last ping, not up to the right edge widened for the drawing (PIN472.139);
-         1.21.196 = the periods read by a screen reader carry the seconds when they are less than a minute apart (PIN472.140) -->
-    <Version>1.21.196</Version>
+         1.21.196 = the periods read by a screen reader carry the seconds when they are less than a minute apart (PIN472.140);
+         1.21.197 = the report presents an outage that matches a change of the PC's network as a hint of a local cause, not as proof the provider is not at fault (PIN472.142) -->
+    <Version>1.21.197</Version>
   </PropertyGroup>
 
   <ItemGroup>
