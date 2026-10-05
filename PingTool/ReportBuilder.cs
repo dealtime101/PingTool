@@ -112,7 +112,7 @@ namespace PingTool
             {
                 string state = x.State switch { HostState.Down => "<td class=\"down\">Down</td>", HostState.Degraded => "<td class=\"deg\">Degraded</td>", _ => "<td>Up</td>" };
                 h.AppendLine(c, $"<tr><td>{Who(x)}</td><td>{E(x.IpText)}</td>{state}<td class=\"n\">{x.Sent.ToString(c)}</td><td class=\"n\">{x.Lost.ToString(c)}</td>"
-                    + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? "global limits")}</td></tr>");
+                    + $"<td class=\"n\">{N(x.LossPercent)}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? (d.FromLogFile ? "not recorded" : "global limits"))}</td></tr>");   // a log does not record the limits: do not claim the global ones
             }
             h.AppendLine("</table>");
 

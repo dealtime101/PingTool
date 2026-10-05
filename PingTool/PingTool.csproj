@@ -186,8 +186,9 @@
          1.21.108 = the Interval, Timeout and Size boxes are 84 pixels apart instead of 76, so that the labels no longer nearly touch (PIN472.37);
          1.21.109 = the box that sets the number of failed pings after which a host is down is labelled "Down after", not the incorrect English "Fails to down" (PIN472.38);
          1.21.110 = the comment on tab order and accessible names lives in Form1.cs, where the designer cannot erase it, not in the generated file (PIN472.39);
-         1.21.111 = the network changes of a session that crosses midnight are dated with the day as well as the time (PIN472.41). -->
-    <Version>1.21.111</Version>
+         1.21.111 = the network changes of a session that crosses midnight are dated with the day as well as the time (PIN472.41);
+         1.21.112 = a report rebuilt from log files says "not recorded" in the limits column of a host, since a log does not keep them, instead of "global limits" (PIN472.42). -->
+    <Version>1.21.112</Version>
   </PropertyGroup>
 
   <ItemGroup>
