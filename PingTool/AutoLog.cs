@@ -28,11 +28,49 @@ namespace PingTool
         private int running;   // 1 while a background flush is in flight
 
         private readonly Action<string>? beforeDiskAccess;   // called before each file is touched: a seam to make the disk slow in a test
+        private readonly Action<FileStream>? afterWrite;      // called after the rows were written: a seam to make the disk fail then
+        private readonly Action<FileStream, long> cutBack;    // brings a file back to a length (a seam to make that fail)
 
-        public AutoLog(string folder, Action<string>? beforeDiskAccess = null)
+        // A write that failed AFTER part of its rows reached the disk, and could not be cut back (the disk was still failing): where the file
+        // was before, and what was being written. The batch stays queued, so the next write to that file first takes these rows back, or the
+        // retry would append them a second time. Only touched under `flushing`.
+        private readonly Dictionary<string, (long Start, byte[] Written)> unrecovered = new();
+
+        public AutoLog(string folder, Action<string>? beforeDiskAccess = null, Action<FileStream>? afterWrite = null, Action<FileStream, long>? cutBack = null)
         {
             this.folder = folder;
             this.beforeDiskAccess = beforeDiskAccess;
+            this.afterWrite = afterWrite;
+            this.cutBack = cutBack ?? ((stream, length) => stream.SetLength(length));
+        }
+
+        // Takes back the rows of a failed write that stayed on disk. True when the file can be written again. Under the file's gate.
+        // The rows are cut only if what follows `start` is still exactly (the beginning of) what was written: if another window added
+        // rows meanwhile, cutting would destroy them, so the rows are left (a duplicate is the lesser harm) and the user is told.
+        private bool TakeBack(string path, (long Start, byte[] Written) failed, out string? note)
+        {
+            note = null;
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+                long after = stream.Length - failed.Start;
+                if (after <= 0) { unrecovered.Remove(path); return true; }   // nothing of it left on disk
+                var tail = new byte[after];
+                stream.Position = failed.Start;
+                stream.ReadExactly(tail);
+                if (after > failed.Written.Length || !failed.Written.AsSpan(0, tail.Length).SequenceEqual(tail))
+                {
+                    unrecovered.Remove(path);
+                    note = "Rows of an earlier failed write could not be taken back from " + Path.GetFileName(path) + " because the file changed meanwhile: some rows may appear twice.";
+                    return true;
+                }
+
+                cutBack(stream, failed.Start);
+                unrecovered.Remove(path);
+                return true;
+            }
+            catch (FileNotFoundException) { unrecovered.Remove(path); return true; }
+            catch (Exception ex) when (IsFileFailure(ex)) { note = ex.Message; return false; }
         }
 
         public static string DefaultFolder => Path.Combine(
@@ -276,6 +314,18 @@ namespace PingTool
                         continue;
                     }
 
+                    if (unrecovered.TryGetValue(path, out var failed))
+                    {
+                        bool back = TakeBack(path, failed, out string? why);
+                        if (!back)
+                        {
+                            lastError = "An earlier write to " + Path.GetFileName(path) + " left rows on disk that cannot be taken back yet (" + why + "); these rows wait so that they are not written twice.";
+                            continue;
+                        }
+
+                        if (why is not null) lastError = why;
+                    }
+
                     CutPartialLine(path);
                     // ReadWrite sharing lets a spreadsheet that does not lock the file read it meanwhile.
                     using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
@@ -286,18 +336,26 @@ namespace PingTool
                     foreach (var e in group) text.Append(PingLog.CsvLine(e)).Append("\r\n");
                     byte[] body = new UTF8Encoding(false).GetBytes(text.ToString());
                     // The byte-order mark makes a spreadsheet read the file as UTF-8; once, at the start.
+                    byte[] bytes = isNew ? new UTF8Encoding(true).GetPreamble().Concat(body).ToArray() : body;
                     try
                     {
-                        stream.Write(isNew ? new UTF8Encoding(true).GetPreamble().Concat(body).ToArray() : body);
+                        stream.Write(bytes);
                         stream.Flush();
+                        afterWrite?.Invoke(stream);
                     }
                     catch (Exception ex) when (IsFileFailure(ex))
                     {
                         // A full disk or a share that drops can leave part of the batch on disk before it throws. The batch
                         // stays queued, so cut the file back to where it was: otherwise the retry would append the rows a
-                        // second time after a half-written line (and a new file would lose its header).
-                        try { stream.SetLength(start); }
-                        catch (Exception cut) when (IsFileFailure(cut)) { }
+                        // second time after a half-written line (and a new file would lose its header). If that fails too,
+                        // it is remembered (`unrecovered`): the next write to this file takes the rows back first, or does not happen.
+                        try { cutBack(stream, start); }
+                        catch (Exception cut) when (IsFileFailure(cut))
+                        {
+                            unrecovered[path] = (start, bytes);
+                            throw new IOException(ex.Message + " (and the rows already written could not be taken back: the next write will first try again)", ex);
+                        }
+
                         throw;
                     }
                     foreach (var e in group) written.Add(e);
