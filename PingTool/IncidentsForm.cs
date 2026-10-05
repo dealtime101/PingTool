@@ -133,9 +133,15 @@ namespace PingTool
                 AccessibleDescription = "The path to the host, hop by hop, captured when the selected outage began, and what changed from the healthy path.",
             };
             details.Disposed += (_, _) => mono.Dispose();
-            list.SelectedIndexChanged += (_, _) =>
-                details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
-            if (list.Items.Count > 0) list.Items[0].Selected = true;
+            void ShowDetails() => details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
+            list.SelectedIndexChanged += (_, _) => ShowDetails();
+            if (list.Items.Count > 0)
+            {
+                list.Items[0].Selected = true;
+                // Set here as well: a selection made before the list has a window handle may not raise the event, and the route of the
+                // first incident (the only one, often) would stay blank until another row was chosen.
+                ShowDetails();
+            }
 
             var lblSummary = new Label
             {
