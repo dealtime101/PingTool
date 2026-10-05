@@ -98,6 +98,7 @@ namespace PingTool
             if (!File.Exists(path)) return;
 
             long keep;
+            byte[]? tail = null;   // what follows the last line end, when it is short enough to be a row
             using (var read = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             {
                 long length = read.Length;
@@ -115,11 +116,38 @@ namespace PingTool
                 }
 
                 if (keep == length) return;   // ends on a line end: nothing partial
+
+                if (length - keep <= MaxRowBytes)
+                {
+                    tail = new byte[length - keep];
+                    read.Position = keep;
+                    read.ReadExactly(tail);
+                }
+            }
+
+            // A last row that is COMPLETE but has no line end (the file was opened and saved by an editor or a spreadsheet that does
+            // not write a final one) is a real ping: it gets its line end instead of being cut. Only what does not read as a whole row
+            // is a half row of a crash. ponytail: a crash that cut only the end of the last field (the detail) leaves a row that still
+            // reads as whole, and is kept with its shortened detail.
+            if (tail is not null && IsWholeRow(tail))
+            {
+                using var end = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
+                end.Write(tail[^1] == (byte)'\r' ? "\n"u8 : "\r\n"u8);
+                return;
             }
 
             using var write = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
             write.SetLength(keep);
         }
+
+        // More than this after the last line end is not a row of ours (a row is a timestamp, a host, a status, a time and a short detail).
+        private const int MaxRowBytes = 64 * 1024;
+
+        // The text reads as exactly one row of a PingTool log (the five fields, a date, a number or nothing, a host and a status).
+        private static bool IsWholeRow(byte[] text) =>
+            text.Length > 0
+            && PingLogReader.TryParse(PingLog.CsvHeader + "\r\n" + new UTF8Encoding(false).GetString(text), out var entries, out _)
+            && entries.Count == 1;
 
         // True when everything pending is on disk.
         public bool Flush()
