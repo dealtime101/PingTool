@@ -332,8 +332,9 @@
          1.21.254 = the comment of the usable-address rule of the diagnosis says what is really left out (169.254.0.0/16 is kept on purpose) (PIN472.290);
          1.21.255 = when no gateway is found because a network card could not be read, the message says so (it was written to the debugger only) (PIN472.292);
          1.21.256 = the name and limits dialog scales with the screen DPI like the other dialogs (PIN472.293);
-         1.21.257 = the crash log writes the first of a run of identical errors in full and only counts the repeats (noted at the 2nd, 10th, 100th time), so a failing loop no longer pushes the cause out of the file (PIN472.303) -->
-    <Version>1.21.257</Version>
+         1.21.257 = the crash log writes the first of a run of identical errors in full and only counts the repeats (noted at the 2nd, 10th, 100th time), so a failing loop no longer pushes the cause out of the file (PIN472.303);
+         1.21.258 = the crash log writes the user's profile folder as %USERPROFILE% and the README says what the file holds before it is shared (PIN472.304) -->
+    <Version>1.21.258</Version>
   </PropertyGroup>
 
   <ItemGroup>

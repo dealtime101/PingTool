@@ -20,8 +20,16 @@ namespace PingTool
             var text = new StringBuilder();
             text.Append(time.ToString("yyyy-MM-dd HH:mm:ss zzz", CultureInfo.InvariantCulture))
                 .Append(" PingTool ").Append(version).Append(fatal ? " - FATAL" : " - continued").Append("\r\n")
-                .Append(Describe(exception)).Append("\r\n\r\n");
+                .Append(MaskProfile(Describe(exception), Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))).Append("\r\n\r\n");
             return text.ToString();
+        }
+
+        // The file is the one a person attaches to a bug report: the folder of the user's profile (C:\Users\name\...) appears in the message
+        // of a file error and in a stack trace with source paths, and it holds the user's name. It is written as %USERPROFILE% instead.
+        internal static string MaskProfile(string text, string profileFolder)
+        {
+            string folder = profileFolder.TrimEnd('\\', '/');
+            return folder.Length < 3 ? text : text.Replace(folder, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
         }
 
         // "TypeName: message" for a box or a console line; the type alone when the message cannot be read (a Message that throws), and a
