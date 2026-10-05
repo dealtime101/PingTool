@@ -108,7 +108,9 @@ namespace PingTool
             }
 
             if (parts.Count == 0) return null;
-            string line = after.Count == 0 ? "Network connection lost; " + string.Join("; ", parts) : string.Join("; ", parts);
+            // Only the cards with an IPv4 address are followed (see Snapshot): when none is left it is that which is said, not a "lost
+            // connection" - a PC whose network is IPv6 may well still be connected.
+            string line = after.Count == 0 ? "No network card with an IPv4 address is up now; " + string.Join("; ", parts) : string.Join("; ", parts);
             return line.Length <= MaxTextLength ? line : line[..(MaxTextLength - 3)] + "...";
         }
     }
