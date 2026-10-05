@@ -24,8 +24,10 @@ namespace PingTool
             ["timeline.axis.clipped"] = ("{0} ms (peak {1})", "{0} ms (pic {1})"),
             ["timeline.incidents.none"] = ("No incident on this host in this period.", "Aucun incident sur cet hôte pendant cette période."),
             ["timeline.incidents"] = ("Incidents: {0}.", "Incidents : {0}."),
-            ["timeline.outage"] = ("outage from {0} ({1})", "panne depuis {0} ({1})"),
-            ["timeline.slowdown"] = ("slowdown from {0} ({1})", "ralentissement depuis {0} ({1})"),
+            // "depuis" in French says that it still goes on: a finished incident is "le {0}" (a date and a time), and one that is still going on
+            // says so itself, with "timeline.ongoing" in the brackets.
+            ["timeline.outage"] = ("outage from {0} ({1})", "panne le {0} ({1})"),
+            ["timeline.slowdown"] = ("slowdown from {0} ({1})", "ralentissement le {0} ({1})"),
             ["timeline.ongoing"] = ("still going on, {0}", "toujours en cours, {0}"),
             ["timeline.small"] = ("The window is too small to draw the chart: make it taller.", "La fenêtre est trop petite pour dessiner le graphique : agrandissez-la."),
             ["timeline.network"] = ("Network changes of this PC (cyan lines): ", "Changements du réseau de ce PC (traits cyan) : "),
