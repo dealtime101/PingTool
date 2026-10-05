@@ -212,8 +212,9 @@
          1.21.134 = importing profiles reads the version number of the file like the other numbers: 1.0 and "1" are version 1 instead of an unreadable file (PIN472.69);
          1.21.135 = a profiles file that is not JSON is refused with the line and position where it breaks, in PingTool's words, not the library's technical message (PIN472.70);
          1.21.136 = a profiles file edited by hand is no longer refused for a comma after its last item or for comments (PIN472.71);
-         1.21.137 = a complete last row of a log file that has no final line end (saved by an editor or a spreadsheet) is kept and given its line end, instead of being cut like a half row left by a crash (PIN472.72) -->
-    <Version>1.21.137</Version>
+         1.21.137 = a complete last row of a log file that has no final line end (saved by an editor or a spreadsheet) is kept and given its line end, instead of being cut like a half row left by a crash (PIN472.72);
+         1.21.138 = two PingTool windows logging the same host into the same file take turns, so neither cuts or overwrites the rows of the other (PIN472.73) -->
+    <Version>1.21.138</Version>
   </PropertyGroup>
 
   <ItemGroup>

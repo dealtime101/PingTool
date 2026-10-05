@@ -149,6 +149,38 @@ namespace PingTool
             && PingLogReader.TryParse(PingLog.CsvHeader + "\r\n" + new UTF8Encoding(false).GetString(text), out var entries, out _)
             && entries.Count == 1;
 
+        // A lock between the windows (processes) of one user that write the same file: a named mutex per file, taken for the length of a
+        // flush of that file, which is milliseconds. FileMode.Append alone does not do it: the position is kept by each process, so two of
+        // them appending at once write over each other. ponytail: Local (this user's session) is the scope, as the logs are in the user's own folder.
+        private sealed class FileGate : IDisposable
+        {
+            private readonly Mutex mutex;
+            private FileGate(Mutex mutex) => this.mutex = mutex;
+
+            public static FileGate? TryEnter(string path, TimeSpan wait)
+            {
+                string name = "PingTool.AutoLog." + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                    Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToLowerInvariant())));
+                var mutex = new Mutex(false, name);
+                try
+                {
+                    if (!mutex.WaitOne(wait)) { mutex.Dispose(); return null; }
+                }
+                catch (AbandonedMutexException)
+                {
+                    // The other window died holding it: the lock is ours, and CutPartialLine deals with a row it left half written.
+                }
+
+                return new FileGate(mutex);
+            }
+
+            public void Dispose()
+            {
+                mutex.ReleaseMutex();
+                mutex.Dispose();
+            }
+        }
+
         // True when everything pending is on disk.
         public bool Flush()
         {
@@ -172,6 +204,16 @@ namespace PingTool
                 {
                     Directory.CreateDirectory(folder);
                     string path = Path.Combine(folder, group.Key);
+                    // Two windows can log the same host into the same file: what one does (cut a half row, append, take its batch back
+                    // after a failure) must not interleave with what the other does. A window that cannot get its turn keeps its rows
+                    // for the next flush, as for a file a spreadsheet holds.
+                    using var gate = FileGate.TryEnter(path, TimeSpan.FromMilliseconds(250));
+                    if (gate is null)
+                    {
+                        LastError = "Another PingTool window is writing this file; these rows wait for the next flush.";
+                        continue;
+                    }
+
                     CutPartialLine(path);
                     // ReadWrite sharing lets a spreadsheet that does not lock the file read it meanwhile.
                     using var stream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
