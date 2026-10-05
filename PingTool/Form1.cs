@@ -32,12 +32,12 @@ namespace PingTool
         private readonly System.Windows.Forms.Timer autoLogTimer = new() { Interval = 5000 };
         // Takes the notification icon away again once a balloon has been shown (see ShowBalloon).
         private readonly System.Windows.Forms.Timer trayIconTimer = new() { Interval = 10_000 };
-        // Alerts also go to the webhooks of settings.json, in the background (see WebhookSender); null when none.
         // Changes of this PC's own network during the run (see NetworkWatch): cyan lines on the timeline, a table in the report.
         private readonly List<NetworkEvent> networkEvents = new();
         private List<NicState>? lastNetwork;   // the cards as last read; null = not read yet, or the last reading failed at the start
         private bool networkReadFailureSaid;   // a failed reading has been written among the events: not again until one works
         private readonly System.Windows.Forms.Timer networkTimer = new() { Interval = 1500 };
+        // Alerts also go to the webhooks of settings.json, in the background (see WebhookSender); null when none.
         private WebhookSender? webhooks;
         private readonly HashSet<string> webhookWarned = new();
         private readonly IncidentLog incidents = new();
