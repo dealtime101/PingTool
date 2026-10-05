@@ -6,6 +6,10 @@ namespace PingTool
     {
         public static readonly TargetKey Comparer = new();
 
+        // Where the host of an http(s) address ends: built once (the key is computed for every comparison of two addresses), not a new
+        // array at each call.
+        private static readonly System.Buffers.SearchValues<char> HostEnd = System.Buffers.SearchValues.Create("/?#");
+
         public static string Of(string? address)
         {
             string text = (address ?? "").Trim();
@@ -16,7 +20,7 @@ namespace PingTool
             if (scheme is not ("http" or "https")) return text.ToLowerInvariant();
 
             string rest = text[(sep + 3)..];
-            int end = rest.IndexOfAny(new[] { '/', '?', '#' });
+            int end = rest.AsSpan().IndexOfAny(HostEnd);
             return end < 0 ? scheme + "://" + rest.ToLowerInvariant() : scheme + "://" + rest[..end].ToLowerInvariant() + rest[end..];
         }
 
