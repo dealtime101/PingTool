@@ -196,8 +196,9 @@
          1.21.118 = in a route trace, a probe that could not be sent no longer wins over a router that answered at the same distance, nor counts in its best time (PIN472.52, with .53);
          1.21.119 = in a route trace, a probe that throws after another probe of the same hop was answered keeps that answer instead of wiping it (PIN472.54);
          1.21.120 = in a route trace, the routers and the destination are timed by the same clock, the round trip time reported by the ICMP exchange, the local stopwatch only standing in when the system reports 0 (PIN472.55);
-         1.21.121 = the title, the legend, the Close button and the accessible names of the timeline window follow the display language, as its axis and summary already did (PIN472.56) -->
-    <Version>1.21.121</Version>
+         1.21.121 = the title, the legend, the Close button and the accessible names of the timeline window follow the display language, as its axis and summary already did (PIN472.56);
+         1.21.122 = the legend of the timeline also explains the dotted cyan line (network change of this PC) and the red-orange triangle (reply above the scale) (PIN472.57) -->
+    <Version>1.21.122</Version>
   </PropertyGroup>
 
   <ItemGroup>
