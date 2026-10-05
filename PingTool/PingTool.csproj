@@ -325,8 +325,9 @@
          1.21.247 = the host of an IPv6 web address has no brackets, like the host of the same address with tcp:// (PIN472.264);
          1.21.248 = a web address option written twice is reported as given twice, not as an unknown option (PIN472.265);
          1.21.249 = the unreachable catch around the unescaping of the expected text is removed, the behaviour for a bad percent sequence is written down (PIN472.266);
-         1.21.250 = replaying no ping at all says so (an ArgumentException with the reason) instead of an index error (PIN472.271) -->
-    <Version>1.21.250</Version>
+         1.21.250 = replaying no ping at all says so (an ArgumentException with the reason) instead of an index error (PIN472.271);
+         1.21.251 = the contract of HostSession.ApplyThresholds (only the monitor is replaced; a new run follows it with Reset) is written down (PIN472.278) -->
+    <Version>1.21.251</Version>
   </PropertyGroup>
 
   <ItemGroup>
