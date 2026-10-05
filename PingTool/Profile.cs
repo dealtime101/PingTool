@@ -180,10 +180,14 @@ namespace PingTool
                 p.DegradedLatencyMs = Limits.Clamp(p.DegradedLatencyMs, Limits.DegradedLatencyMs);
                 p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
                 p.DownAfter = Limits.Clamp(p.DownAfter, Limits.DownAfter);
-                p.TargetOptions = PingTool.TargetOptions.Clean(p.TargetOptions!);
                 // Same rules as an imported profile: one entry per address (case ignored), at most MaxHostsPerProfile.
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
                     .Distinct(TargetKey.Comparer).Take(ProfileExchange.MaxHostsPerProfile).ToList();
+                // The names and limits are those "of some of the hosts above": an entry for an address the profile does not hold (left out,
+                // empty, or cut by the limit on hosts) would be applied to the table of the whole window when the profile is loaded.
+                var held = new HashSet<string>(p.Hosts, TargetKey.Comparer);
+                p.TargetOptions = PingTool.TargetOptions.Clean(p.TargetOptions!)
+                    .Where(entry => held.Contains(entry.Key)).ToDictionary(entry => entry.Key, entry => entry.Value, TargetKey.Comparer);
                 clean.Add(p);
             }
 

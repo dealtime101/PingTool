@@ -338,8 +338,9 @@
          1.21.260 = a report from a log file refuses to be built without the end of its period, instead of ending it now (PIN472.313);
          1.21.261 = the automatic log asks the system to commit the bytes to the disk at each flush (Flush(true)), so a power cut does not lose rows counted as written (PIN472.324);
          1.21.262 = the comment on the command-line switches says what the code does: a value after a switch is refused (PIN472.329);
-         1.21.263 = a log value that really starts with an apostrophe before a formula start is written with a second one, so it reads back as it was (PIN472.334) -->
-    <Version>1.21.263</Version>
+         1.21.263 = a log value that really starts with an apostrophe before a formula start is written with a second one, so it reads back as it was (PIN472.334);
+         1.21.264 = a profile keeps the names and limits of the hosts it holds only: entries for other addresses, or for hosts cut by the limit, are dropped on loading (PIN472.337) -->
+    <Version>1.21.264</Version>
   </PropertyGroup>
 
   <ItemGroup>
