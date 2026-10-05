@@ -225,8 +225,9 @@
          1.21.147 = a certificate option on an http:// address, where there is no certificate, is refused with a message that says so, instead of being accepted and never checking anything (PIN472.83);
          1.21.148 = a name lookup target written with an IP address is refused with a message that says to use a name, since an address is not looked up and the target would always answer (PIN472.84);
          1.21.149 = the plain address box refuses what is not a host name or an IP address, as tcp:// and dns:// already did, instead of letting a ping fail on it as an unresolved name (PIN472.85);
-         1.21.150 = the help of the address box names the two web options, #contains= and #cert=, with an example that is accepted (PIN472.86) -->
-    <Version>1.21.150</Version>
+         1.21.150 = the help of the address box names the two web options, #contains= and #cert=, with an example that is accepted (PIN472.86);
+         1.21.151 = a duration too long to be a time span, such as 999999999d, is refused with the message about the duration option instead of ending the program at start-up (PIN472.87) -->
+    <Version>1.21.151</Version>
   </PropertyGroup>
 
   <ItemGroup>

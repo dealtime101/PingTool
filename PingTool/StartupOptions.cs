@@ -19,9 +19,13 @@ namespace PingTool
             string t = (text ?? "").Trim().ToLowerInvariant();
             if (t.Length < 2 || !int.TryParse(t[..^1], NumberStyles.None, CultureInfo.InvariantCulture, out int n)) return false;
 
-            var unit = t[^1] switch { 's' => TimeSpan.FromSeconds(n), 'm' => TimeSpan.FromMinutes(n), 'h' => TimeSpan.FromHours(n), 'd' => TimeSpan.FromDays(n), _ => (TimeSpan?)null };
-            if (unit is not TimeSpan d || d < MinDuration || d > MaxDuration) return false;
-            duration = d;
+            // In whole seconds, as a 64-bit number, and compared with the limits BEFORE any TimeSpan is built: TimeSpan.FromDays(999999999)
+            // throws (it does not fit), and an exception here ended the program at start-up instead of refusing the option.
+            long perUnit = t[^1] switch { 's' => 1, 'm' => 60, 'h' => 3600, 'd' => 86400, _ => 0 };
+            if (perUnit == 0) return false;
+            long seconds = n * perUnit;   // n is below 2^31 and perUnit at most 86400: it fits
+            if (seconds < MinDuration.TotalSeconds || seconds > MaxDuration.TotalSeconds) return false;
+            duration = TimeSpan.FromSeconds(seconds);
             return true;
         }
 
