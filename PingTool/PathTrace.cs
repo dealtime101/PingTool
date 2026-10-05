@@ -249,16 +249,21 @@ namespace PingTool
         // unreachable (and ends the trace). Another error from a router (a parameter problem, a source quench...) is still a router at
         // that distance: the trace goes on, with the status written. No real answer (no resources, hardware error, unknown) is the
         // probe's own failure, said as such, not a verdict on the network.
-        internal static HopReply Classify(IPStatus status, IPAddress? address, long roundtripMs, long measuredMs) => status switch
+        // The time is the one the ICMP exchange reports (RoundtripTime), for the destination and the routers alike, so that two hops of one
+        // route are measured by the same clock; the stopwatch around the call (which also counts our own scheduling) only stands in when the
+        // system reports 0, as some platforms do for routers.
+        internal static HopReply Classify(IPStatus status, IPAddress? address, long roundtripMs, long measuredMs) => ClassifyWith(status, address, roundtripMs > 0 ? roundtripMs : measuredMs);
+
+        private static HopReply ClassifyWith(IPStatus status, IPAddress? address, long ms) => status switch
         {
-            IPStatus.Success => new HopReply(HopStatus.Reached, address, roundtripMs > 0 ? roundtripMs : measuredMs),
-            IPStatus.TtlExpired or IPStatus.TimeExceeded or IPStatus.TtlReassemblyTimeExceeded => new HopReply(HopStatus.Expired, address, measuredMs),
+            IPStatus.Success => new HopReply(HopStatus.Reached, address, ms),
+            IPStatus.TtlExpired or IPStatus.TimeExceeded or IPStatus.TtlReassemblyTimeExceeded => new HopReply(HopStatus.Expired, address, ms),
             IPStatus.TimedOut => new HopReply(HopStatus.Timeout, null, 0),
             IPStatus.DestinationNetworkUnreachable or IPStatus.DestinationHostUnreachable or IPStatus.DestinationProtocolUnreachable
                 or IPStatus.DestinationPortUnreachable or IPStatus.DestinationUnreachable or IPStatus.DestinationScopeMismatch
-                or IPStatus.BadRoute or IPStatus.BadDestination => new HopReply(HopStatus.Unreachable, address, measuredMs),
+                or IPStatus.BadRoute or IPStatus.BadDestination => new HopReply(HopStatus.Unreachable, address, ms),
             IPStatus.NoResources or IPStatus.HardwareError or IPStatus.Unknown => new HopReply(HopStatus.Failed, null, 0, "ICMP status " + status),
-            _ when address is not null => new HopReply(HopStatus.Expired, address, measuredMs, "answered " + status),
+            _ when address is not null => new HopReply(HopStatus.Expired, address, ms, "answered " + status),
             _ => new HopReply(HopStatus.Failed, null, 0, "ICMP status " + status),
         };
     }

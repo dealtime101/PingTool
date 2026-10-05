@@ -194,8 +194,9 @@
          1.21.116 = a damaged settings file is still kept aside when its backup name is taken between the check and the move: the next name is tried instead of giving up (PIN472.50);
          1.21.117 = a route trace that ends at its hop limit says so, and that the hops beyond were not probed, instead of claiming they do not answer (PIN472.51);
          1.21.118 = in a route trace, a probe that could not be sent no longer wins over a router that answered at the same distance, nor counts in its best time (PIN472.52, with .53);
-         1.21.119 = in a route trace, a probe that throws after another probe of the same hop was answered keeps that answer instead of wiping it (PIN472.54) -->
-    <Version>1.21.119</Version>
+         1.21.119 = in a route trace, a probe that throws after another probe of the same hop was answered keeps that answer instead of wiping it (PIN472.54);
+         1.21.120 = in a route trace, the routers and the destination are timed by the same clock, the round trip time reported by the ICMP exchange, the local stopwatch only standing in when the system reports 0 (PIN472.55) -->
+    <Version>1.21.120</Version>
   </PropertyGroup>
 
   <ItemGroup>
