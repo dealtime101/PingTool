@@ -20,7 +20,9 @@ namespace PingTool
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
 
-            Controls.Add(new Label { Text = address, ForeColor = Color.Silver, AutoSize = false, Location = new Point(12, 10), Size = new Size(356, 18) });
+            // A long address (a URL, a full IPv6 address) is cut with "..." and the whole of it comes up as a tooltip (AutoEllipsis does
+            // both), instead of being cut off flat: the person must be able to tell which target this is.
+            Controls.Add(new Label { Text = address, ForeColor = Color.Silver, AutoSize = false, AutoEllipsis = true, Location = new Point(12, 10), Size = new Size(356, 18), AccessibleName = "Address of the target: " + address });
             Controls.Add(new Label { Text = "Name (shown in the list, the alerts and the report)", ForeColor = Color.White, AutoSize = true, Location = new Point(12, 36) });
             label = new TextBox
             {
