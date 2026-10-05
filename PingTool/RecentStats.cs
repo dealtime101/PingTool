@@ -67,10 +67,11 @@ namespace PingTool
                 Rank(ok, 50), ok.Count >= MinForP95 ? Rank(ok, 95) : null, ok.Count >= MinForP99 ? Rank(ok, 99) : null, jitter, ok.Average());
         }
 
-        // Nearest rank: the ceil(p/100 * n)-th smallest value.
-        private static double Rank(List<long> sorted, int percent)
+        // Nearest rank: the ceil(p/100 * n)-th smallest value. In whole numbers: 7 / 100.0 * 100 is 7.000000000000001 in floating
+        // point, whose ceiling is 8, one rank too far (the percents in use, 50, 95 and 99, happen to be exact, but the method takes any).
+        internal static double Rank(List<long> sorted, int percent)
         {
-            int rank = (int)Math.Ceiling(percent / 100.0 * sorted.Count);
+            int rank = (int)(((long)percent * sorted.Count + 99) / 100);
             return sorted[Math.Clamp(rank, 1, sorted.Count) - 1];
         }
 

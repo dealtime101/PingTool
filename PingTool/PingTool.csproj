@@ -327,8 +327,9 @@
          1.21.249 = the unreachable catch around the unescaping of the expected text is removed, the behaviour for a bad percent sequence is written down (PIN472.266);
          1.21.250 = replaying no ping at all says so (an ArgumentException with the reason) instead of an index error (PIN472.271);
          1.21.251 = the contract of HostSession.ApplyThresholds (only the monitor is replaced; a new run follows it with Reset) is written down (PIN472.278);
-         1.21.252 = a ping above the scale of the graph is drawn at its top edge, not out of the graph (PIN472.284) -->
-    <Version>1.21.252</Version>
+         1.21.252 = a ping above the scale of the graph is drawn at its top edge, not out of the graph (PIN472.284);
+         1.21.253 = the nearest rank of a percentile is computed in whole numbers: floating point put p7 of 100 values one rank too far (PIN472.286) -->
+    <Version>1.21.253</Version>
   </PropertyGroup>
 
   <ItemGroup>
