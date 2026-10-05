@@ -89,7 +89,7 @@ namespace PingTool
                         return false;
                     }
 
-                    if (!TryHttpOptions(url.Fragment, out string? expect, out int certDays, out error)) return false;
+                    if (!TryHttpOptions(url.Fragment, url.Scheme == Uri.UriSchemeHttps, out string? expect, out int certDays, out error)) return false;
 
                     target = new ProbeTarget(ProbeKind.Http, url.Host, url.Port, url, expect, certDays);
                     return true;
@@ -117,7 +117,7 @@ namespace PingTool
 
         // The part after # of a web address: "contains=text" and/or "cert=days", separated by &. Anything else is refused: a typo
         // ("#contain=...") silently ignored would leave the check the user thinks they set up doing nothing.
-        private static bool TryHttpOptions(string fragment, out string? expect, out int certDays, out string error)
+        private static bool TryHttpOptions(string fragment, bool secure, out string? expect, out int certDays, out string error)
         {
             expect = null;
             certDays = DefaultCertWarnDays;
@@ -149,6 +149,13 @@ namespace PingTool
                 else if (key == "cert" && !sawCert)
                 {
                     sawCert = true;
+                    // An option that can never do anything is refused, like the unknown ones: a person who wrote it believes a certificate is watched.
+                    if (!secure)
+                    {
+                        error = "#cert= only applies to https:// addresses: an http:// address has no certificate to check. Use https://, or leave #cert= out.";
+                        return false;
+                    }
+
                     if (!int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out certDays) || certDays > MaxCertWarnDays)
                     {
                         error = $"#cert= needs a number of days from 0 (never warn) to {MaxCertWarnDays}, for example https://example.com/#cert=30";
