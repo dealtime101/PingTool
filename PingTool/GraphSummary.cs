@@ -4,6 +4,8 @@ using System.Globalization;
 namespace PingTool
 {
     // One line of the latency graph: a target, its colour and the last pings (negative = lost).
+    // Samples are OLDEST FIRST, the newest last: the contract of every reader (the line drawn, the summary read aloud, the percentiles).
+    // The collection type cannot say it; the two producers hand over the queue of a session (HostSession.History), which is in that order.
     // Times = when each sample was made (same order and count), when the graph should place the samples in time and not by rank.
     internal sealed record GraphSeries(string Name, Color Color, IReadOnlyCollection<long> Samples, IReadOnlyCollection<DateTimeOffset>? Times = null);
 

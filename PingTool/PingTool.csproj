@@ -307,8 +307,9 @@
          1.21.229 = the README and the code say what the automatic log really promises: a crash loses at most the last few seconds still in memory, not nothing (PIN472.209);
          1.21.230 = the incident list fills the route panel for the incident it selects at opening, without waiting for a selection event (PIN472.213);
          1.21.231 = the network watch keeps a VPN adapter reported as a tunnel card: only Teredo, 6to4 and ISATAP pseudo-cards are left out (PIN472.221);
-         1.21.232 = when no IPv4 card is left, the network watch says that, not "connection lost" (an IPv6 network may still be there) (PIN472.222) -->
-    <Version>1.21.232</Version>
+         1.21.232 = when no IPv4 card is left, the network watch says that, not "connection lost" (an IPv6 network may still be there) (PIN472.222);
+         1.21.233 = the order of the graph samples (oldest first) is written where the series type is defined (PIN472.227) -->
+    <Version>1.21.233</Version>
   </PropertyGroup>
 
   <ItemGroup>
