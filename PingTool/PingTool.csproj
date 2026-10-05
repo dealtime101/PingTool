@@ -179,8 +179,9 @@
          1.21.101 = picking a profile asks first when it would replace a target list that is not saved as a profile or the figures of the run, and No leaves the box on the profile that is really applied (PIN472.26);
          1.21.102 = the message of an incomplete export names the log checkbox with the label it has on screen, read from the control (PIN472.28);
          1.21.103 = the report says after how many failed pings in a row a host was reported down, with the value the run started with, as it does for the other limits (PIN472.29);
-         1.21.104 = the big ping value is green under half of the slow limit of its host, orange up to it, red beyond, instead of fixed 50 and 100 ms (PIN472.31). -->
-    <Version>1.21.104</Version>
+         1.21.104 = the big ping value is green under half of the slow limit of its host, orange up to it, red beyond, instead of fixed 50 and 100 ms (PIN472.31);
+         1.21.105 = the webhook of a notice (a certificate about to expire) gives the address as the host, like the alerts of state, not the display name (PIN472.32). -->
+    <Version>1.21.105</Version>
   </PropertyGroup>
 
   <ItemGroup>

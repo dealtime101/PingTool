@@ -1375,7 +1375,7 @@ namespace PingTool
             session.Notice = text;
             if (text is null || closing || !chkAlert.Checked || !noticed.Add(session.Address + "|" + text)) return;
 
-            webhooks?.Send(new WebhookEvent(session.DisplayName, HostChange.Notice, text, null, DateTimeOffset.Now));
+            webhooks?.Send(new WebhookEvent(session.Address, HostChange.Notice, text, null, DateTimeOffset.Now));   // the host field is the address, as in Alert
             ShowBalloon(text, ToolTipIcon.Warning);
         }
 
