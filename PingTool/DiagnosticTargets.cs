@@ -30,25 +30,25 @@ namespace PingTool
             // the system routes the Internet from (routedFrom: the system has weighed the routes and their metrics, the list of cards is
             // in no such order: a Wi-Fi and an Ethernet card up together, or a VPN adapter, would otherwise give the gateway of the wrong one).
             // Without that address (no route, or not asked) it is the first of them, as it always was.
-            var usable = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.Gateways.Any(IsUsableGateway)).ToList();
+            var usable = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.Gateways.Any(IsUsableIPv4)).ToList();
             var nic = (routedFrom is null ? null : usable.FirstOrDefault(n => n.Addresses is not null && n.Addresses.Any(a => a.Equals(routedFrom))))
                 ?? usable.FirstOrDefault();
             if (nic is not null)
             {
                 gatewayFound = true;
-                targets.Add(nic.Gateways.First(IsUsableGateway).ToString());
-                foreach (var dns in nic.DnsServers.Where(IsUsableDns).Take(MaxDnsServers)) targets.Add(dns.ToString());
+                targets.Add(nic.Gateways.First(IsUsableIPv4).ToString());
+                foreach (var dns in nic.DnsServers.Where(IsUsableIPv4).Take(MaxDnsServers)) targets.Add(dns.ToString());
             }
             else
             {
                 // No IPv4 gateway on a real card (an IPv6-only gateway, or none seen): the DNS servers of the active real card are
                 // still worth testing, or the report can no longer tell a fault of the provider's DNS from the rest. gatewayFound stays
                 // false: there is no router in the list, and the caller says so.
-                var realUp = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.DnsServers.Any(IsUsableDns)).ToList();
+                var realUp = nics.Where(n => n.IsUp && !n.IsVirtualOrLoopback && n.DnsServers.Any(IsUsableIPv4)).ToList();
                 var dnsCard = (routedFrom is null ? null : realUp.FirstOrDefault(n => n.Addresses is not null && n.Addresses.Any(a => a.Equals(routedFrom))))
                     ?? realUp.FirstOrDefault();
                 if (dnsCard is not null)
-                    foreach (var dns in dnsCard.DnsServers.Where(IsUsableDns).Take(MaxDnsServers)) targets.Add(dns.ToString());
+                    foreach (var dns in dnsCard.DnsServers.Where(IsUsableIPv4).Take(MaxDnsServers)) targets.Add(dns.ToString());
             }
 
             targets.AddRange(InternetReferences);
@@ -151,13 +151,10 @@ namespace PingTool
             return readers;
         }
 
-        // 0.0.0.0 is "no gateway"; only IPv4 ones are used (the targets of the list are IPv4 addresses or names).
-        private static bool IsUsableGateway(IPAddress a) =>
-            a.AddressFamily == AddressFamily.InterNetwork && !a.Equals(IPAddress.Any) && !IPAddress.IsLoopback(a);
-
-        // A resolver on the PC itself (127.0.0.53 of a Linux stub, ::1) says nothing about the network; IPv6 and link-local
-        // (fe80::) servers are left out: the targets are IPv4.
-        private static bool IsUsableDns(IPAddress a) =>
+        // The one rule for a gateway AND for a DNS server (they were two copies of the same line): an IPv4 address that is not 0.0.0.0
+        // ("no gateway") and not the PC itself (the 127.0.0.53 stub resolver of Linux, ::1, say nothing about the network). IPv6 and
+        // link-local (fe80::) addresses are left out: the targets of the list are IPv4 addresses or names.
+        private static bool IsUsableIPv4(IPAddress a) =>
             a.AddressFamily == AddressFamily.InterNetwork && !a.Equals(IPAddress.Any) && !IPAddress.IsLoopback(a);
     }
 }
