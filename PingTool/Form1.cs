@@ -337,8 +337,9 @@ namespace PingTool
             // Started minimized, no window is shown (see SetVisibleCore): the balloon is what can say it then.
             if (gatewayMissing)
             {
-                launchWarning = DiagnosticTargets.NoGatewayMessage;
-                Shown += (_, _) => MessageBox.Show(DiagnosticTargets.NoGatewayMessage, "PingTool");
+                string noGateway = DiagnosticTargets.NoGatewayText;   // with the reason when a card could not be read, taken now: the box comes later
+                launchWarning = noGateway;
+                Shown += (_, _) => MessageBox.Show(noGateway, "PingTool");
             }
             // Same rule as typing an address: what the address box would refuse is left out, and said once the window is up.
             var validHosts = ProbeTarget.KeepValid(hostsOfThisLaunch.Distinct(TargetKey.Comparer), out int refused);
@@ -581,7 +582,7 @@ namespace PingTool
             });
 
             if (!gatewayFound)
-                MessageBox.Show(DiagnosticTargets.NoGatewayMessage, "PingTool");
+                MessageBox.Show(DiagnosticTargets.NoGatewayText, "PingTool");
         }
 
         // Picking a profile replaces the target list and clears the figures. Nothing to ask when nothing would be lost; else the

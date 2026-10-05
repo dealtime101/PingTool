@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -97,6 +98,8 @@ namespace PingTool
         internal static List<NicSnapshot> ReadCards(IEnumerable<Func<NicSnapshot>> readers)
         {
             var snapshots = new List<NicSnapshot>();
+            int skipped = 0;
+            string? why = null;
             foreach (var read in readers)
             {
                 try
@@ -106,11 +109,23 @@ namespace PingTool
                 catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or InvalidOperationException)
                 {
                     System.Diagnostics.Debug.WriteLine("A network card could not be read: " + ex.Message);
+                    skipped++;
+                    why ??= ex.Message;
                 }
             }
 
+            // Kept for the message that says no gateway was found (Debug output does not exist in a release build): without it a missing
+            // gateway reads as "the PC is not connected" when a card the router is on could not be read.
+            LastCardProblem = skipped == 0 ? null : string.Create(CultureInfo.InvariantCulture,
+                $"{skipped} network card(s) could not be read ({(why is { Length: > 80 } ? why[..77] + "..." : why)}): the gateway may be on one of them.");
             return snapshots;
         }
+
+        // Why the last discovery left cards out; null when it read them all. Written by Discover, read when the answer was "no gateway".
+        public static string? LastCardProblem { get; private set; }
+
+        // The message for "no gateway was found", with the reason when part of the cards could not be read.
+        public static string NoGatewayText => LastCardProblem is { } problem ? NoGatewayMessage + " " + problem : NoGatewayMessage;
 
         internal static List<string> Discover(IEnumerable<Func<NicSnapshot>> readers, out bool gatewayFound, IPAddress? routedFrom = null) =>
             From(ReadCards(readers), out gatewayFound, routedFrom);
@@ -162,6 +177,9 @@ namespace PingTool
             catch (Exception ex) when (ex is NetworkInformationException or PlatformNotSupportedException or InvalidOperationException)
             {
                 System.Diagnostics.Debug.WriteLine("Network cards could not be listed: " + ex.Message);
+                // Said like a card that could not be read (see ReadCards), so that the "no gateway" message gives the reason.
+                string reason = "the list of cards: " + ex.Message;
+                readers.Add(() => throw new InvalidOperationException(reason));
             }
 
             return readers;
