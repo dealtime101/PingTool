@@ -1303,12 +1303,13 @@ namespace PingTool
             {
                 lblPingResult.Text = ping + " ms";
 
-                if (ping < 50)
-                    lblPingResult.ForeColor = Color.LimeGreen;
-                else if (ping < 100)
-                    lblPingResult.ForeColor = Color.Orange;
-                else
-                    lblPingResult.ForeColor = Color.Tomato;
+                // Steps of the host's own "slow" limit (what the state and the report use), not fixed 50 and 100 ms.
+                lblPingResult.ForeColor = HostMonitor.LatencyBand(ping, selected?.Monitor.LatencyMs ?? HostMonitor.DefaultLatencyMs) switch
+                {
+                    0 => Color.LimeGreen,
+                    1 => Color.Orange,
+                    _ => Color.Tomato,
+                };
             }
             else
             {

@@ -44,6 +44,13 @@ namespace PingTool
             this.downAfter = Math.Max(1, downAfter);
         }
 
+        // The "slow" limit this host is judged by (its own, or the one in the box when it has none).
+        public double LatencyMs => latencyMs;
+
+        // The colour step of one ping against a slow limit: 0 under half of it, 1 up to it, 2 from it on (the same
+        // comparison as the state above: the limit itself is already "degraded").
+        public static int LatencyBand(long pingMs, double slowMs) => pingMs < slowMs / 2 ? 0 : pingMs < slowMs ? 1 : 2;
+
         public double WindowLossPercent =>
             window.Count == 0 ? 0 : 100.0 * window.Count(p => p < 0) / window.Count;
 
