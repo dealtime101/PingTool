@@ -330,8 +330,9 @@
          1.21.252 = a ping above the scale of the graph is drawn at its top edge, not out of the graph (PIN472.284);
          1.21.253 = the nearest rank of a percentile is computed in whole numbers: floating point put p7 of 100 values one rank too far (PIN472.286);
          1.21.254 = the comment of the usable-address rule of the diagnosis says what is really left out (169.254.0.0/16 is kept on purpose) (PIN472.290);
-         1.21.255 = when no gateway is found because a network card could not be read, the message says so (it was written to the debugger only) (PIN472.292) -->
-    <Version>1.21.255</Version>
+         1.21.255 = when no gateway is found because a network card could not be read, the message says so (it was written to the debugger only) (PIN472.292);
+         1.21.256 = the name and limits dialog scales with the screen DPI like the other dialogs (PIN472.293) -->
+    <Version>1.21.256</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -11,6 +11,11 @@ namespace PingTool
 
         public TargetOptionsForm(string address, TargetOptions? current, int globalSlow, int globalLoss, int globalDown)
         {
+            // Positions and sizes are written for 96 DPI: the form scales them to the screen, so that the text, which does grow with the
+            // scaling, keeps its room at 125 %, 150 % or 200 % (as IncidentsForm, TimelineForm and TraceForm do).
+            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleMode = AutoScaleMode.Dpi;
+
             Text = "PingTool - Name and limits";
             ClientSize = new Size(380, 264);
             StartPosition = FormStartPosition.CenterParent;
