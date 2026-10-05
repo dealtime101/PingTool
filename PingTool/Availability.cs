@@ -53,22 +53,32 @@ namespace PingTool
             : cell.LossPercent <= 30 ? "h2"
             : "h3";
 
-        // One row per day (the most recent MaxGridDays), 24 cells each (null = no ping that hour).
+        // One row per CALENDAR day, the most recent MaxGridDays of them from the first day with data (or the last 31 days if there are more),
+        // 24 cells each (null = no ping that hour). A day with no ping at all (the PC was off, the tool stopped) is a row of empty cells:
+        // leaving it out would close the gap on screen and let "the last 31 days" reach back much further than 31 days.
         public static List<(DateTime Day, HourCell?[] Hours)> Grid(IEnumerable<HourCell> cells)
         {
-            var byDay = cells.GroupBy(c => c.Hour.Date).OrderBy(g => g.Key).TakeLast(MaxGridDays);
+            var byDay = cells.GroupBy(c => c.Hour.Date).ToDictionary(g => g.Key, g => g.ToList());
             var rows = new List<(DateTime, HourCell?[])>();
-            foreach (var day in byDay)
+            if (byDay.Count == 0) return rows;
+
+            DateTime last = byDay.Keys.Max();
+            DateTime first = byDay.Keys.Min();
+            DateTime earliest = last.AddDays(-(MaxGridDays - 1));
+            if (first < earliest) first = earliest;
+
+            for (DateTime day = first; day <= last; day = day.AddDays(1))
             {
                 var hours = new HourCell?[24];
-                foreach (var cell in day)
-                {
-                    var previous = hours[cell.Hour.Hour];
-                    // The repeated hour of a clock change is one cell: its pings add up.
-                    hours[cell.Hour.Hour] = previous is null ? cell : new HourCell(cell.Hour, previous.Sent + cell.Sent, previous.Lost + cell.Lost);
-                }
+                if (byDay.TryGetValue(day, out var present))
+                    foreach (var cell in present)
+                    {
+                        var previous = hours[cell.Hour.Hour];
+                        // The repeated hour of a clock change is one cell: its pings add up.
+                        hours[cell.Hour.Hour] = previous is null ? cell : new HourCell(cell.Hour, previous.Sent + cell.Sent, previous.Lost + cell.Lost);
+                    }
 
-                rows.Add((day.Key, hours));
+                rows.Add((day, hours));
             }
 
             return rows;
