@@ -13,7 +13,7 @@ namespace PingTool
     {
         public static string Describe(IReadOnlyList<GraphSeries> series)
         {
-            if (series.Count == 0) return "No data yet: start pinging.";
+            if (series.Count == 0) return Loc.T("graph.empty");
 
             var c = CultureInfo.CurrentCulture;
             // Every target, by its full name: a reader asks for this on purpose and cannot see which ones "and N more" would be.
@@ -22,17 +22,18 @@ namespace PingTool
 
         private static string One(GraphSeries s, CultureInfo c)
         {
-            string who = s.Name.Length == 0 ? "Selected target" : s.Name;
-            if (s.Samples.Count == 0) return who + ": no ping yet";
+            string who = s.Name.Length == 0 ? Loc.T("graph.selected") : s.Name;
+            if (s.Samples.Count == 0) return Loc.T("graph.noping", who);
 
             long last = s.Samples.Last();
             var recent = RecentStats.From(s.Samples);
-            string lastText = last < 0 ? "last ping lost" : "last " + last.ToString(c) + " ms";
-            string p95 = recent.P95 is double p ? ", 95th percentile " + p.ToString("0.#", c) + " ms" : "";
+            string lastText = last < 0 ? Loc.T("graph.last.lost") : Loc.T("graph.last", last.ToString(c));
+            string p95 = recent.P95 is double p ? Loc.T("graph.p95", p.ToString("0.#", c)) : "";
             // The one target on screen also gets its curve in words: the window in quarters, oldest first (a compared set would be too long).
             string trend = s.Name.Length == 0 ? Trend(s.Samples, c) : "";
             // "ping" or "pings" with the count: a screen reader says this sentence aloud, and the first one it reads at the start of a run is "of the last 1 ping".
-            return $"{who}: {lastText}{p95}, {recent.Lost.ToString(c)} of the last {recent.Samples.ToString(c)} ping{(recent.Samples == 1 ? "" : "s")} lost{trend}";
+            // The words come from the language of the window (Loc), the numbers from the regional format.
+            return Loc.T(recent.Samples == 1 ? "graph.line.one" : "graph.line.many", who, lastText, p95, recent.Lost.ToString(c), recent.Samples.ToString(c), trend);
         }
 
         public const int TrendParts = 4;
@@ -51,11 +52,11 @@ namespace PingTool
                 int from = p * list.Count / parts, to = (p + 1) * list.Count / parts;
                 var slice = list.Skip(from).Take(to - from).ToList();
                 var replies = slice.Where(v => v >= 0).ToList();
-                string avg = replies.Count == 0 ? "no reply" : replies.Average().ToString("0.#", c) + " ms";
-                texts.Add($"{avg} {slice.Count - replies.Count} lost");
+                string avg = replies.Count == 0 ? Loc.T("graph.noreply") : Loc.T("graph.ms", replies.Average().ToString("0.#", c));
+                texts.Add(Loc.T("graph.trend.part", avg, (slice.Count - replies.Count).ToString(c)));
             }
 
-            return "; over the window, oldest first: " + string.Join(" / ", texts);
+            return Loc.T("graph.trend", string.Join(" / ", texts));
         }
     }
 }
