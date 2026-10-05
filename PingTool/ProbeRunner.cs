@@ -142,9 +142,9 @@ namespace PingTool
 
         // The time until the status line and headers arrive, on a NEW connection each time (so the
         // figure includes the TCP and TLS handshakes, like a first visit). 4xx and 5xx are failures.
-        private static Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => HttpAsync(t, timeoutMs, token, Web);
+        private static Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => HttpAsync(t, timeoutMs, Web, token);
 
-        internal static async Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token, HttpClient client)
+        internal static async Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, HttpClient client, CancellationToken token)   // the token last (CA1068)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             deadline.CancelAfter(timeoutMs);
