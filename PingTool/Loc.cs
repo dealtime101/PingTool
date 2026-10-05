@@ -8,8 +8,9 @@ namespace PingTool
     // The language is the one of the Windows display language; numbers and dates keep following the regional format.
     internal static class Loc
     {
-        // Set by tests; null = follow the display language of Windows.
-        internal static string? ForcedLanguage;
+        // Set by tests; null = follow the display language of Windows. The program itself never assigns it, hence the explicit initial
+        // value (without it the compiler warns, CS0649, that the field "will always be null": true of the program, not of the tests).
+        internal static string? ForcedLanguage = null;
 
         internal static string Language =>
             (ForcedLanguage ?? CultureInfo.CurrentUICulture.TwoLetterISOLanguageName) == "fr" ? "fr" : "en";
