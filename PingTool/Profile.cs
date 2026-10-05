@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace PingTool
 {
@@ -35,15 +36,49 @@ namespace PingTool
             if (name.Length == 0) error = "Give the profile a name.";
             else if (string.Equals(name, DiagnosticTargets.ProfileName, StringComparison.OrdinalIgnoreCase))
                 error = "That name is reserved for the built-in diagnosis: choose another.";
-            else if (name.Length > MaxNameLength) error = $"The name is limited to {MaxNameLength} characters.";
-            else if (name.Any(IsInvisible)) error = "The name cannot contain control or invisible formatting characters.";
+            // The length is what the user sees, in characters as they are shown ("👨‍👩‍👧" is one), not in UTF-16 units (that one is eight).
+            else if (new StringInfo(name).LengthInTextElements > MaxNameLength) error = $"The name is limited to {MaxNameLength} characters.";
+            else if (HasInvisible(name)) error = "The name cannot contain control or invisible formatting characters.";
 
             return error.Length == 0;
         }
 
         // Control characters and the invisible "format" ones (zero width space, bidi marks): "Home" and "Home" + U+200B look
-        // the same on screen but would be two profiles.
-        private static bool IsInvisible(char c) => char.IsControl(c) || char.GetUnicodeCategory(c) == UnicodeCategory.Format;
+        // the same on screen but would be two profiles. One exception: the zero width joiner INSIDE a character that is drawn as one
+        // (an emoji family, a flag with a pride stripe): without it the emoji falls apart. Between two letters it joins nothing and
+        // stays refused, so "Ho" + ZWJ + "me" cannot pass for "Home".
+        private static bool HasInvisible(string name)
+        {
+            for (int i = 0; i < name.Length; i++)
+            {
+                char c = name[i];
+                if (char.IsControl(c)) return true;
+                if (char.GetUnicodeCategory(c) == UnicodeCategory.Format && !IsJoiner(name, i)) return true;
+            }
+
+            return false;
+        }
+
+        // True for a zero width joiner that is inside one text element (neither the first nor the last char of it): the rules of the
+        // Unicode text segmentation keep an emoji sequence together across it, and cut after it when it joins nothing.
+        internal static bool IsJoiner(string text, int index)
+        {
+            if (text[index] != '‍') return false;
+            var starts = StringInfo.ParseCombiningCharacters(text);
+            int element = Array.FindLastIndex(starts, s => s <= index);
+            int start = starts[element];
+            int end = element + 1 < starts.Length ? starts[element + 1] : text.Length;
+            return index > start && index < end - 1;
+        }
+
+        // The name as it was written before the format characters were refused: they are taken out, except the joiners that hold an emoji together.
+        internal static string WithoutInvisibleFormat(string text)
+        {
+            var kept = new StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
+                if (char.GetUnicodeCategory(text[i]) != UnicodeCategory.Format || IsJoiner(text, i)) kept.Append(text[i]);
+            return kept.ToString();
+        }
 
         // True when the list on screen is what the saved profile holds (same targets, any order, same rule as "the same
         // target" everywhere). No saved profile means the list has not been saved: it is only "the same" when it is empty.
@@ -84,7 +119,7 @@ namespace PingTool
             {
                 if (p is null) { leftOut?.Add("an empty entry"); continue; }
                 // A profile saved before the format characters were refused keeps its place, under the name as it looked.
-                p.Name = string.Concat((p.Name ?? "").Where(c => char.GetUnicodeCategory(c) != UnicodeCategory.Format));
+                p.Name = WithoutInvisibleFormat(p.Name ?? "");
                 if (!TryName(p.Name, out string name, out string why))
                 {
                     leftOut?.Add($"\"{Clip(p.Name)}\": {why.TrimEnd('.')}");
