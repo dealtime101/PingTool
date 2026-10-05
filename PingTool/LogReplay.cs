@@ -126,8 +126,13 @@ namespace PingTool
     {
         // The pings go through the same HostMonitor and IncidentLog as live ones, in time order (a stable sort: two pings
         // of one instant keep the order of the file). The thresholds are the defaults: the log does not say which were used.
+        // At least one ping: a replay has a first and a last time, and a window that opens it needs a host to show. The reader
+        // (PingLogReader.TryParse) refuses a log with no ping, so the callers always have one; a caller that does not gets this said.
         public static ReplayResult Run(IReadOnlyCollection<LogEntry> entries)
         {
+            ArgumentNullException.ThrowIfNull(entries);
+            if (entries.Count == 0) throw new ArgumentException("A replay needs at least one ping: there is nothing to replay.", nameof(entries));
+
             var sorted = entries.Select((e, i) => (e, i)).OrderBy(x => x.e.Time).ThenBy(x => x.i).Select(x => x.e).ToList();
             // The same ping twice (an export and the automatic log of the same night, the same file opened twice, files that overlap)
             // is one ping: a LogEntry is a record, so "identical" is every field alike, the first kept. Counted, so it can be said.
