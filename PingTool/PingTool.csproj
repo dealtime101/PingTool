@@ -231,8 +231,9 @@
          1.21.153 = a cancellation that reaches the failure classifier is named Stopped instead of the generic Error with "A task was canceled." (PIN472.89);
          1.21.154 = in the headless mode an alert that cannot be raised is said once and the monitoring goes on, with its final report and exit code, instead of ending that host and failing the whole run (PIN472.90);
          1.21.155 = in the headless mode a report checkpoint that fails is said once and the next ones, and the final report, are still tried, instead of ending the periodic saves and the run (PIN472.91);
-         1.21.156 = the headless run checks its duration, no negative value and no more than 30 days, and refuses it with a clear message instead of the timer's raw out-of-range error (PIN472.92) -->
-    <Version>1.21.156</Version>
+         1.21.156 = the headless run checks its duration, no negative value and no more than 30 days, and refuses it with a clear message instead of the timer's raw out-of-range error (PIN472.92);
+         1.21.157 = the diagnosis sentences about local and Internet targets agree in number: one local target is "the local target ... that local device", not "the local ones ... those local devices" (PIN472.93) -->
+    <Version>1.21.157</Version>
   </PropertyGroup>
 
   <ItemGroup>
