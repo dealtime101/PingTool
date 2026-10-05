@@ -848,7 +848,7 @@ namespace PingTool
             FlushAutoLog();
             string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
             var previous = autoLog;
-            autoLog = AutoLog.Next(previous, chkSaveLog.Checked ? folder : null, retiredLogs);
+            autoLog = AutoLog.Next(previous, chkSaveLog.Checked ? folder : null, retiredLogs, note => ShowBalloon(note, ToolTipIcon.Warning));
             if (!ReferenceEquals(autoLog, previous))
             {
                 autoLogWarned = false;

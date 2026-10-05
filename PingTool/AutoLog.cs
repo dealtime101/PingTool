@@ -83,11 +83,16 @@ namespace PingTool
         // What the next run logs to, given the log of the run before (null = it had none) and the folder wanted (null = no log).
         // Same folder: the same log goes on, queue included (the file names are per host and day, so nothing changes). Another
         // folder, or no log at all: what the old one still holds is not thrown away, it goes into `retired` and keeps being retried.
-        // ponytail: retired logs are not capped, one per run with a folder that stays unwritable (20 000 entries at most each).
-        public static AutoLog? Next(AutoLog? previous, string? folder, List<AutoLog> retired)
+        // The retired logs together are kept within MaxRetiredPending entries (CapRetired): what is given up is said through `warn`.
+        public static AutoLog? Next(AutoLog? previous, string? folder, List<AutoLog> retired, Action<string>? warn = null)
         {
             if (previous is not null && folder is not null && string.Equals(previous.folder, folder, StringComparison.OrdinalIgnoreCase)) return previous;
-            if (previous is { Pending: > 0 }) retired.Add(previous);
+            if (previous is { Pending: > 0 })
+            {
+                retired.Add(previous);
+                if (CapRetired(retired) is { } note) warn?.Invoke(note);
+            }
+
             return folder is null ? null : new AutoLog(folder);
         }
 
@@ -134,17 +139,56 @@ namespace PingTool
             {
                 pending.Add(entry);
                 int over = pending.Count - MaxPending;
-                if (over <= 0) return;
-
-                DroppedFrom ??= pending[0].Time;
-                DroppedTo = pending[over - 1].Time;
-                // Same gap when nothing was written since the last drop; a new one when some pings reached the disk in between.
-                if (gaps.Count > 0 && !writtenSinceDrop) gaps[^1] = (gaps[^1].From, pending[over - 1].Time);
-                else gaps.Add((pending[0].Time, pending[over - 1].Time));
-                writtenSinceDrop = false;
-                Dropped += over;
-                pending.RemoveRange(0, over);
+                if (over > 0) DropOldestLocked(over);
             }
+        }
+
+        // The oldest `over` entries are given up (the folder stayed unwritable too long, or the memory budget is spent). Under `queue`.
+        private void DropOldestLocked(int over)
+        {
+            DroppedFrom ??= pending[0].Time;
+            DroppedTo = pending[over - 1].Time;
+            // Same gap when nothing was written since the last drop; a new one when some pings reached the disk in between.
+            if (gaps.Count > 0 && !writtenSinceDrop) gaps[^1] = (gaps[^1].From, pending[over - 1].Time);
+            else gaps.Add((pending[0].Time, pending[over - 1].Time));
+            writtenSinceDrop = false;
+            Dropped += over;
+            pending.RemoveRange(0, over);
+        }
+
+        // What all the retired logs together may hold in memory: one log is capped at MaxPending, and a folder that stays unwritable
+        // through several runs would otherwise add one more full log each time, without end.
+        public const int MaxRetiredPending = MaxPending;
+
+        // Keeps the retired logs within MaxRetiredPending entries together, giving up the OLDEST pings first (a log that is emptied
+        // is forgotten). Returns the sentence for the user, or null when nothing had to be given up. On the window's thread.
+        internal static string? CapRetired(List<AutoLog> retired)
+        {
+            int lost = 0;
+            DateTimeOffset? from = null, to = null;
+            while (retired.Count > 0)
+            {
+                int total = retired.Sum(r => r.Pending);
+                if (total <= MaxRetiredPending) break;
+
+                var oldest = retired[0];
+                int drop = Math.Min(total - MaxRetiredPending, oldest.Pending);
+                lock (oldest.queue)
+                {
+                    if (drop > 0)
+                    {
+                        from ??= oldest.pending[0].Time;
+                        to = oldest.pending[drop - 1].Time;
+                        oldest.DropOldestLocked(drop);
+                        lost += drop;
+                    }
+                }
+
+                if (oldest.Pending == 0) retired.RemoveAt(0);
+            }
+
+            return lost == 0 ? null : string.Create(CultureInfo.CurrentCulture,
+                $"{lost} ping(s) from earlier runs (from {from!.Value.ToLocalTime():G} to {to!.Value.ToLocalTime():G}) were given up: the log folder stayed unwritable through several runs, and what waits for it is kept to {MaxRetiredPending} pings. The log has a gap there.");
         }
 
         // "PingTool-8.8.8.8-2026-10-03.csv". The host is whatever the user typed (tcp://x:443,

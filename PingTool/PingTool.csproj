@@ -279,8 +279,9 @@
          1.21.201 = a webhook retry waits at least the Retry-After of the receiver (seconds or date, at most 60 s) instead of using up its attempts inside the restriction (PIN472.152);
          1.21.202 = the expected-text check of a web target reads the page in its own encoding (byte order mark, then the Content-Type charset, then UTF-8) (PIN472.154);
          1.21.203 = the expected text is searched as the page arrives and the probe ends at the first read that brings it, instead of waiting for the end of a slow body (PIN472.155);
-         1.21.204 = a log write that failed after part of its rows reached the disk and could not be cut back is remembered: the next write to that file takes the rows back first (or waits), so the retry no longer duplicates them (PIN472.157) -->
-    <Version>1.21.204</Version>
+         1.21.204 = a log write that failed after part of its rows reached the disk and could not be cut back is remembered: the next write to that file takes the rows back first (or waits), so the retry no longer duplicates them (PIN472.157);
+         1.21.205 = the retired logs of earlier runs together hold at most 20 000 pings in memory: the oldest are given up, with a warning, instead of one more full log per run (PIN472.158) -->
+    <Version>1.21.205</Version>
   </PropertyGroup>
 
   <ItemGroup>
