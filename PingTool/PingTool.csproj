@@ -254,8 +254,9 @@
          1.21.176 = when no real card has an IPv4 gateway, the diagnosis still tests the IPv4 DNS servers of the active real card, so a provider DNS fault can still be told from the rest (PIN472.116);
          1.21.177 = the name-and-limits dialog says that the name changes at once and the limits apply from the next Start (PIN472.118);
          1.21.178 = a long address in the name-and-limits dialog is cut with an ellipsis and shown whole as a tooltip, instead of being cut off flat (PIN472.119);
-         1.21.179 = the name-and-limits dialog has access keys: Alt+N for the name, Alt+S, Alt+L and Alt+D for the three limits (PIN472.120) -->
-    <Version>1.21.179</Version>
+         1.21.179 = the name-and-limits dialog has access keys: Alt+N for the name, Alt+S, Alt+L and Alt+D for the three limits (PIN472.120);
+         1.21.180 = the availability of a period counts only the part of each outage that lies inside it, so an outage that began before the period no longer counts whole (PIN472.121) -->
+    <Version>1.21.180</Version>
   </PropertyGroup>
 
   <ItemGroup>

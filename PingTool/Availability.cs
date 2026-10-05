@@ -19,8 +19,10 @@ namespace PingTool
         // to the first success after it; a slowdown is not counted as down). An outage still going on counts up to `end`.
         public static AvailabilityRow For(string host, IEnumerable<Incident> incidents, DateTimeOffset from, DateTimeOffset end)
         {
-            var outages = incidents.Where(i => i.Host == host && i.Kind == IncidentKind.Outage).ToList();
-            var durations = outages.Select(i => Clamp(i.Duration(end))).ToList();
+            // Only the part of an outage that lies INSIDE the period counts: one that began before `from` (the log of an earlier day, a
+            // report for a window) is cut at `from`, and one still going on is cut at `end`. An outage wholly outside is not one of this period.
+            var outages = incidents.Where(i => i.Host == host && i.Kind == IncidentKind.Outage && i.Start <= end && (i.End ?? end) >= from).ToList();
+            var durations = outages.Select(i => Clamp(((i.End ?? end) < end ? (i.End ?? end) : end) - (i.Start > from ? i.Start : from))).ToList();
             var down = durations.Aggregate(TimeSpan.Zero, (a, b) => a + b);
             var period = end - from;
 
