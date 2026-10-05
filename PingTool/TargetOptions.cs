@@ -67,14 +67,14 @@ namespace PingTool
         public static (int SlowMs, int LossPercent, int DownAfter) Effective(TargetOptions? o, int slowMs, int lossPercent, int downAfter) =>
             (o?.SlowMs ?? slowMs, o?.LossPercent ?? lossPercent, o?.DownAfter ?? downAfter);
 
-        // "slow above 20 ms, loss at least 10 %, down after 2" for the report (only the limits the target has of its own, in that order);
+        // "slow above 20 ms, loss at least 10 %, down after 2 failed pings in a row" for the report (only the limits the target has of its own, in that order);
         // "global limits" when it has none.
         public static string DescribeLimits(TargetOptions? o)
         {
             var parts = new List<string>();
             if (o?.SlowMs is int s) parts.Add($"slow above {s} ms");
             if (o?.LossPercent is int l) parts.Add($"loss at least {l} %");
-            if (o?.DownAfter is int d) parts.Add($"down after {d}");
+            if (o?.DownAfter is int d) parts.Add($"down after {d} failed ping{(d == 1 ? "" : "s")} in a row");   // the unit, as the report row "Down when" says it
             return parts.Count == 0 ? "global limits" : string.Join(", ", parts);
         }
     }
