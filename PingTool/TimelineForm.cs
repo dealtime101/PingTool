@@ -54,7 +54,10 @@ namespace PingTool
 
         // The margin is the width of the top label in the font and at the scale of NOW: measured again when either changes (the window
         // dragged to a screen of another density, the font changed), from the data on show, or the label would run into the plot.
-        private void Remeasure() => measuredLeft = TextRenderer.MeasureText(TopLabel(data), Font).Width + Px(10);
+        private const TextFormatFlags MarginLabelFlags = TextFormatFlags.NoPadding | TextFormatFlags.NoPrefix | TextFormatFlags.SingleLine | TextFormatFlags.Left | TextFormatFlags.Top;
+
+        private void Remeasure() =>
+            measuredLeft = TextRenderer.MeasureText(TopLabel(data), Font, new Size(int.MaxValue, int.MaxValue), MarginLabelFlags).Width + Px(10);
 
         protected override void OnFontChanged(EventArgs e)
         {
@@ -156,9 +159,11 @@ namespace PingTool
             foreach (float x in shapes.Clipped ?? Array.Empty<float>())
                 g.FillPolygon(cutBrush, new[] { new PointF(x - Px(3), 0), new PointF(x + Px(3), 0), new PointF(x, Px(5)) });
 
+            // The labels of the margin are drawn by the engine that measured them (TextRenderer, see Remeasure): GDI+ and GDI do not give the
+            // same width for the same text, and the margin is that width plus a little room. (Not under the shifted transform: GDI ignores it.)
             g.ResetTransform();
-            g.DrawString(TopLabel(data), Font, grey, Px(2), TopMargin);
-            g.DrawString("0", Font, grey, Px(2), TopMargin + plotH - Font.Height);
+            TextRenderer.DrawText(g, TopLabel(data), Font, new Point(Px(2), TopMargin), Color.Silver, MarginLabelFlags);
+            TextRenderer.DrawText(g, "0", Font, new Point(Px(2), TopMargin + plotH - Font.Height), Color.Silver, MarginLabelFlags);
         }
     }
 
