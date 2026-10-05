@@ -71,10 +71,17 @@ namespace PingTool
                 Minimum = range.Min, Maximum = range.Max, Location = new Point(250, y), Size = new Size(118, 23),
                 Value = Math.Clamp(own ?? global, range.Min, range.Max), Enabled = own is not null, AccessibleName = plain,
             };
+            // Unticked, the number shows the global value; the own value goes into the memory and comes back when the box is ticked again.
+            var memory = new OwnValueMemory(own);
             box.CheckedChanged += (_, _) =>
             {
                 number.Enabled = box.Checked;
-                if (!box.Checked) number.Value = Math.Clamp(global, range.Min, range.Max);
+                if (box.Checked) number.Value = Math.Clamp(memory.Restore(global), range.Min, range.Max);
+                else
+                {
+                    memory.Remember((int)number.Value);
+                    number.Value = Math.Clamp(global, range.Min, range.Max);
+                }
             };
             Controls.Add(box);
             Controls.Add(number);
