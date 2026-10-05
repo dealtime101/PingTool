@@ -118,10 +118,10 @@ namespace PingTool
             return new ProbeOutcome(rtt, null, peer is { IsIPv4MappedToIPv6: true } ? peer.MapToIPv4() : peer);
         }
 
-        // The time until the status line and headers arrive, on a NEW connection each time (so the
-        // figure includes the TCP and TLS handshakes, like a first visit). 4xx and 5xx are failures.
         // Where the certificate's end date of a request is kept while the request is in flight (see ValidateServerCertificate).
         private static readonly HttpRequestOptionsKey<DateTime> CertificateEnd = new("PingTool.CertificateEnd");
+
+        // How much of a page is read when an expected text is looked for (see Search): the first 64 KiB.
         public const int MaxBodyBytes = 64 * 1024;
 
         // The default validation, plus a note of when the server's certificate ends. Returning "no policy error" is exactly what the
@@ -132,6 +132,8 @@ namespace PingTool
             return errors == SslPolicyErrors.None;
         }
 
+        // The time until the status line and headers arrive, on a NEW connection each time (so the
+        // figure includes the TCP and TLS handshakes, like a first visit). 4xx and 5xx are failures.
         private static Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => HttpAsync(t, timeoutMs, token, Web);
 
         internal static async Task<ProbeOutcome> HttpAsync(ProbeTarget t, int timeoutMs, CancellationToken token, HttpClient client)

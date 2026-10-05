@@ -316,8 +316,9 @@
          1.21.238 = the hour-by-day grid of the report tells its loss classes apart by stripes as well as by colour (PIN472.240);
          1.21.239 = the margin labels of the session timeline are drawn by the same text engine that measured the margin (PIN472.248);
          1.21.240 = the session timeline takes the colours of the system in a high-contrast theme (TimelinePalette), as the latency graph already did (PIN472.249);
-         1.21.241 = the summary under the session timeline is as tall as its text needs (the chart keeps its minimum), instead of a fixed height (PIN472.250) -->
-    <Version>1.21.241</Version>
+         1.21.241 = the summary under the session timeline is as tall as its text needs (the chart keeps its minimum), instead of a fixed height (PIN472.250);
+         1.21.242 = the comment of the HTTP probe is back above HttpAsync, the fields before it have their own (PIN472.254) -->
+    <Version>1.21.242</Version>
   </PropertyGroup>
 
   <ItemGroup>
