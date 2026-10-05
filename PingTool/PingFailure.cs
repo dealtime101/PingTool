@@ -51,7 +51,7 @@ namespace PingTool
                 => new("No proto", "The destination host does not support the protocol (ICMP protocol unreachable). This is not a filtering rule."),
             AddressFamily.InterNetworkV6
                 => new("Blocked", "Communication with the destination is administratively prohibited: a filtering rule is in the way."),
-            _ => new("Rejected", "The destination reports the protocol as unreachable or the traffic as prohibited (one status code covers both). If the host is known to be up, look for a filtering rule."),
+            _ => new("Rejected", "The destination reports the protocol as unreachable or the traffic as prohibited (one status code covers both): either the host does not support the protocol (IPv4, not a filtering rule) or a filtering rule is in the way (IPv6). The address family is not known here: find out whether the target is reached over IPv4 or IPv6 to tell which."),
         };
 
         public static PingFailure From(Exception ex)
