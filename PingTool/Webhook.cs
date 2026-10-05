@@ -174,12 +174,23 @@ namespace PingTool
                 await foreach (var e in target.Queue.Reader.ReadAllAsync(stop.Token))
                 {
                     var result = await DeliverAsync(target.Url, e, stop.Token);
-                    if (!result.Ok) Failed?.Invoke(result.Label, result.Detail);
+                    if (!result.Ok) RaiseFailed(result.Label, result.Detail);
                 }
             }
             catch (OperationCanceledException)
             {
                 // Disposed.
+            }
+        }
+
+        // Each subscriber on its own: one that throws (a console or a file that cannot be written) must not stop the worker, which
+        // would leave every later alert of this webhook in the queue for ever, nor keep the other subscribers from hearing of it.
+        private void RaiseFailed(string label, string detail)
+        {
+            foreach (var handler in Failed?.GetInvocationList() ?? Array.Empty<Delegate>())
+            {
+                try { ((Action<string, string>)handler)(label, detail); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"A subscriber to the webhook failure raised: {ex}"); }
             }
         }
 
