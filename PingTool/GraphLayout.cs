@@ -25,6 +25,20 @@ namespace PingTool
             return (Math.Clamp(offset, 0, Math.Max(0, total - rows)), rows);
         }
 
+        // The offset of the legend page after (forward) or before the one that shows `rows` entries from `first`, of `total`: after the last page
+        // comes the first, before the first comes the last, the same round trip a click makes (LegendWindow holds the offset to what exists).
+        public static int NextLegendOffset(int total, int first, int rows, bool forward) =>
+            forward ? (first + rows >= total ? 0 : first + rows)
+                    : (first <= 0 ? Math.Max(0, total - rows) : Math.Max(0, first - rows));
+
+        // "page 2 of 3" for the legend as shown: what a screen reader is told, since the page is only ever a picture.
+        public static (int Page, int Pages) LegendPage(int total, int first, int rows)
+        {
+            if (rows <= 0 || total <= 0) return (1, 1);
+            int pages = (total + rows - 1) / rows;
+            return (first + rows >= total ? pages : first / rows + 1, pages);
+        }
+
         // Where the tick of a lost ping is drawn (from the baseline upwards), as (y of the bottom end, y of the top end).
         // One host: as it always was. Several compared hosts end at the same "now": drawn in the same place, the last would hide
         // the others, so each host gets its OWN band of the shared strip above the baseline (host 0 lowest), the bands side by

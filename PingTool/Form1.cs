@@ -1541,7 +1541,17 @@ namespace PingTool
         // reader asks, not at every ping.
         private sealed class GraphAccessibleObject(LatencyGraph owner) : ControlAccessibleObject(owner)
         {
-            public override string? Description => GraphSummary.Describe(owner.series);
+            // The figures of every host, and when the legend has several pages which one is shown and how to turn it.
+            public override string? Description
+            {
+                get
+                {
+                    string text = GraphSummary.Describe(owner.series);
+                    if (!owner.compare || owner.series.Count <= owner.legendRows) return text;
+                    var (page, pages) = GraphLayout.LegendPage(owner.series.Count, owner.legendFirst, owner.legendRows);
+                    return $"{text}. The legend is on page {page} of {pages}: Page Down shows the next one, Page Up the one before.";
+                }
+            }
         }
 
         protected override AccessibleObject CreateAccessibilityInstance() => new GraphAccessibleObject(this);
@@ -1583,6 +1593,7 @@ namespace PingTool
             for (int i = 0; i < series.Count; i++) DrawSeries(g, series[i], top, i);
             if (compare) DrawLegend(g);
             else if (series.Count == 1) DrawP95(g, series[0].Samples, top);
+            if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(g, ClientRectangle);   // where the keyboard is
         }
 
         private void DrawSeries(Graphics g, GraphSeries s, long top, int index)
@@ -1646,7 +1657,7 @@ namespace PingTool
             if (series.Count > rows)
             {
                 using var grey = new SolidBrush(palette.Text);
-                string more = $"{first + 1}-{first + rows} of {series.Count}: click for more";
+                string more = $"{first + 1}-{first + rows} of {series.Count}: click or press Page Down for more";
                 float x = Width - g.MeasureString(more, Font).Width - 2;
                 g.DrawString(more, Font, grey, x, y);
                 legendLeft = Math.Min(legendLeft, x);
@@ -1673,9 +1684,27 @@ namespace PingTool
         {
             base.OnMouseClick(e);
             if (!InLegend(e.Location) || series.Count <= legendRows) return;
-            legendOffset = legendFirst + legendRows >= series.Count ? 0 : legendFirst + legendRows;   // the next page, round to the first
+            legendOffset = GraphLayout.NextLegendOffset(series.Count, legendFirst, legendRows, forward: true);   // the next page, round to the first
             Invalidate();
         }
+
+        // The same without a mouse: with the graph focused (Tab), Page Down shows the next page of the legend and Page Up the one before.
+        // Only when there is more than one page; other keys are left to the window.
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (!compare || series.Count <= legendRows || e.Modifiers != Keys.None) return;
+            if (e.KeyCode is not (Keys.PageDown or Keys.PageUp)) return;
+
+            legendOffset = GraphLayout.NextLegendOffset(series.Count, legendFirst, legendRows, forward: e.KeyCode == Keys.PageDown);
+            e.Handled = true;
+            Invalidate();
+            AccessibilityNotifyClients(AccessibleEvents.DescriptionChange, -1);   // a screen reader is told the page changed
+        }
+
+        // The focus is shown, as on any control the keyboard can reach.
+        protected override void OnGotFocus(EventArgs e) { base.OnGotFocus(e); Invalidate(); }
+        protected override void OnLostFocus(EventArgs e) { base.OnLostFocus(e); Invalidate(); }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
