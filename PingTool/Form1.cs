@@ -178,7 +178,7 @@ namespace PingTool
                 System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
                 System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
                 webhooks?.Dispose();
-                FlushAutoLog();
+                FlushAutoLogAtExit();
                 SaveSettings();
             };
         }
@@ -841,11 +841,11 @@ namespace PingTool
             }
         }
 
-        // A new run: whatever the previous run could not write yet gets a try now, and what still fails is NOT dropped (the balloon said
-        // it would be retried): the same log goes on when the folder is the same, otherwise the old one is retired and still retried.
+        // A new run: whatever the previous run could not write yet is NOT dropped (the balloon said it would be retried) and is not waited
+        // for either (a share that does not answer would freeze the window at Start): the same log goes on when the folder is the same,
+        // otherwise the old one is retired, and the timer writes both in the background.
         private void StartAutoLog()
         {
-            FlushAutoLog();
             string folder = settings.LogFolder.Length > 0 ? settings.LogFolder : AutoLog.DefaultFolder;
             var previous = autoLog;
             autoLog = AutoLog.Next(previous, chkSaveLog.Checked ? folder : null, retiredLogs, note => ShowBalloon(note, ToolTipIcon.Warning));
@@ -861,19 +861,9 @@ namespace PingTool
         }
 
         // A file that cannot be written (open in a spreadsheet, disk full) never stops the monitoring:
-        // one balloon says so, the entries wait and go out at the next tick that works.
-        // On the window's thread and waiting for the disk: at Start, Stop and exit, where what is queued must be written NOW.
-        private void FlushAutoLog()
-        {
-            AutoLog.FlushRetired(retiredLogs);
-            if (autoLog is null)
-            {
-                if (retiredLogs.Count == 0) autoLogTimer.Stop();
-                return;
-            }
-
-            ReportFlush(autoLog, autoLog.Flush());
-        }
+        // one balloon says so, the entries wait and go out at the next tick that works (FlushAutoLogInBackground).
+        // At exit what is queued must be written NOW, but for at most AutoLog.CloseWait: the window does not stay open on a dead share.
+        private void FlushAutoLogAtExit() => AutoLog.FlushWithin(autoLog, retiredLogs, AutoLog.CloseWait);
 
         // The timer's flush: the disk work (a share that went away can hold a write for tens of seconds, once per file) runs off the
         // window's thread, one flush at a time, so the window never freezes on it; the result is read back here.

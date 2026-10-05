@@ -99,6 +99,18 @@ namespace PingTool
             return folder is null ? null : new AutoLog(folder);
         }
 
+        // For the closing of the window: what is queued is written NOW, but the window never waits longer than `limit` for a disk that does
+        // not answer (a network share that went away holds a write for tens of seconds, once per file): the work goes on a pool thread
+        // and what it has not finished is left (the process ends anyway). True when everything got out in time.
+        public static bool FlushWithin(AutoLog? current, List<AutoLog> retired, TimeSpan limit)
+        {
+            var work = Task.Run(() => { FlushRetired(retired); return current?.Flush() ?? true; });
+            try { return work.Wait(limit) && work.Result; }
+            catch (AggregateException) { return false; }
+        }
+
+        public static readonly TimeSpan CloseWait = TimeSpan.FromSeconds(3);
+
         // One try for each retired log; the ones that got everything out are forgotten.
         public static void FlushRetired(List<AutoLog> retired) => retired.RemoveAll(r => r.Flush());
 
