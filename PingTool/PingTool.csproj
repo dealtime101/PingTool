@@ -320,8 +320,9 @@
          1.21.242 = the comment of the HTTP probe is back above HttpAsync, the fields before it have their own (PIN472.254);
          1.21.243 = an HTTP error without a reason phrase reads "The server answered 599", not "599 " with a space and nothing after (PIN472.255);
          1.21.244 = the fatal-error handler writes the log first and guards every step after it: an exception whose Message throws, or a box that cannot be shown, no longer replaces the error being reported (PIN472.259);
-         1.21.245 = with no incident, the route panel of the incident list says so instead of staying blank (PIN472.262) -->
-    <Version>1.21.245</Version>
+         1.21.245 = with no incident, the route panel of the incident list says so instead of staying blank (PIN472.262);
+         1.21.246 = a narrow column of the incident list grows to hold its title and the sort arrow when it is sorted (PIN472.263) -->
+    <Version>1.21.246</Version>
   </PropertyGroup>
 
   <ItemGroup>

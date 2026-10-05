@@ -78,6 +78,16 @@ namespace PingTool
                 list.ListViewItemSorter = new ItemSorter(sortColumn, ascending, now);
                 list.Sort();
                 for (int c = 0; c < titles.Length; c++) list.Columns[c].Text = titles[c] + (c == sortColumn ? (ascending ? " ▲" : " ▼") : "");
+
+                // The arrow is part of the title: a narrow column ("Failed", "#") that held the title with no room to spare would cut it with
+                // "..." as soon as it is sorted, and the direction would be unreadable. The column grows to its title with the arrow (never
+                // shrinks, the user may have widened it); the cause column takes back what the others use (ColumnWidthChanged).
+                if (sortColumn >= 0)
+                {
+                    var sorted = list.Columns[sortColumn];
+                    int needed = TextRenderer.MeasureText(titles[sortColumn] + " ▼", list.Font).Width + W(16);   // the title, the arrow, the header's own padding
+                    if (sorted.Width < needed) sorted.Width = needed;
+                }
             }
 
             list.ColumnClick += (_, e) => SortBy(e.Column);
