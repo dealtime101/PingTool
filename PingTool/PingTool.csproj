@@ -204,8 +204,9 @@
          1.21.126 = the number of columns of the timeline is counted again with the left margin of the new top label, so a host whose scale label has another width still gets columns of about 4 pixels (PIN472.61);
          1.21.127 = a handler of the webhook failure event that throws no longer stops the worker of that webhook: the next alerts are still sent (PIN472.62);
          1.21.128 = closing PingTool while an alert is being sent or waiting to be sent again no longer reports a webhook failure that did not happen (PIN472.63);
-         1.21.129 = closing PingTool gives the alerts still queued for a webhook up to two seconds to be sent, instead of dropping them at once (PIN472.64) -->
-    <Version>1.21.129</Version>
+         1.21.129 = closing PingTool gives the alerts still queued for a webhook up to two seconds to be sent, instead of dropping them at once (PIN472.64);
+         1.21.130 = an alert dropped because its webhook did not take them fast enough is reported with the count so far, instead of vanishing without a trace (PIN472.65) -->
+    <Version>1.21.130</Version>
   </PropertyGroup>
 
   <ItemGroup>
