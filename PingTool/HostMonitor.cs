@@ -13,8 +13,9 @@ namespace PingTool
     //   Degraded  : the last WindowSize pings, window FULL, show loss >= lossPercent
     //               or an average latency >= latencyMs. A single spike cannot do it:
     //               one 500 ms ping among nine 20 ms ones averages 68 ms.
-    //   Recovered : the window is back under 10 % loss (and under the loss limit, when that is lower than 10 %) and
-    //               80 % of the latency limit (the margin keeps a host hovering at the limit from flapping).
+    //   Recovered : the window is back to at most 10 % loss (one lost ping in ten still counts; and STRICTLY under the loss limit, when
+    //               that is lower than 10 %) and an average latency of at most 80 % of the latency limit (the margin keeps a host
+    //               hovering at the limit from flapping).
     //
     // Coming back Up restarts the window, so the failures that caused the outage
     // cannot read as "degraded" the moment the host answers again.
