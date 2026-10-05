@@ -335,8 +335,9 @@
          1.21.257 = the crash log writes the first of a run of identical errors in full and only counts the repeats (noted at the 2nd, 10th, 100th time), so a failing loop no longer pushes the cause out of the file (PIN472.303);
          1.21.258 = the crash log writes the user's profile folder as %USERPROFILE% and the README says what the file holds before it is shared (PIN472.304);
          1.21.259 = the address box of the main window has an accessible name and description of its own (PIN472.307);
-         1.21.260 = a report from a log file refuses to be built without the end of its period, instead of ending it now (PIN472.313) -->
-    <Version>1.21.260</Version>
+         1.21.260 = a report from a log file refuses to be built without the end of its period, instead of ending it now (PIN472.313);
+         1.21.261 = the automatic log asks the system to commit the bytes to the disk at each flush (Flush(true)), so a power cut does not lose rows counted as written (PIN472.324) -->
+    <Version>1.21.261</Version>
   </PropertyGroup>
 
   <ItemGroup>

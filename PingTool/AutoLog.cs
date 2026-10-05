@@ -433,7 +433,10 @@ namespace PingTool
                     try
                     {
                         stream.Write(bytes);
-                        stream.Flush();
+                        // Flush(true) asks the operating system to commit the bytes to the disk itself: Flush() only empties the program's own
+                        // buffer, and a power cut right after would lose rows that the log had counted as written (once per file per flush,
+                        // every few seconds: the cost is a few milliseconds, the same call Settings.Save makes).
+                        stream.Flush(true);
                         afterWrite?.Invoke(stream);
                     }
                     catch (Exception ex) when (IsFileFailure(ex))
