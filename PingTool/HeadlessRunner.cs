@@ -54,7 +54,7 @@ namespace PingTool
                         sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost, s.Stats.LossPercent,
                             s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
                             s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options), s.Notice)).ToList(),
-                        Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()), incidents.Summary(now), incidents.Incidents.ToList());
+                        Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()), incidents.Summary(now), incidents.Incidents.ToList(), DownAfter: settings.DownAfter);
             }
 
             using var run = CancellationTokenSource.CreateLinkedTokenSource(stop);

@@ -760,7 +760,7 @@ namespace PingTool
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
-                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
+                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
@@ -1071,7 +1071,7 @@ namespace PingTool
 
             var now = DateTimeOffset.Now;
             // What the measures were taken with, not what the boxes say now (they are editable again after Stop).
-            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value);
+            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
             var data = new ReportData(now, runStart, Environment.MachineName,
                 AppVersion.Display,
                 run.IntervalMs, run.TimeoutMs, run.PacketSize,
@@ -1080,7 +1080,7 @@ namespace PingTool
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
                     s.Options?.Label, s.RunLimits, s.Notice)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
-                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList());
+                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList(), DownAfter: run.DownAfter);
 
             using var dialog = new SaveFileDialog
             {

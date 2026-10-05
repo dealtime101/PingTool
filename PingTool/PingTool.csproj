@@ -177,8 +177,9 @@
          1.21.99 = the targets read from settings.json and the command line go through the same check as an address typed in the box: an invalid one is left out and said once, instead of being added and failing at every probe (PIN472.24);
          1.21.100 = the diagnose option says it when no gateway is found, as the diagnosis profile does: in a message once the window is up, in a balloon when it starts minimized, on the error output when headless (PIN472.25);
          1.21.101 = picking a profile asks first when it would replace a target list that is not saved as a profile or the figures of the run, and No leaves the box on the profile that is really applied (PIN472.26);
-         1.21.102 = the message of an incomplete export names the log checkbox with the label it has on screen, read from the control (PIN472.28). -->
-    <Version>1.21.102</Version>
+         1.21.102 = the message of an incomplete export names the log checkbox with the label it has on screen, read from the control (PIN472.28);
+         1.21.103 = the report says after how many failed pings in a row a host was reported down, with the value the run started with, as it does for the other limits (PIN472.29). -->
+    <Version>1.21.103</Version>
   </PropertyGroup>
 
   <ItemGroup>

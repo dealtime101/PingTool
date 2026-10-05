@@ -14,7 +14,7 @@ namespace PingTool
         string? Notice = null);
 
     // The probe settings a run was STARTED with: the boxes can be changed after Stop, and a report must describe the measures it holds.
-    internal sealed record RunSettings(int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent);
+    internal sealed record RunSettings(int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent, int DownAfter);
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
@@ -23,7 +23,9 @@ namespace PingTool
         // does not record - the probe settings, the computer, the limits used - is not invented.
         bool FromLogFile = false, DateTimeOffset? PeriodEnd = null,
         // Changes of the PC's own network during the period (Wi-Fi, VPN, adapter, address, gateway).
-        IReadOnlyList<NetworkEvent>? NetworkEvents = null);
+        IReadOnlyList<NetworkEvent>? NetworkEvents = null,
+        // Consecutive failed pings after which a host was reported down (the default when a log does not record it).
+        int DownAfter = HostMonitor.DefaultDownAfter);
 
     // A self-contained diagnostic report: ONE html file, no script, no external resource, graphs
     // drawn as inline SVG. Meant to be sent to an ISP or an IT team who do not have PingTool.
@@ -75,6 +77,7 @@ namespace PingTool
             Row(h, "PingTool version", d.Version, E);
             if (!d.FromLogFile) Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
             Row(h, d.FromLogFile ? $"Degraded when (last {HostMonitor.WindowSize} pings; default limits, the log does not record them)" : $"Degraded when (last {HostMonitor.WindowSize} pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
+            Row(h, d.FromLogFile ? "Down when (default limit, the log does not record it)" : "Down when", $"{d.DownAfter} failed pings in a row", E);
             h.AppendLine("</table>");
 
             // The figures a provider's support asks for first, before any graph.
