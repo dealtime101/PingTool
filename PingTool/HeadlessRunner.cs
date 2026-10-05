@@ -137,6 +137,20 @@ namespace PingTool
                 }
             }
 
+            // A checkpoint that fails (a file open in a browser, an antivirus holding it, anything the writer did not foresee) loses THAT
+            // checkpoint: the next one is tried when its time comes, and the final one at the end. It is said once. Not guarded, it
+            // ended the periodic saves for the rest of the night and then took the final report and the exit code down with it.
+            int checkpointProblemSaid = 0;
+            void SafeCheckpoint(ReportData data)
+            {
+                try { checkpoint!(data); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    if (Interlocked.Exchange(ref checkpointProblemSaid, 1) == 0)
+                        Console.Error.WriteLine("A report checkpoint could not be written, the next one will be tried: " + ex.GetType().Name + ": " + ex.Message);
+                }
+            }
+
             async Task Checkpoints()
             {
                 if (checkpoint is null) return;
@@ -145,7 +159,7 @@ namespace PingTool
                     while (true)
                     {
                         await Task.Delay(checkpointEvery ?? CheckpointEvery, run.Token);
-                        checkpoint(Build());
+                        SafeCheckpoint(Build());
                     }
                 }
                 catch (OperationCanceledException) { /* the end */ }
@@ -156,7 +170,7 @@ namespace PingTool
             await Task.WhenAll(loops);
 
             var report = Build();
-            checkpoint?.Invoke(report);
+            if (checkpoint is not null) SafeCheckpoint(report);
 
             long sent = sessions.Sum(s => s.Stats.Sent);
             string summary = sent == 0
