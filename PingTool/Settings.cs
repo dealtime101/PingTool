@@ -191,7 +191,7 @@ namespace PingTool
             var good = raw.Where(w => WebhookPayload.TryParseUrl(w, out _)).Distinct(StringComparer.Ordinal).Take(MaxWebhooks).ToList();
             WebhooksIgnored = raw.Count - good.Count;
             if (good.Count < raw.Count)
-                LoadProblem =$"{raw.Count - good.Count} webhook address(es) in settings.json were ignored: only distinct http:// or https:// addresses are used (at most {MaxWebhooks}).";
+                AddProblem($"{raw.Count - good.Count} webhook address(es) in settings.json were ignored: only distinct http:// or https:// addresses are used (at most {MaxWebhooks}).");
             Webhooks = good;
             ActiveProfile ??= "";
             Recent = (Recent ?? new List<string>())
@@ -201,8 +201,13 @@ namespace PingTool
                 .Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
                 .Distinct(TargetKey.Comparer).ToList();   // the same rule as MainForm.AddHost
             TargetOptions = PingTool.TargetOptions.Clean(TargetOptions!);
-            Profiles = ProfileBook.Sanitize(Profiles);
+            var leftOut = new List<string>();
+            Profiles = ProfileBook.Sanitize(Profiles, leftOut);
+            if (leftOut.Count > 0) AddProblem(ProfileBook.DescribeLeftOut(leftOut));
         }
+
+        // What loading had to say: several things can be said at once (a webhook left out AND a profile left out), each on its own line.
+        private void AddProblem(string text) => LoadProblem = LoadProblem is null ? text : LoadProblem + "\r\n" + text;
 
         // Written beside the target and moved over it, so a crash mid-write
         // leaves the old file instead of half of a new one.

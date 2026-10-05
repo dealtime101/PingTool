@@ -236,8 +236,9 @@
          1.21.158 = a log file is read row by row, so one that is too big, or that is not a log, is refused at the limit without first turning every row of it into strings (PIN472.94);
          1.21.159 = the line number in the error of a log file is the line of the file as an editor numbers it, even after a field that holds a line break (PIN472.95);
          1.21.160 = replaying logs no longer chains pings separated by a long silence: the incident open before the hole ends at the last ping before it, and the monitor starts again after it (PIN472.96);
-         1.21.161 = replaying logs counts an identical ping once when files overlap or the same file is loaded twice, and says how many were removed (PIN472.97) -->
-    <Version>1.21.161</Version>
+         1.21.161 = replaying logs counts an identical ping once when files overlap or the same file is loaded twice, and says how many were removed (PIN472.97);
+         1.21.162 = a profile of settings.json that is left out on loading, for its name, as a repeat or past the limit of 20, is said in the start-up message with the reason, not dropped in silence (PIN472.98) -->
+    <Version>1.21.162</Version>
   </PropertyGroup>
 
   <ItemGroup>

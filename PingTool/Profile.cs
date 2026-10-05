@@ -75,16 +75,33 @@ namespace PingTool
 
         // What a hand-edited or damaged settings.json may contain: nulls, blank or repeated names,
         // a missing host list, more profiles than allowed. Keeps what is usable, first one wins.
-        public static List<Profile> Sanitize(IEnumerable<Profile?>? loaded)
+        // leftOut: when given, receives one line per profile that was not kept and why, so that the caller can say it (nothing is lost
+        // silently: a profile of a hand-edited file that vanishes with all its hosts, with no word, is worse than a refusal).
+        public static List<Profile> Sanitize(IEnumerable<Profile?>? loaded, List<string>? leftOut = null)
         {
             var clean = new List<Profile>();
             foreach (var p in loaded ?? Enumerable.Empty<Profile?>())
             {
-                if (p is null) continue;
+                if (p is null) { leftOut?.Add("an empty entry"); continue; }
                 // A profile saved before the format characters were refused keeps its place, under the name as it looked.
                 p.Name = string.Concat((p.Name ?? "").Where(c => char.GetUnicodeCategory(c) != UnicodeCategory.Format));
-                if (!TryName(p.Name, out string name, out _)) continue;
-                if (Find(clean, name) is not null) continue;
+                if (!TryName(p.Name, out string name, out string why))
+                {
+                    leftOut?.Add($"\"{Clip(p.Name)}\": {why.TrimEnd('.')}");
+                    continue;
+                }
+
+                if (Find(clean, name) is not null)
+                {
+                    leftOut?.Add($"\"{Clip(name)}\": another profile already has that name");
+                    continue;
+                }
+
+                if (clean.Count >= MaxProfiles)
+                {
+                    leftOut?.Add($"\"{Clip(name)}\": at most {MaxProfiles} profiles are kept");
+                    continue;
+                }
 
                 p.Name = name;
                 p.IntervalMs = Limits.Clamp(p.IntervalMs, Limits.IntervalMs);
@@ -98,10 +115,15 @@ namespace PingTool
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())
                     .Distinct(TargetKey.Comparer).Take(ProfileExchange.MaxHostsPerProfile).ToList();
                 clean.Add(p);
-                if (clean.Count == MaxProfiles) break;
             }
 
             return clean;
         }
+
+        private static string Clip(string text) => text.Length <= 20 ? text : text[..20] + "...";
+
+        // The sentence for the start-up message: how many, then the first reasons (three at most, the rest counted).
+        public static string DescribeLeftOut(IReadOnlyList<string> leftOut) =>
+            $"{leftOut.Count} profile(s) in settings.json were left out: {string.Join("; ", leftOut.Take(3))}{(leftOut.Count > 3 ? $" (and {leftOut.Count - 3} more)" : "")}.";
     }
 }
