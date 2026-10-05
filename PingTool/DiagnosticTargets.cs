@@ -20,6 +20,11 @@ namespace PingTool
         // Internet references that do not depend on the user's provider (anycast, run by large operators).
         public static readonly string[] InternetReferences = { "1.1.1.1", "8.8.8.8", "dns://www.cloudflare.com", "https://www.cloudflare.com/" };
 
+        // The same, for a PC that has no IPv4 gateway but an IPv6 one (an IPv6-only connection): the two literal addresses are IPv6 ones
+        // (they would only fail there, and a failure of those proves nothing about the connection), the name lookup and the web address are
+        // the same, a name reaches whichever family there is.
+        public static readonly string[] InternetReferencesIPv6 = { "2606:4700:4700::1111", "2001:4860:4860::8888", "dns://www.cloudflare.com", "https://www.cloudflare.com/" };
+
         // The list of targets, local ones first, no duplicates. gatewayFound says whether the first one is a real gateway.
         public static List<string> From(IEnumerable<NicSnapshot> nics, out bool gatewayFound, IPAddress? routedFrom = null)
         {
@@ -38,6 +43,17 @@ namespace PingTool
                 gatewayFound = true;
                 targets.Add(nic.Gateways.First(IsUsableIPv4).ToString());
                 foreach (var dns in nic.DnsServers.Where(IsUsableIPv4).Take(MaxDnsServers)) targets.Add(dns.ToString());
+            }
+            else if (nics.FirstOrDefault(n => n.IsUp && !n.IsVirtualOrLoopback && n.Gateways.Any(IsUsableIPv6) && !n.DnsServers.Any(IsUsableIPv4)) is { } v6)
+            {
+                // An IPv6-only connection: no IPv4 gateway anywhere, a real card with an IPv6 one and no IPv4 DNS server (one that has
+                // IPv4 DNS servers is handled below: those are tested). The gateway is the router; its address keeps its zone
+                // (fe80::1%4: a link-local address means nothing without it), and the card's IPv6 DNS servers follow.
+                gatewayFound = true;
+                targets.Add(v6.Gateways.First(IsUsableIPv6).ToString());
+                foreach (var dns in v6.DnsServers.Where(IsUsableIPv6).Take(MaxDnsServers)) targets.Add(dns.ToString());
+                targets.AddRange(InternetReferencesIPv6);
+                return targets.Distinct(TargetKey.Comparer).ToList();
             }
             else
             {
@@ -156,5 +172,10 @@ namespace PingTool
         // link-local (fe80::) addresses are left out: the targets of the list are IPv4 addresses or names.
         private static bool IsUsableIPv4(IPAddress a) =>
             a.AddressFamily == AddressFamily.InterNetwork && !a.Equals(IPAddress.Any) && !IPAddress.IsLoopback(a);
+
+        // The IPv6 counterpart, for a connection that has no IPv4 at all: not "::" (no gateway), not ::1. Link-local (fe80::%zone) is
+        // kept, a router announces itself that way, with the zone the address carries.
+        private static bool IsUsableIPv6(IPAddress a) =>
+            a.AddressFamily == AddressFamily.InterNetworkV6 && !a.Equals(IPAddress.IPv6Any) && !IPAddress.IsLoopback(a);
     }
 }
