@@ -232,9 +232,14 @@ namespace PingTool
                     ?? answered.FirstOrDefault(x => x.Status == HopStatus.Unreachable)
                     ?? (answered.Count > 0 ? answered[0] : null)
                     ?? replies.FirstOrDefault(x => x.Status == HopStatus.Failed) ?? replies[0];
+                // The address of the hop: the one of the reply that decided the status, or, when that reply gave none (an "unreachable"
+                // report can come without one), the first router that did give its address at this distance: the hop is not drawn as a
+                // star while a router is known. It leads the list of the addresses seen (the line prints the others as "also").
+                var address = reply.Address ?? answered.FirstOrDefault(x => x.Address is not null)?.Address;
                 var also = answered.Where(x => x.Address is not null).Select(x => x.Address!).Distinct().ToList();
+                if (address is not null) { also.Remove(address); also.Insert(0, address); }
                 long? best = answered.Count == 0 ? null : answered.Min(x => x.RttMs);
-                hops.Add(new Hop(ttl, reply.Address, best, reply.Status, reply.Detail, also));
+                hops.Add(new Hop(ttl, address, best, reply.Status, reply.Detail, also));
                 progress?.Invoke(hops);   // the hops known so far; the caller reads them before the next await
                 if (reply.Status is HopStatus.Reached or HopStatus.Unreachable or HopStatus.Failed) break;
 
