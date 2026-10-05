@@ -63,6 +63,9 @@ namespace PingTool
         internal MainForm(StartupOptions? startup)
         {
             this.startup = startup ?? StartupOptions.None;
+            // Form1.Designer.cs is generated and rewritten by the designer, so what is worth keeping is written here:
+            // each settings box comes right after its label in tab order (that is how a screen reader names it), and its
+            // AccessibleName says it outright so that a later reordering cannot break it.
             InitializeComponent();
             Icon = AppIcon.Load();   // the title bar, Alt+Tab and the taskbar
             Text = AppVersion.Title(null);

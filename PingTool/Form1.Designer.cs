@@ -170,8 +170,6 @@
             numInterval.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numInterval.Name = "numInterval";
             numInterval.Size = new Size(68, 23);
-            // Each box comes right after its label in tab order: that is how a screen reader names it,
-            // and AccessibleName says it outright so a later reordering cannot break it.
             numInterval.AccessibleName = "Interval (ms)";
             numInterval.TabIndex = 9;
             numInterval.Value = new decimal(new int[] { 1000, 0, 0, 0 });

@@ -184,8 +184,9 @@
          1.21.106 = the tooltip of the graph legend no longer reads the previous series after the list of hosts changed: the legend layout is forgotten until the next repaint (PIN472.33);
          1.21.107 = a route of reference that failed is asked again at a next reply, three times at most, instead of being missing for the whole run (PIN472.35);
          1.21.108 = the Interval, Timeout and Size boxes are 84 pixels apart instead of 76, so that the labels no longer nearly touch (PIN472.37);
-         1.21.109 = the box that sets the number of failed pings after which a host is down is labelled "Down after", not the incorrect English "Fails to down" (PIN472.38). -->
-    <Version>1.21.109</Version>
+         1.21.109 = the box that sets the number of failed pings after which a host is down is labelled "Down after", not the incorrect English "Fails to down" (PIN472.38);
+         1.21.110 = the comment on tab order and accessible names lives in Form1.cs, where the designer cannot erase it, not in the generated file (PIN472.39). -->
+    <Version>1.21.110</Version>
   </PropertyGroup>
 
   <ItemGroup>
