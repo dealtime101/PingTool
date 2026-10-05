@@ -246,8 +246,9 @@
          1.21.168 = a text with a wrong number of arguments no longer makes the alert or the timeline fail: the sentence is shown as it is, followed by its key (PIN472.107);
          1.21.169 = a failure to read the network cards is no longer taken for the network going away: the reading is ignored and the last known state kept, so no false "connection lost" and "connected" pair is recorded (PIN472.108);
          1.21.170 = a failure to read the network cards is written once among the dated network events, with its reason, instead of only in the debug output that a release build does not have (PIN472.109);
-         1.21.171 = on the comparison graph the loss tick of each host is at least one pixel long, so the losses of the 7th host and the following ones are drawn instead of vanishing (PIN472.110) -->
-    <Version>1.21.171</Version>
+         1.21.171 = on the comparison graph the loss tick of each host is at least one pixel long, so the losses of the 7th host and the following ones are drawn instead of vanishing (PIN472.110);
+         1.21.172 = the recent figures under the graph (last pings, jitter, loss, voice quality) are worded in the display language like the rest, with the numbers still in the regional format (PIN472.112) -->
+    <Version>1.21.172</Version>
   </PropertyGroup>
 
   <ItemGroup>

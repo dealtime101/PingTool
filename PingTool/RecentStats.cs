@@ -84,16 +84,17 @@ namespace PingTool
             var c = CultureInfo.CurrentCulture;
             string N(double? v) => v is null ? "-" : v.Value.ToString("0.#", c);
 
-            if (Samples == 0) return "Last pings: waiting for data";
+            if (Samples == 0) return Loc.T("stats.waiting");
 
+            // The words follow the display language (Loc), the numbers the regional format, as everywhere else in the program.
             // The loss line is there even without percentiles: a host that answers nothing is exactly when it matters.
             string first = P50 is null
-                ? string.Format(c, "Last {0}: need {1} replies for percentiles", Samples, MinForPercentiles)
-                : string.Format(c, "Last {0}: p50 {1}", Samples, N(P50))
+                ? Loc.T("stats.need", Samples, MinForPercentiles)
+                : Loc.T("stats.last", Samples, N(P50))
                     + (P95 is null ? "" : " / p95 " + N(P95)) + (P99 is null ? "" : " / p99 " + N(P99)) + " ms"
-                    + (P95 is null ? string.Format(c, " (p95 needs {0} replies)", MinForP95) : "");
-            string voice = Mos is double mos ? string.Format(c, " | voice {0} ({1:0.0})", Verdict(mos), mos) : "";
-            return first + string.Format(c, "\nRecent jitter {0} ms | loss {1}% ({2}/{3})", N(Jitter), N(100.0 * Lost / Samples), Lost, Samples) + voice;
+                    + (P95 is null ? Loc.T("stats.p95needs", MinForP95) : "");
+            string voice = Mos is double mos ? Loc.T("stats.voice", Loc.T("stats.voice." + Verdict(mos)), mos.ToString("0.0", c)) : "";
+            return first + "\n" + Loc.T("stats.jitter", N(Jitter), N(100.0 * Lost / Samples), Lost, Samples) + voice;
         }
     }
 }
