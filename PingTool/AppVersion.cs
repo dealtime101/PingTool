@@ -19,9 +19,9 @@ namespace PingTool
         // "1.1.0 (9d2f2f6)" for a report; just "1.1.0" without a commit.
         public static string Display => Format(Full);
 
-        // Window title: "PingTool v1.1.0" or "PingTool v1.1.0 - host".
+        // Window title: "PingTool v1.1.0" or "PingTool v1.1.0 - host". No host is null, empty or blank: no dangling " - ".
         public static string Title(string? host) =>
-            host is null ? "PingTool v" + Number : "PingTool v" + Number + " - " + host;
+            string.IsNullOrWhiteSpace(host) ? "PingTool v" + Number : "PingTool v" + Number + " - " + host.Trim();
 
         public static string ReadFrom(Assembly assembly) =>
             assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion

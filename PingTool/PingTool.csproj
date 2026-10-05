@@ -345,8 +345,9 @@
          1.21.267 = the note about pings the log let go is in the language of the window (PIN472.344);
          1.21.268 = the public lists of Internet references of the diagnosis are read-only views: no code can replace or empty their elements (PIN472.351);
          1.21.269 = the name given to a target loses its invisible format characters (right-to-left override, zero width space...) as the name of a profile does (PIN472.355);
-         1.21.270 = the crash log is moved aside before the entry that would take it over its limit, not after (PIN472.360) -->
-    <Version>1.21.270</Version>
+         1.21.270 = the crash log is moved aside before the entry that would take it over its limit, not after (PIN472.360);
+         1.21.271 = the window title has no dangling " - " when the host name is empty or blank (PIN472.361) -->
+    <Version>1.21.271</Version>
   </PropertyGroup>
 
   <ItemGroup>
