@@ -93,12 +93,12 @@ namespace PingTool
         }
 
         // The time to open the connection, nothing more: that is "the port is reachable".
-        private static Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => TcpAsync(t, timeoutMs, token, Dns.GetHostAddressesAsync);
+        private static Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token) => TcpAsync(t, timeoutMs, Dns.GetHostAddressesAsync, token);
 
         // The name is resolved FIRST and the clock starts after it: a slow resolver (or a first lookup that is not cached yet) is not a slow
         // port. The whole probe, resolution included, still has to fit in the timeout. `resolve` is injected so that a test can make it slow.
-        internal static async Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs, CancellationToken token,
-            Func<string, CancellationToken, Task<IPAddress[]>> resolve)
+        internal static async Task<ProbeOutcome> TcpAsync(ProbeTarget t, int timeoutMs,
+            Func<string, CancellationToken, Task<IPAddress[]>> resolve, CancellationToken token)   // the token last (CA1068)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
             deadline.CancelAfter(timeoutMs);

@@ -348,8 +348,9 @@
          1.21.270 = the crash log is moved aside before the entry that would take it over its limit, not after (PIN472.360);
          1.21.271 = the window title has no dangling " - " when the host name is empty or blank (PIN472.361);
          1.21.272 = the build has no warning left: the test-only language field has an explicit initial value (PIN472.362);
-         1.21.273 = the key of a target looks for the end of its host with a search set built once, not a new array at each comparison (PIN472.363) -->
-    <Version>1.21.273</Version>
+         1.21.273 = the key of a target looks for the end of its host with a search set built once, not a new array at each comparison (PIN472.363);
+         1.21.274 = the TCP probe takes its cancellation token as its last parameter (CA1068) (PIN472.365) -->
+    <Version>1.21.274</Version>
   </PropertyGroup>
 
   <ItemGroup>
