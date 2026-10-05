@@ -136,8 +136,10 @@ namespace PingTool
 
         // settings.json -> settings.json.bad-20261003-142501-123 (a counter if that name is taken), so that two
         // damaged files in a row do not overwrite each other. Null when the move itself failed.
-        private static string? KeepAside(string path)
+        // move is File.Move, a parameter so that the race below can be replayed.
+        internal static string? KeepAside(string path, Action<string, string>? move = null)
         {
+            move ??= File.Move;
             string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", CultureInfo.InvariantCulture);
             for (int n = 0; n < 100; n++)
             {
@@ -145,11 +147,14 @@ namespace PingTool
                 if (File.Exists(target)) continue;
                 try
                 {
-                    File.Move(path, target);
+                    move(path, target);
                     return target;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
+                    // The name was free at the check and taken at the move (another instance, a sync tool): the next name will do.
+                    // Any other failure (locked, no permission) is not going to be different with another name.
+                    if (File.Exists(target)) continue;
                     System.Diagnostics.Debug.WriteLine($"Settings file not kept aside: {ex}");
                     return null;
                 }
