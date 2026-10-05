@@ -90,6 +90,9 @@ namespace PingTool
                 // HttpClient.Timeout is a TaskCanceledException WITH a TimeoutException inside). A bare cancellation is not one:
                 // that is somebody pressing Stop.
                 _ when ex is TimeoutException || ex.InnerException is TimeoutException => Timeout,
+                // The callers filter Stop out before they get here (ProbeRunner.RunAsync rethrows it, StartPinging and the headless loop
+                // catch it). One that still arrives is named for what it is, not shown as a fault of the network named "Error".
+                _ when ex is OperationCanceledException => new("Stopped", "The probe was cancelled before it finished (Stop or close), not a failure of the host"),
                 _ when ex is ArgumentException => new("Bad addr", "Invalid address: " + ex.Message),
                 // Raised by SslStream itself, or wrapped by the HTTP layer: both levels, as for the socket error above.
                 _ when (ex as System.Security.Authentication.AuthenticationException ?? ex.InnerException as System.Security.Authentication.AuthenticationException) is { } tls
