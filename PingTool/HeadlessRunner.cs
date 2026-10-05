@@ -81,6 +81,7 @@ namespace PingTool
 
             using var run = CancellationTokenSource.CreateLinkedTokenSource(stop);
             run.CancelAfter(duration);
+            int alertProblemSaid = 0;   // 1 once the error output has been told that an alert failed
 
             async Task Loop(HostSession session, ProbeTarget target)
             {
@@ -102,6 +103,7 @@ namespace PingTool
                     }
 
                     var now = clock();
+                    WebhookEvent? toRaise = null;
                     lock (gate)
                     {
                         session.Add(ping, failure, now);
@@ -112,8 +114,20 @@ namespace PingTool
                         {
                             TimeSpan? outage = change == HostChange.Up
                                 ? incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage)?.Duration(now) : null;
-                            alert(new WebhookEvent(session.Address, change,
-                                AlertMessage.For(session.DisplayName, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs, outage), outage, now));
+                            toRaise = new WebhookEvent(session.Address, change,
+                                AlertMessage.For(session.DisplayName, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs, outage), outage, now);
+                        }
+                    }
+
+                    // Outside the lock, and guarded: an alert that cannot be raised (the callback threw) must not end the probing of this
+                    // host, nor reach Task.WhenAll and take the final report and the exit code with it. It is said once; the run goes on.
+                    if (toRaise is not null)
+                    {
+                        try { alert!(toRaise); }
+                        catch (Exception ex) when (ex is not OperationCanceledException)
+                        {
+                            if (Interlocked.Exchange(ref alertProblemSaid, 1) == 0)
+                                Console.Error.WriteLine("An alert could not be raised, the monitoring goes on: " + ex.GetType().Name + ": " + ex.Message);
                         }
                     }
 
