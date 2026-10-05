@@ -220,8 +220,9 @@
          1.21.142 = the headless mode ends with exit code 2, "could not run", for any unexpected error, not only a bad argument, after writing it to the crash log and the error output (PIN472.78);
          1.21.143 = Ctrl+C in the headless mode ends the monitoring properly: the final report is written, the summary printed and the exit code given, instead of the process being killed (PIN472.79);
          1.21.144 = the help option exits with 0 and, in the headless mode, writes its text to the standard output where a script can redirect it; a bad command line still exits with 2 on the error output (PIN472.80);
-         1.21.145 = the incident list can be sorted from the keyboard, Control and the number of the column, and its accessible description says so (PIN472.81) -->
-    <Version>1.21.145</Version>
+         1.21.145 = the incident list can be sorted from the keyboard, Control and the number of the column, and its accessible description says so (PIN472.81);
+         1.21.146 = the monospace font of the route boxes of the incident and trace windows is released with the box instead of waiting for the finalizer, so opening them often no longer piles up GDI handles (PIN472.82) -->
+    <Version>1.21.146</Version>
   </PropertyGroup>
 
   <ItemGroup>

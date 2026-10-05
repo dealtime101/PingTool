@@ -26,12 +26,14 @@ namespace PingTool
             ShowInTaskbar = false;
             BackColor = Color.FromArgb(64, 64, 64);
 
+            // A control does not dispose a font it was given: this one goes with the text box, not when the finalizer gets to it.
+            var mono = new Font(FontFamily.GenericMonospace, 9F);
             output = new TextBox
             {
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
-                Font = new Font(FontFamily.GenericMonospace, 9F),
+                Font = mono,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.White,
                 Location = new Point(10, 10),
@@ -40,6 +42,7 @@ namespace PingTool
                 AccessibleName = "Route to the host",
                 Text = "Tracing the route to " + session.Address + " (" + ip + ")...",
             };
+            output.Disposed += (_, _) => mono.Dispose();
             var close = new Button { Text = "Close", Location = new Point(470, 294), Size = new Size(80, 28), DialogResult = DialogResult.Cancel,
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             CancelButton = close;

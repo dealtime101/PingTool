@@ -108,18 +108,21 @@ namespace PingTool
             finally { list.EndUpdate(); }
 
             // The route to the host at the moment of the selected outage.
+            // A control does not dispose a font it was given: this one goes with the text box, not when the finalizer gets to it.
+            var mono = new Font(FontFamily.GenericMonospace, 9F);
             var details = new TextBox
             {
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
-                Font = new Font(FontFamily.GenericMonospace, 9F),
+                Font = mono,
                 BackColor = Color.FromArgb(40, 40, 40),
                 ForeColor = Color.White,
                 Dock = DockStyle.Fill,
                 AccessibleName = "Route when the selected outage began",
                 AccessibleDescription = "The path to the host, hop by hop, captured when the selected outage began, and what changed from the healthy path.",
             };
+            details.Disposed += (_, _) => mono.Dispose();
             list.SelectedIndexChanged += (_, _) =>
                 details.Text = list.SelectedItems.Count == 0 ? "" : DetailsOf((Incident)list.SelectedItems[0].Tag!);
             if (list.Items.Count > 0) list.Items[0].Selected = true;
