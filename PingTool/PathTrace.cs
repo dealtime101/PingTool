@@ -217,8 +217,13 @@ namespace PingTool
                 // must not win over a router that did answer at this distance, nor take part in its best time. Failed is the status of the
                 // hop only when no probe got a real answer; silent when none got anything.
                 var answered = replies.Where(x => x.Status is not (HopStatus.Timeout or HopStatus.Failed)).ToList();
-                var reply = answered.Count > 0 ? answered[0]   // the first answer gives the status
-                    : replies.FirstOrDefault(x => x.Status == HopStatus.Failed) ?? replies[0];
+                // When the answers disagree (a load-balanced path: one probe expired at a router, the next reached the destination), the
+                // order of the probes must not decide: the destination answering wins (the trace is over), then "unreachable" (a router
+                // says it cannot go on), and only then the first "time exceeded", which is a router on the way.
+                var reply = answered.FirstOrDefault(x => x.Status == HopStatus.Reached)
+                    ?? answered.FirstOrDefault(x => x.Status == HopStatus.Unreachable)
+                    ?? (answered.Count > 0 ? answered[0] : null)
+                    ?? replies.FirstOrDefault(x => x.Status == HopStatus.Failed) ?? replies[0];
                 var also = answered.Where(x => x.Address is not null).Select(x => x.Address!).Distinct().ToList();
                 long? best = answered.Count == 0 ? null : answered.Min(x => x.RttMs);
                 hops.Add(new Hop(ttl, reply.Address, best, reply.Status, reply.Detail, also));
