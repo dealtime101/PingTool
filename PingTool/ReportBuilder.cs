@@ -11,10 +11,12 @@ namespace PingTool
         // The name the user gave the target and the limits it ran with, when they are not the defaults (see TargetOptions).
         string? Label = null, string? Limits = null,
         // A warning the last probe came with although it succeeded (a certificate about to expire).
-        string? Notice = null);
+        string? Notice = null,
+        // The voice quality (MOS) of the last RecentStats.Window pings, as the window shows it; null with no reply.
+        double? Mos = null);
 
     // The probe settings a run was STARTED with: the boxes can be changed after Stop, and a report must describe the measures it holds.
-    internal sealed record RunSettings(int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent, int DownAfter);
+    internal sealed record RunSettings(int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent, int DownAfter, double DegradedMos = 0);
 
     internal sealed record ReportData(DateTimeOffset GeneratedAt, DateTimeOffset RunStart, string Machine, string Version,
         int IntervalMs, int TimeoutMs, int PacketSize, int DegradedLatencyMs, int DegradedLossPercent,
@@ -25,7 +27,9 @@ namespace PingTool
         // Changes of the PC's own network during the period (Wi-Fi, VPN, adapter, address, gateway).
         IReadOnlyList<NetworkEvent>? NetworkEvents = null,
         // Consecutive failed pings after which a host was reported down (the default when a log does not record it).
-        int DownAfter = HostMonitor.DefaultDownAfter);
+        int DownAfter = HostMonitor.DefaultDownAfter,
+        // "MOS below" limit the run had (0 = none).
+        double DegradedMos = 0);
 
     // A self-contained diagnostic report: ONE html file, no script, no external resource, graphs
     // drawn as inline SVG. Meant to be sent to an ISP or an IT team who do not have PingTool.
@@ -86,7 +90,8 @@ namespace PingTool
             else Row(h, "Computer", d.Machine, E);
             Row(h, "PingTool version", d.Version, E);
             if (!d.FromLogFile) Row(h, "Probe settings", $"one echo request every {d.IntervalMs} ms, timeout {d.TimeoutMs} ms, {d.PacketSize} bytes", E);
-            Row(h, d.FromLogFile ? $"Degraded when (last {HostMonitor.WindowSize} pings; default limits, the log does not record them)" : $"Degraded when (last {HostMonitor.WindowSize} pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms", E);
+            Row(h, d.FromLogFile ? $"Degraded when (last {HostMonitor.WindowSize} pings; default limits, the log does not record them)" : $"Degraded when (last {HostMonitor.WindowSize} pings)",$"loss at least {d.DegradedLossPercent}% or average latency at least {d.DegradedLatencyMs} ms"
+                + (d.DegradedMos > 0 ? $" or voice quality (MOS) below {d.DegradedMos.ToString("0.0", c)}" : ""), E);
             Row(h, d.FromLogFile ? "Down when (default limit, the log does not record it)" : "Down when", $"{d.DownAfter} failed pings in a row", E);
             h.AppendLine("</table>");
 
@@ -117,12 +122,12 @@ namespace PingTool
 
             h.AppendLine("<h2>Targets</h2>");
             h.AppendLine("<table><tr><th>Target</th><th>Address</th><th>State</th><th>Sent</th><th>Lost</th><th>Loss %</th>"
-                + "<th>Min ms</th><th>Avg ms</th><th>Max ms</th><th>Jitter ms</th><th>Limits</th></tr>");
+                + "<th>Min ms</th><th>Avg ms</th><th>Max ms</th><th>Jitter ms</th><th>MOS</th><th>Limits</th></tr>");
             foreach (var x in d.Hosts)
             {
                 string state = x.State switch { HostState.Down => "<td class=\"down\">Down</td>", HostState.Degraded => "<td class=\"deg\">Degraded</td>", _ => "<td>Up</td>" };
                 h.AppendLine(c, $"<tr><td>{Who(x)}</td><td>{E(x.IpText)}</td>{state}<td class=\"n\">{x.Sent.ToString(c)}</td><td class=\"n\">{x.Lost.ToString(c)}</td>"
-                    + $"<td class=\"n\">{(x.LossPercent is null ? "-" : E(Availability.FormatLoss(x.LossPercent.Value, c)))}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td>{E(x.Limits ?? (d.FromLogFile ? "not recorded" : "global limits"))}</td></tr>");   // a log does not record the limits: do not claim the global ones
+                    + $"<td class=\"n\">{(x.LossPercent is null ? "-" : E(Availability.FormatLoss(x.LossPercent.Value, c)))}</td><td class=\"n\">{N(x.Min)}</td><td class=\"n\">{N(x.Avg)}</td><td class=\"n\">{N(x.Max)}</td><td class=\"n\">{N(x.Jitter)}</td><td class=\"n\">{(x.Mos is double mos ? E(mos.ToString("0.0", c) + " " + RecentStats.Verdict(mos)) : "-")}</td><td>{E(x.Limits ?? (d.FromLogFile ? "not recorded" : "global limits"))}</td></tr>");   // a log does not record the limits: do not claim the global ones
             }
             h.AppendLine("</table>");
 

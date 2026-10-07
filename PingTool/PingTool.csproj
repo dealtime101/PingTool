@@ -357,8 +357,9 @@
          1.21.279 = the comment on the lenient number reading of imported profiles says what the code does: decimals are cut toward zero, not rounded (PIN472.10);
          1.21.280 = the tooltip, the comment and the README say what a profile keeps (the monitoring settings) and what it does not (window mode, saving the log) (PIN472.13);
          1.21.281 = a hop whose deciding reply gave no address is named by the first router that did, not drawn as a star; the address leads the list of those seen (PIN472.18)
-         1.21.282 = two hosts that differ only by a character a file name cannot hold get two log files (a short hash is added to a name that had to be changed), not one (PIN472.21) -->
-    <Version>1.21.282</Version>
+         1.21.282 = two hosts that differ only by a character a file name cannot hold get two log files (a short hash is added to a name that had to be changed), not one (PIN472.21)
+         1.21.283 = a MOS column in the host list and the report, and a "MOS below" limit next to the slow and loss limits: a window whose voice quality falls under it is degraded, and the alert says so (PIN472.1) -->
+    <Version>1.21.283</Version>
   </PropertyGroup>
 
   <ItemGroup>

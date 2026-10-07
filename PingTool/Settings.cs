@@ -18,6 +18,11 @@ namespace PingTool
         public static readonly (int Min, int Max) DownAfter = (1, 20);
 
         public static int Clamp(int value, (int Min, int Max) range) => Math.Clamp(value, range.Min, range.Max);
+
+        // "MOS below": 0 = no such limit, otherwise a MOS between 1.0 and 4.5 (the scale ends of RecentStats.MosOf), to one decimal as
+        // the box shows it. Anything that is not a number, or is under 1, means "off".
+        public const double MaxMos = 4.5;
+        public static double ClampMos(double value) => double.IsNaN(value) || value < 1 ? 0 : Math.Round(Math.Min(value, MaxMos), 1);
     }
 
     // What survives between two launches. A missing, unreadable or hand-broken
@@ -64,6 +69,8 @@ namespace PingTool
         // average latency (see HostMonitor). Edited in settings.json.
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
+        // Also degraded when the voice quality (MOS, see RecentStats) of the last 10 pings falls below this; 0 = not used.
+        public double DegradedMos { get; set; }
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
         // A readable name and limits of their own for some targets, by address (see TargetOptions).
@@ -178,6 +185,7 @@ namespace PingTool
             PacketSize = Limits.Clamp(PacketSize, Limits.PacketSize);
             DegradedLatencyMs = Limits.Clamp(DegradedLatencyMs, Limits.DegradedLatencyMs);
             DegradedLossPercent = Limits.Clamp(DegradedLossPercent, Limits.DegradedLossPercent);
+            DegradedMos = Limits.ClampMos(DegradedMos);
             DownAfter = Limits.Clamp(DownAfter, Limits.DownAfter);
 
             Address = (Address ?? "").Trim();

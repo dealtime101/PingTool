@@ -58,10 +58,10 @@ A mistyped option is refused with a message rather than silently ignored.
 For each target, PingTool looks at the last 10 pings:
 
 - **Down**: 3 pings in a row failed (the **Down after** box sets that number). **Back up** at the first reply; the notification says how long the outage lasted ("back up after 2 min 14 s").
-- **Degraded**: a full window of 10 pings shows at least the *loss* limit (default 30 %) or at least the *slow* limit as an average (default 150 ms). One isolated spike does not trigger it.
-- **Recovered**: loss back to 10 % or less (one lost ping in ten still counts) and the average at 80 % of the slow limit or less, so a target hovering at the limit does not flap.
+- **Degraded**: a full window of 10 pings shows at least the *loss* limit (default 30 %) or at least the *slow* limit as an average (default 150 ms). One isolated spike does not trigger it. With **MOS below** set (default 0 = not used), a window whose voice quality (MOS, 1 to 4.5, worked out from the average, the jitter and the loss of those 10 pings) falls under that value counts as degraded too, which catches a link that loses a few pings and jitters without reaching the loss limit; the notification then says so. About 4 is good, under 3.6 callers notice.
+- **Recovered**: loss back to 10 % or less (one lost ping in ten still counts) and the average at 80 % of the slow limit or less (and, when **MOS below** is set, the MOS at 0.1 above it), so a target hovering at the limit does not flap.
 
-The thresholds are the three boxes **Slow above (ms)**, **Loss at least (%)** and **Down after**.
+The thresholds are the boxes **Slow above (ms)**, **Loss at least (%)**, **Down after** and **MOS below**. The list has a **MOS** column (voice quality of the last 60 pings, once there are 10 replies), and the report a **MOS** column and, when the limit is set, a line saying so under *Degraded when*. The MOS limit is global: a target cannot have one of its own.
 
 ## Webhooks
 
@@ -89,6 +89,7 @@ The format follows the address: **Slack** (`{"text": …}`), **Discord** (`{"con
 | Packet size (ping only) | 1 – 65 500 bytes | 32 bytes |
 | Slow above | 1 – 60 000 ms | 150 ms |
 | Loss at least | 1 – 100 % | 30 % |
+| MOS below | 0 (not used) or 1.0 – 4.5 | 0 |
 | Down after | 1 – 20 failed pings in a row | 3 |
 
 They are saved in `%APPDATA%\PingTool\settings.json`. A hand-edited file is checked on load: out-of-range numbers are pulled to the nearest limit, and blank or duplicate entries in the lists are dropped. Trailing commas, `//` and `/* */` comments and property names in any case (`intervalMs`) are accepted; comments are not kept when PingTool saves the file again. A damaged file does not stop the program: it is kept aside (`settings.json.bad-<date-time>`, never overwritten), PingTool starts with defaults and says so, so the file can be fixed instead of lost. A file that cannot be opened at all (locked, no permission) is left alone and reported.

@@ -15,6 +15,7 @@ namespace PingTool
         public bool Alert { get; set; } = true;
         public int DegradedLatencyMs { get; set; } = 150;
         public int DegradedLossPercent { get; set; } = 30;
+        public double DegradedMos { get; set; }   // 0 = not used (see Settings)
         public int DownAfter { get; set; } = HostMonitor.DefaultDownAfter;
 
         // The name and own limits of some of the hosts above, by address (see TargetOptions).
@@ -179,6 +180,7 @@ namespace PingTool
                 p.PacketSize = Limits.Clamp(p.PacketSize, Limits.PacketSize);
                 p.DegradedLatencyMs = Limits.Clamp(p.DegradedLatencyMs, Limits.DegradedLatencyMs);
                 p.DegradedLossPercent = Limits.Clamp(p.DegradedLossPercent, Limits.DegradedLossPercent);
+                p.DegradedMos = Limits.ClampMos(p.DegradedMos);
                 p.DownAfter = Limits.Clamp(p.DownAfter, Limits.DownAfter);
                 // Same rules as an imported profile: one entry per address (case ignored), at most MaxHostsPerProfile.
                 p.Hosts = (p.Hosts ?? new List<string>()).Where(h => !string.IsNullOrWhiteSpace(h)).Select(h => h.Trim())

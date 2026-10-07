@@ -6,10 +6,10 @@ namespace PingTool
     {
         public const int HistorySize = 180;
 
-        public HostSession(string address, int degradedLatencyMs = HostMonitor.DefaultLatencyMs, int degradedLossPercent = HostMonitor.DefaultLossPercent, int downAfter = HostMonitor.DefaultDownAfter)
+        public HostSession(string address, int degradedLatencyMs = HostMonitor.DefaultLatencyMs, int degradedLossPercent = HostMonitor.DefaultLossPercent, int downAfter = HostMonitor.DefaultDownAfter, double mosBelow = 0)
         {
             Address = address;
-            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter, mosBelow);
         }
 
         public string Address { get; }
@@ -29,8 +29,11 @@ namespace PingTool
         // it is replaced (starting from a clean state), not edited. ONLY the monitor is replaced: what the session has measured
         // (Stats, History, Last) stays, on purpose - the replay of a log restarts the monitor after a hole in the log and goes on
         // counting the same session. A caller that starts a new run follows it with Reset(), as the window does (Form1, at Start).
-        public void ApplyThresholds(int degradedLatencyMs, int degradedLossPercent, int downAfter) =>
-            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter);
+        public void ApplyThresholds(int degradedLatencyMs, int degradedLossPercent, int downAfter, double mosBelow = 0) =>
+            Monitor = new HostMonitor(degradedLatencyMs, degradedLossPercent, downAfter, mosBelow);
+
+        // The voice quality of the last RecentStats.Window pings (the figure of the "Last 60" line); null with no reply.
+        public double? Mos => RecentStats.From(History).Mos;
         public Queue<long> History { get; } = new();
 
         // When each ping of History was made, in the same order (always as many as History): what lets the comparison graph put the

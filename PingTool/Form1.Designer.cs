@@ -65,12 +65,16 @@
             numSize = new NumericUpDown();
             lblSlow = new Label();
             lblLoss = new Label();
+            lblMos = new Label();
+            numMos = new NumericUpDown();
+            colMos = new ColumnHeader();
             numSlow = new NumericUpDown();
             numLoss = new NumericUpDown();
             lblDownAfter = new Label();
             numDownAfter = new NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)numSlow).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numLoss).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)numMos).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numDownAfter).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numInterval).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numTimeout).BeginInit();
@@ -237,11 +241,33 @@
             numLoss.TabIndex = 17;
             numLoss.Value = new decimal(new int[] { 30, 0, 0, 0 });
             //
+            // lblMos
+            //
+            lblMos.AutoSize = true;
+            lblMos.ForeColor = Color.White;
+            lblMos.Location = new Point(30, 467);
+            lblMos.Name = "lblMos";
+            lblMos.TabIndex = 37;
+            lblMos.Text = "MOS below (0 = off)";
+            //
+            // numMos
+            //
+            numMos.AccessibleName = "Voice quality (MOS) below, 0 = not used";
+            numMos.DecimalPlaces = 1;
+            numMos.Increment = new decimal(new int[] { 1, 0, 0, 65536 });
+            numMos.Location = new Point(30, 485);
+            numMos.Maximum = new decimal(new int[] { 45, 0, 0, 65536 });
+            numMos.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
+            numMos.Name = "numMos";
+            numMos.Size = new Size(80, 23);
+            numMos.TabIndex = 38;
+            numMos.Value = new decimal(new int[] { 0, 0, 0, 0 });
+            //
             // chkSaveLog
             //
             chkSaveLog.AutoSize = true;
             chkSaveLog.ForeColor = Color.White;
-            chkSaveLog.Location = new Point(30, 491);
+            chkSaveLog.Location = new Point(30, 539);
             chkSaveLog.Name = "chkSaveLog";
             chkSaveLog.TabIndex = 21;
             chkSaveLog.Text = "Save the log to disk (daily CSV per host)";
@@ -272,7 +298,7 @@
             chkAlert.Checked = true;
             chkAlert.CheckState = CheckState.Checked;
             chkAlert.ForeColor = Color.White;
-            chkAlert.Location = new Point(30, 467);
+            chkAlert.Location = new Point(30, 515);
             chkAlert.Name = "chkAlert";
             chkAlert.TabIndex = 20;
             chkAlert.Text = "Alert on outage / slowdown / recovery";
@@ -280,14 +306,14 @@
             //
             // lstHosts
             //
-            lstHosts.Columns.AddRange(new ColumnHeader[] { colHost, colLast, colAvg, colLoss });
+            lstHosts.Columns.AddRange(new ColumnHeader[] { colHost, colLast, colAvg, colLoss, colMos });
             lstHosts.FullRowSelect = true;
             lstHosts.HideSelection = false;
             lstHosts.Location = new Point(300, 52);
             lstHosts.MultiSelect = false;
             lstHosts.ShowItemToolTips = true;
             lstHosts.Name = "lstHosts";
-            lstHosts.Size = new Size(260, 218);
+            lstHosts.Size = new Size(300, 218);
             lstHosts.AccessibleName = "Monitored targets";
             lstHosts.TabIndex = 25;
             lstHosts.UseCompatibleStateImageBehavior = false;
@@ -314,11 +340,16 @@
             colLoss.Text = "Loss";
             colLoss.Width = 45;
             //
+            // colMos
+            //
+            colMos.Text = "MOS";
+            colMos.Width = 42;
+            //
             // btnAddHost
             //
             btnAddHost.Location = new Point(300, 328);
             btnAddHost.Name = "btnAddHost";
-            btnAddHost.Size = new Size(120, 28);
+            btnAddHost.Size = new Size(140, 28);
             btnAddHost.TabIndex = 27;
             btnAddHost.Text = "Add address";
             btnAddHost.UseVisualStyleBackColor = true;
@@ -326,9 +357,9 @@
             //
             // btnRemoveHost
             //
-            btnRemoveHost.Location = new Point(440, 328);
+            btnRemoveHost.Location = new Point(460, 328);
             btnRemoveHost.Name = "btnRemoveHost";
-            btnRemoveHost.Size = new Size(120, 28);
+            btnRemoveHost.Size = new Size(140, 28);
             btnRemoveHost.TabIndex = 28;
             btnRemoveHost.Text = "Remove selected";
             btnRemoveHost.UseVisualStyleBackColor = true;
@@ -338,7 +369,7 @@
             //
             btnExport.Location = new Point(300, 362);
             btnExport.Name = "btnExport";
-            btnExport.Size = new Size(126, 28);
+            btnExport.Size = new Size(146, 28);
             btnExport.TabIndex = 29;
             btnExport.Text = "Export CSV...";
             btnExport.UseVisualStyleBackColor = true;
@@ -346,9 +377,9 @@
             //
             // btnIncidents
             //
-            btnIncidents.Location = new Point(434, 362);
+            btnIncidents.Location = new Point(454, 362);
             btnIncidents.Name = "btnIncidents";
-            btnIncidents.Size = new Size(126, 28);
+            btnIncidents.Size = new Size(146, 28);
             btnIncidents.TabIndex = 30;
             btnIncidents.Text = "Incidents (0)";
             btnIncidents.UseVisualStyleBackColor = true;
@@ -358,7 +389,7 @@
             //
             btnReport.Location = new Point(300, 424);
             btnReport.Name = "btnReport";
-            btnReport.Size = new Size(260, 28);
+            btnReport.Size = new Size(300, 28);
             btnReport.TabIndex = 32;
             btnReport.Text = "Save diagnostic report (HTML)...";
             btnReport.UseVisualStyleBackColor = true;
@@ -368,7 +399,7 @@
             //
             btnTimeline.Location = new Point(300, 456);
             btnTimeline.Name = "btnTimeline";
-            btnTimeline.Size = new Size(126, 28);
+            btnTimeline.Size = new Size(146, 28);
             btnTimeline.TabIndex = 33;
             btnTimeline.Text = "Session timeline...";
             btnTimeline.UseVisualStyleBackColor = true;
@@ -376,9 +407,9 @@
             //
             // btnOpenLog
             //
-            btnOpenLog.Location = new Point(434, 456);
+            btnOpenLog.Location = new Point(454, 456);
             btnOpenLog.Name = "btnOpenLog";
-            btnOpenLog.Size = new Size(126, 28);
+            btnOpenLog.Size = new Size(146, 28);
             btnOpenLog.TabIndex = 34;
             btnOpenLog.Text = "Open a log...";
             btnOpenLog.UseVisualStyleBackColor = true;
@@ -388,7 +419,7 @@
             //
             btnImportProfiles.Location = new Point(300, 488);
             btnImportProfiles.Name = "btnImportProfiles";
-            btnImportProfiles.Size = new Size(126, 28);
+            btnImportProfiles.Size = new Size(146, 28);
             btnImportProfiles.TabIndex = 35;
             btnImportProfiles.Text = "Import profiles...";
             btnImportProfiles.UseVisualStyleBackColor = true;
@@ -396,9 +427,9 @@
             //
             // btnExportProfiles
             //
-            btnExportProfiles.Location = new Point(434, 488);
+            btnExportProfiles.Location = new Point(454, 488);
             btnExportProfiles.Name = "btnExportProfiles";
-            btnExportProfiles.Size = new Size(126, 28);
+            btnExportProfiles.Size = new Size(146, 28);
             btnExportProfiles.TabIndex = 36;
             btnExportProfiles.Text = "Export profiles...";
             btnExportProfiles.UseVisualStyleBackColor = true;
@@ -430,7 +461,7 @@
             lblDiagnosis.ForeColor = Color.Silver;
             lblDiagnosis.Location = new Point(300, 276);
             lblDiagnosis.Name = "lblDiagnosis";
-            lblDiagnosis.Size = new Size(260, 46);
+            lblDiagnosis.Size = new Size(300, 46);
             lblDiagnosis.TabIndex = 26;
             lblDiagnosis.Text = "";
             //
@@ -449,14 +480,14 @@
             //
             cboProfile.Location = new Point(300, 20);
             cboProfile.Name = "cboProfile";
-            cboProfile.Size = new Size(150, 23);
+            cboProfile.Size = new Size(190, 23);
             cboProfile.AccessibleName = "Monitoring profile";
             cboProfile.TabIndex = 22;
             cboProfile.SelectionChangeCommitted += cboProfile_SelectionChangeCommitted;
             //
             // btnSaveProfile
             //
-            btnSaveProfile.Location = new Point(455, 19);
+            btnSaveProfile.Location = new Point(495, 19);
             btnSaveProfile.Name = "btnSaveProfile";
             btnSaveProfile.Size = new Size(50, 25);
             btnSaveProfile.TabIndex = 23;
@@ -466,7 +497,7 @@
             //
             // btnDeleteProfile
             //
-            btnDeleteProfile.Location = new Point(510, 19);
+            btnDeleteProfile.Location = new Point(550, 19);
             btnDeleteProfile.Name = "btnDeleteProfile";
             btnDeleteProfile.Size = new Size(50, 25);
             btnDeleteProfile.TabIndex = 24;
@@ -479,7 +510,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(64, 64, 64);
-            ClientSize = new Size(580, 519);
+            ClientSize = new Size(620, 567);
             Controls.Add(chkCompare);
             Controls.Add(lblDiagnosis);
             Controls.Add(lblState);
@@ -497,6 +528,8 @@
             Controls.Add(btnRemoveHost);
             Controls.Add(btnAddHost);
             Controls.Add(lstHosts);
+            Controls.Add(numMos);
+            Controls.Add(lblMos);
             Controls.Add(chkSaveLog);
             Controls.Add(chkAlert);
             Controls.Add(numDownAfter);
@@ -527,6 +560,7 @@
             ((System.ComponentModel.ISupportInitialize)numSize).EndInit();
             ((System.ComponentModel.ISupportInitialize)numSlow).EndInit();
             ((System.ComponentModel.ISupportInitialize)numLoss).EndInit();
+            ((System.ComponentModel.ISupportInitialize)numMos).EndInit();
             ((System.ComponentModel.ISupportInitialize)numDownAfter).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -571,6 +605,9 @@
         private NumericUpDown numSize;
         private Label lblSlow;
         private Label lblLoss;
+        private Label lblMos;
+        private NumericUpDown numMos;
+        private ColumnHeader colMos;
         private NumericUpDown numSlow;
         private NumericUpDown numLoss;
         private Label lblDownAfter;

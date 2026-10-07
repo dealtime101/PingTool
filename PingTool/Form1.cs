@@ -48,7 +48,7 @@ namespace PingTool
         // Everything below the top block: hidden in compact mode.
         private Control[] detailControls = Array.Empty<Control>();
 
-        private static readonly Size FullSize = new(580, 519);
+        private static readonly Size FullSize = new(620, 567);
         // Tall enough for address, big result, Start/Stop and the stats label.
         private static readonly Size CompactSize = new(284, 282);
         private readonly ToolTip toolTip = new();
@@ -89,7 +89,7 @@ namespace PingTool
             detailControls = new Control[]
             {
                 graphLatency, lblInterval, lblTimeout, lblSize, numInterval, numTimeout, numSize,
-                lblSlow, numSlow, lblLoss, numLoss, lblDownAfter, numDownAfter,
+                lblSlow, numSlow, lblLoss, numLoss, lblMos, numMos, lblDownAfter, numDownAfter,
                 chkAlert, chkSaveLog, lstHosts, btnAddHost, btnRemoveHost, btnExport, btnIncidents, btnReport, btnTimeline, btnOpenLog, btnImportProfiles, btnExportProfiles, cboProfile, btnSaveProfile, btnDeleteProfile, lblDiagnosis, chkCompare,
             };
             notifyIcon.DoubleClick += (_, _) => RestoreFromTray();
@@ -234,7 +234,7 @@ namespace PingTool
             {
                 (graphLatency, T | B | L),
                 (lblInterval, B | L), (numInterval, B | L), (lblTimeout, B | L), (numTimeout, B | L), (lblSize, B | L), (numSize, B | L),
-                (lblSlow, B | L), (numSlow, B | L), (lblLoss, B | L), (numLoss, B | L), (lblDownAfter, B | L), (numDownAfter, B | L),
+                (lblSlow, B | L), (numSlow, B | L), (lblLoss, B | L), (numLoss, B | L), (lblMos, B | L), (numMos, B | L), (lblDownAfter, B | L), (numDownAfter, B | L),
                 (chkAlert, B | L), (chkSaveLog, B | L),
                 (cboProfile, T | L | R), (btnSaveProfile, T | R), (btnDeleteProfile, T | R),
                 (lstHosts, T | B | L | R), (lblDiagnosis, B | L | R),
@@ -248,7 +248,7 @@ namespace PingTool
 
         private void FitHostColumns() =>
             colHost.Width = ColumnFit.HostWidth(lstHosts.ClientSize.Width, SystemInformation.VerticalScrollBarWidth,
-                colLast.Width + colAvg.Width + colLoss.Width, DeviceDpi);
+                colLast.Width + colAvg.Width + colLoss.Width + colMos.Width, DeviceDpi);
 
         protected override void OnResize(EventArgs e)
         {
@@ -312,6 +312,8 @@ namespace PingTool
             numSize.Value = Math.Clamp(settings.PacketSize, (int)numSize.Minimum, (int)numSize.Maximum);
             numSlow.Value = Math.Clamp(settings.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
             numLoss.Value = Math.Clamp(settings.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
+            numMos.Value = (decimal)Limits.ClampMos(settings.DegradedMos);
+            toolTip.SetToolTip(numMos, "A host also counts as degraded when the voice quality (MOS, 1 to 4.5) of its last 10 pings falls below this. 0 = not used. About 4 is good, under 3.6 callers notice.");
             numDownAfter.Value = Math.Clamp(settings.DownAfter, (int)numDownAfter.Minimum, (int)numDownAfter.Maximum);
             chkAlert.Checked = settings.Alert;
             chkSaveLog.Checked = settings.SaveLog;
@@ -362,6 +364,7 @@ namespace PingTool
             settings.PacketSize = (int)numSize.Value;
             settings.DegradedLatencyMs = (int)numSlow.Value;
             settings.DegradedLossPercent = (int)numLoss.Value;
+            settings.DegradedMos = (double)numMos.Value;
             settings.DownAfter = (int)numDownAfter.Value;
             settings.Alert = chkAlert.Checked;
             settings.SaveLog = chkSaveLog.Checked;
@@ -394,9 +397,9 @@ namespace PingTool
 
             settings.TargetOptions.TryGetValue(address, out var options);
             var (slow, loss, down) = TargetOptions.Effective(options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
-            var session = new HostSession(address, slow, loss, down) { Options = options, RunLimits = options is null ? null : TargetOptions.DescribeLimits(options) };
+            var session = new HostSession(address, slow, loss, down, (double)numMos.Value) { Options = options, RunLimits = options is null ? null : TargetOptions.DescribeLimits(options) };
             sessions.Add(session);
-            var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-" }) { Tag = session };
+            var item = new ListViewItem(new[] { session.DisplayName, "-", "-", "-", "-" }) { Tag = session };
             lstHosts.Items.Add(item);
             RenderRow(item);   // the hover text is there from the start, not after the first ping
             item.Selected = true;
@@ -445,6 +448,7 @@ namespace PingTool
                 Alert = chkAlert.Checked,
                 DegradedLatencyMs = (int)numSlow.Value,
                 DegradedLossPercent = (int)numLoss.Value,
+                DegradedMos = (double)numMos.Value,
                 DownAfter = (int)numDownAfter.Value,
                 // The names and own limits of this profile's hosts go with it.
                 TargetOptions = hosts.Where(settings.TargetOptions.ContainsKey)
@@ -583,6 +587,7 @@ namespace PingTool
                 Alert = chkAlert.Checked,
                 DegradedLatencyMs = (int)numSlow.Value,
                 DegradedLossPercent = (int)numLoss.Value,
+                DegradedMos = (double)numMos.Value,
                 DownAfter = (int)numDownAfter.Value,
             });
 
@@ -632,6 +637,7 @@ namespace PingTool
 
             numSlow.Value = Math.Clamp(profile.DegradedLatencyMs, (int)numSlow.Minimum, (int)numSlow.Maximum);
             numLoss.Value = Math.Clamp(profile.DegradedLossPercent, (int)numLoss.Minimum, (int)numLoss.Maximum);
+            numMos.Value = (decimal)Limits.ClampMos(profile.DegradedMos);
             numDownAfter.Value = Math.Clamp(profile.DownAfter, (int)numDownAfter.Minimum, (int)numDownAfter.Maximum);
             numInterval.Value = Math.Clamp(profile.IntervalMs, (int)numInterval.Minimum, (int)numInterval.Maximum);
             numTimeout.Value = Math.Clamp(profile.TimeoutMs, (int)numTimeout.Minimum, (int)numTimeout.Maximum);
@@ -765,12 +771,12 @@ namespace PingTool
                 foreach (var s in sessions)
                 {
                     var (slow, loss, down) = TargetOptions.Effective(s.Options, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
-                    s.ApplyThresholds(slow, loss, down);
+                    s.ApplyThresholds(slow, loss, down, (double)numMos.Value);
                     s.RunLimits = s.Options is null ? null : TargetOptions.DescribeLimits(s.Options);
                     s.Reset();
                 }
                 runStart = DateTimeOffset.Now;
-                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+                runSettings = new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value, (double)numMos.Value);
                 log.Clear();
                 StartAutoLog();
                 webhookWarned.Clear();
@@ -963,6 +969,7 @@ namespace PingTool
             numSize.Enabled = enabled;
             numSlow.Enabled = enabled;
             numLoss.Enabled = enabled;
+            numMos.Enabled = enabled;
             numDownAfter.Enabled = enabled;
             chkSaveLog.Enabled = enabled;
             btnAddHost.Enabled = enabled;
@@ -1119,6 +1126,7 @@ namespace PingTool
             item.SubItems[1].Text = s.Last is null ? "-" : s.LastFailure?.Short ?? s.Last + " ms";
             item.SubItems[2].Text = s.Stats.Avg is null ? "-" : s.Stats.Avg.Value.ToString("0.#", CultureInfo.CurrentCulture);
             item.SubItems[3].Text = s.Stats.LossPercent is double loss ? loss.ToString("0.#", CultureInfo.CurrentCulture) + "%" : "-";
+            item.SubItems[4].Text = s.Mos is double mos ? mos.ToString("0.0", CultureInfo.CurrentCulture) : "-";
         }
 
         // A report for someone who does not have PingTool: one self-contained HTML file.
@@ -1132,16 +1140,16 @@ namespace PingTool
 
             var now = DateTimeOffset.Now;
             // What the measures were taken with, not what the boxes say now (they are editable again after Stop).
-            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value);
+            var run = runSettings ?? new RunSettings((int)numInterval.Value, (int)numTimeout.Value, (int)numSize.Value, (int)numSlow.Value, (int)numLoss.Value, (int)numDownAfter.Value, (double)numMos.Value);
             var data = new ReportData(now, runStart, Environment.MachineName,
                 AppVersion.Display,
                 run.IntervalMs, run.TimeoutMs, run.PacketSize,
                 run.DegradedLatencyMs, run.DegradedLossPercent,
                 sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost,
                     s.Stats.LossPercent, s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
-                    s.Options?.Label, s.RunLimits, s.Notice)).ToList(),
+                    s.Options?.Label, s.RunLimits, s.Notice, s.Mos)).ToList(),
                 Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()),
-                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList(), DownAfter: run.DownAfter);
+                incidents.Summary(now), incidents.Incidents.ToList(), NetworkEvents: networkEvents.ToList(), DownAfter: run.DownAfter, DegradedMos: run.DegradedMos);
 
             using var dialog = new SaveFileDialog
             {
@@ -1398,7 +1406,7 @@ namespace PingTool
             if (closing || change == HostChange.None || !chkAlert.Checked) return;
 
             var monitor = session.Monitor;
-            string text = AlertMessage.For(session.DisplayName, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage);
+            string text = AlertMessage.For(session.DisplayName, change, monitor.WindowLossPercent, monitor.WindowAvgMs, outage, monitor.Voice);
             webhooks?.Send(new WebhookEvent(session.Address, change, text, outage, DateTimeOffset.Now));
             var (sound, icon) = change switch
             {

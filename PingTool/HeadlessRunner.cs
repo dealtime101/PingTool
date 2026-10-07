@@ -65,7 +65,7 @@ namespace PingTool
             {
                 settings.TargetOptions.TryGetValue(address, out var options);
                 var (slow, loss, down) = TargetOptions.Effective(options, settings.DegradedLatencyMs, settings.DegradedLossPercent, settings.DownAfter);
-                sessions.Add(new HostSession(address, slow, loss, down) { Options = options });
+                sessions.Add(new HostSession(address, slow, loss, down, settings.DegradedMos) { Options = options });
             }
 
             var incidents = new IncidentLog();
@@ -80,8 +80,8 @@ namespace PingTool
                         settings.DegradedLatencyMs, settings.DegradedLossPercent,
                         sessions.Select(s => new HostReport(s.Address, s.IpText, s.Monitor.State, s.Stats.Sent, s.Stats.Lost, s.Stats.LossPercent,
                             s.Stats.Min, s.Stats.Avg, s.Stats.Max, s.Stats.Jitter, s.History.ToArray(), s.Stats.Hours,
-                            s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options), s.Notice)).ToList(),
-                        Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()), incidents.Summary(now), incidents.Incidents.ToList(), DownAfter: settings.DownAfter);
+                            s.Options?.Label, s.Options is null ? null : TargetOptions.DescribeLimits(s.Options), s.Notice, s.Mos)).ToList(),
+                        Diagnosis.For(sessions.Select(s => s.ToTarget()).ToList()), incidents.Summary(now), incidents.Incidents.ToList(), DownAfter: settings.DownAfter, DegradedMos: settings.DegradedMos);
             }
 
             using var run = CancellationTokenSource.CreateLinkedTokenSource(stop);
@@ -120,7 +120,7 @@ namespace PingTool
                             TimeSpan? outage = change == HostChange.Up
                                 ? incidents.Incidents.LastOrDefault(i => i.Host == session.Address && i.Kind == IncidentKind.Outage)?.Duration(now) : null;
                             toRaise = new WebhookEvent(session.Address, change,
-                                AlertMessage.For(session.DisplayName, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs, outage), outage, now);
+                                AlertMessage.For(session.DisplayName, change, session.Monitor.WindowLossPercent, session.Monitor.WindowAvgMs, outage, session.Monitor.Voice), outage, now);
                         }
                     }
 
